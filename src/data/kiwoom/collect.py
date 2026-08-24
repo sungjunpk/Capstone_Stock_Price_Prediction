@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import date, timedelta
 
 import pandas as pd
@@ -168,15 +169,22 @@ def collect_universe(
     codes: list[str],
     *,
     start_date: date | None = None,
+    with_chart: bool = True,
     with_flow: bool = True,
     with_info: bool = True,
 ) -> dict[str, str]:
-    """유니버스 전체 수집. 한 종목이 실패해도 나머지는 계속 진행한다."""
+    """유니버스 전체 수집. 한 종목이 실패해도 나머지는 계속 진행한다.
+
+    TR별로 켜고 끌 수 있다. 수급(investor_flow)은 페이지당 100건이라
+    종목당 30~50초가 걸리는 병목이므로, 급하지 않으면 나중에 따로 돌린다.
+    """
     status: dict[str, str] = {}
+    t0 = time.monotonic()
+
     for i, code in enumerate(codes, 1):
-        log.info("[%d/%d] %s 수집 시작", i, len(codes), code)
         try:
-            collect_daily_chart(client, code, start_date=start_date)
+            if with_chart:
+                collect_daily_chart(client, code, start_date=start_date)
             if with_flow:
                 collect_investor_flow(client, code, start_date=start_date)
             if with_info:
@@ -185,4 +193,17 @@ def collect_universe(
         except KiwoomAPIError as exc:
             log.error("%s 수집 실패: %s", code, exc)
             status[code] = f"fail: {exc}"
+        except Exception as exc:  # noqa: BLE001 — 한 종목 때문에 전체가 죽으면 안 된다
+            log.error("%s 예기치 못한 오류: %s", code, exc)
+            status[code] = f"error: {exc}"
+
+        # 긴 수집이라 진행률과 남은 시간을 주기적으로 알린다
+        if i % 10 == 0 or i == len(codes):
+            elapsed = time.monotonic() - t0
+            eta = elapsed / i * (len(codes) - i)
+            fails = sum(1 for v in status.values() if v != "ok")
+            log.info(
+                "진행 %d/%d (%.0f%%) | 실패 %d | 경과 %.0f분 | 남은시간 약 %.0f분",
+                i, len(codes), 100 * i / len(codes), fails, elapsed / 60, eta / 60,
+            )
     return status

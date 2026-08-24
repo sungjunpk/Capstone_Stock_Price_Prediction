@@ -21,7 +21,7 @@ from typing import Any
 
 import requests
 
-from src.data.kiwoom.endpoints import TOKEN_PATH, TRSpec
+from src.data.kiwoom.endpoints import ALL_SPECS, TOKEN_PATH, TRSpec
 from src.utils.config import KiwoomSettings, load_kiwoom_settings
 from src.utils.logging import get_logger
 from src.utils.ratelimit import RateLimiterRegistry
@@ -29,6 +29,13 @@ from src.utils.ratelimit import RateLimiterRegistry
 log = get_logger(__name__)
 
 _RETRY_STATUS = {429, 500, 502, 503, 504}
+# 제한 초과를 알리는 신호들. 키움은 429 말고 HTTP 200 + return_code 로도 알려준다.
+_RATE_LIMIT_CODES = {"5", 5}
+_RATE_LIMIT_WORDS = ("초과", "제한", "잠시", "too many", "limit")
+
+
+def _looks_rate_limited(code, msg: str) -> bool:
+    return code in _RATE_LIMIT_CODES or any(w in msg.lower() for w in _RATE_LIMIT_WORDS)
 _MAX_RETRIES = 4
 _TOKEN_MARGIN_SEC = 300  # 만료 5분 전 미리 갱신
 
@@ -56,6 +63,11 @@ class KiwoomClient:
         self.max_pages = max_pages
 
         self.limiter = RateLimiterRegistry(self.settings.rate_limit_per_sec)
+        # TR별 초당 제한을 리미터에 등록. 전역 설정보다 큰 값은 전역으로 깎는다.
+        for spec in ALL_SPECS.values():
+            self.limiter.set_limit(
+                spec.api_id, min(spec.rate_limit_per_sec, self.settings.rate_limit_per_sec)
+            )
         self._session = requests.Session()
         self._token: str | None = None
         self._token_expires_at: float = 0.0
@@ -137,10 +149,18 @@ class KiwoomClient:
 
             if resp.status_code in _RETRY_STATUS:
                 backoff = 2.0**attempt
-                log.warning(
-                    "[%s] HTTP %s — %.1fs 후 재시도 (%d/%d)",
-                    spec.name, resp.status_code, backoff, attempt + 1, _MAX_RETRIES,
-                )
+                if resp.status_code == 429:
+                    # 재시도만 하면 같은 속도로 계속 부딪힌다. 속도 자체를 낮춘다.
+                    new_rate = self.limiter.penalize(spec.api_id)
+                    log.warning(
+                        "[%s] 429 — 속도를 %.2f req/s 로 낮추고 %.1fs 후 재시도 (%d/%d)",
+                        spec.name, new_rate, backoff, attempt + 1, _MAX_RETRIES,
+                    )
+                else:
+                    log.warning(
+                        "[%s] HTTP %s — %.1fs 후 재시도 (%d/%d)",
+                        spec.name, resp.status_code, backoff, attempt + 1, _MAX_RETRIES,
+                    )
                 time.sleep(backoff)
                 last_err = KiwoomAPIError(
                     f"{spec.name}: HTTP {resp.status_code}", status=resp.status_code
@@ -157,10 +177,23 @@ class KiwoomClient:
             # 키움은 HTTP 200 이어도 body 안 return_code 로 실패를 알린다. VERIFIED
             rc = data.get("return_code")
             if rc not in (None, 0, "0"):
+                msg = str(data.get("return_msg") or "")
+                # 제한 초과가 200 으로 오는 경우가 있다(ka10099 에서 관측) — 속도를 낮추고 재시도
+                if _looks_rate_limited(rc, msg) and attempt < _MAX_RETRIES - 1:
+                    new_rate = self.limiter.penalize(spec.api_id)
+                    backoff = 2.0**attempt
+                    log.warning(
+                        "[%s] 제한 초과 응답(return_code=%s) — 속도 %.2f req/s, %.1fs 후 재시도",
+                        spec.name, rc, new_rate, backoff,
+                    )
+                    time.sleep(backoff)
+                    last_err = KiwoomAPIError(f"{spec.name}: return_code={rc}", body=data)
+                    continue
                 raise KiwoomAPIError(
-                    f"{spec.name}: return_code={rc} msg={data.get('return_msg')}",
-                    body=data,
+                    f"{spec.name}: return_code={rc} msg={msg}", body=data
                 )
+
+            self.limiter.report_success(spec.api_id)
             return data, {k.lower(): v for k, v in resp.headers.items()}
 
         raise KiwoomAPIError(f"{spec.name}: 재시도 소진") from last_err

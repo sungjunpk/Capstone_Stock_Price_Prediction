@@ -50,6 +50,7 @@ DAILY_CHART = TRSpec(  # VERIFIED 2026-08-24 (005930 mock, 10,914행 1985~현재
         "volume": ("trde_qty", "abs_int"),
         "value": ("trde_prica", "abs_int"),  # 거래대금 — 단위 백만원 (검증됨)
     },
+    rate_limit_per_sec=3.0,
     verified=True,
     note="upd_stkpc_tp='1' 필수. 검증: 2018-05 삼성전자 50:1 분할 구간에서 "
          "ON=53,000원 연속 / OFF=2,650,000원→53,000원 점프 확인. "
@@ -147,10 +148,35 @@ OVERSEAS_DAILY = TRSpec(  # DEPRECATED — 사용하지 말 것. 위 주석 참�
     note="사용 금지 — 해외 일봉 TR 없음. 국내상장 해외지수 ETF 를 DAILY_CHART 로 수집할 것",
 )
 
+# --- 종목 리스트: 유니버스 자동 선정용 --------------------------------------
+STOCK_LIST = TRSpec(  # VERIFIED 2026-08-24 (KOSPI mrkt_tp=0, 2477종목)
+    name="stock_list",
+    path="/api/dostk/stkinfo",
+    api_id="ka10099",
+    list_key="list",
+    schema={
+        "code": ("code", "str"),
+        "name": ("name", "str"),
+        "sector": ("upName", "str"),          # 업종 — ka10001 에는 없고 여기에 있다
+        "size_class": ("upSizeName", "str"),  # 대형주/중형주/소형주
+        "listed_shares": ("listCount", "abs_int"),
+        "last_price": ("lastPrice", "abs_float"),  # 시가총액 = listed_shares × last_price
+        "listing_date": ("regDay", "date"),
+        "audit": ("auditInfo", "str"),        # '정상' 이 아니면 관리종목 등
+        "market": ("marketName", "str"),
+        "state": ("state", "str"),
+        "kind": ("kind", "str"),
+    },
+    rate_limit_per_sec=0.5,  # 응답이 커서 제한이 빡빡하다 — 429 관측됨
+    verified=True,
+    note="mrkt_tp: '0'=KOSPI, '10'=KOSDAQ. 한 번에 전 종목이 오고 연속조회 없음(cont-yn=N). "
+         "⚠️ upName(업종)이 여기 있다 — ka10001 에는 없으므로 업종은 이 TR 에서 받는다.",
+)
+
 ALL_SPECS: dict[str, TRSpec] = {
     spec.name: spec
     # OVERSEAS_DAILY 는 의도적으로 제외 — 해외 일봉 TR 이 존재하지 않는다
-    for spec in (DAILY_CHART, STOCK_INFO, INVESTOR_FLOW, INDEX_DAILY)
+    for spec in (DAILY_CHART, STOCK_INFO, INVESTOR_FLOW, INDEX_DAILY, STOCK_LIST)
 }
 
 

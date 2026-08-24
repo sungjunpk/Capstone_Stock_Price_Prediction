@@ -35,6 +35,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--codes", nargs="*", help="종목코드 (미지정 시 config 유니버스)")
     ap.add_argument("--skip-index", action="store_true", help="지수 수집 생략")
+    ap.add_argument(
+        "--tr", nargs="*", default=["all"],
+        choices=["all", "chart", "flow", "info"],
+        help="수집할 TR 선택. flow(수급)는 종목당 30~50초로 느리다. 기본 all",
+    )
     ap.add_argument("--dry-run", action="store_true", help="API 호출 없이 계획만")
     args = ap.parse_args()
 
@@ -67,8 +72,20 @@ def main() -> int:
     etf_codes = {e["code"] for e in etfs} - set(args.codes or [])
     stock_codes = [c for c in codes if c not in etf_codes]
 
+    want = set(args.tr)
+    do_all = "all" in want
+    with_chart, with_flow, with_info = (
+        do_all or "chart" in want,
+        do_all or "flow" in want,
+        do_all or "info" in want,
+    )
+    log.info("수집 TR: chart=%s flow=%s info=%s", with_chart, with_flow, with_info)
+
     with KiwoomClient() as client:
-        status = collect_universe(client, stock_codes, start_date=start_date)
+        status = collect_universe(
+            client, stock_codes, start_date=start_date,
+            with_chart=with_chart, with_flow=with_flow, with_info=with_info,
+        )
         for code in sorted(etf_codes):
             log.info("[ETF] %s 일봉 수집", code)
             try:
@@ -78,7 +95,7 @@ def main() -> int:
                 log.error("ETF %s 실패: %s", code, exc)
                 status[code] = f"fail: {exc}"
 
-        if not args.skip_index:
+        if not args.skip_index and with_chart:
             for idx in cfg["data"]["macro"]["indices"]:
                 try:
                     collect_index_daily(client, idx["code"], start_date=start_date)

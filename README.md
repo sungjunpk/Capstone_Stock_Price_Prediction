@@ -17,8 +17,11 @@ pytest -q              # 21 tests
 ## 파이프라인
 
 ```bash
+python scripts/build_universe.py        # 유니버스 자동 선정 → configs/universe.yaml
 python scripts/collect.py --dry-run     # 수집 계획 확인 (API 호출 없음)
-python scripts/collect.py               # 일봉/수급/종목정보/지수 증분 수집
+python scripts/collect.py --tr chart info   # 일봉+종목정보만 (빠름, 약 15분)
+python scripts/collect.py --tr flow     # 수급만 (느림, 종목당 30~50초)
+python scripts/collect.py               # 전부
 python scripts/peek.py                  # 뭐가 얼마나 쌓였는지 확인
 python scripts/build_features.py        # 지표 + 라벨 → data/processed/features.parquet
 python scripts/train.py                 # (미구현) Phase 1 모델 학습
@@ -64,14 +67,22 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 
 | 종류 | 대상 | 행 수 |
 |---|---|---|
-| 일봉 | 유니버스 8종목 | 각 2,857행 (삼성바이오 2,399 — 2016 상장) |
-| 수급 | 유니버스 8종목 | 일봉과 동일 |
-| 종목정보 | 유니버스 8종목 | 각 1행 (조회시점 스냅샷) |
+| 일봉 | 유니버스 **146종목** | 415,948행 (2015-01 ~ 2026-08) |
+| 종목정보 | 유니버스 146종목 | 각 1행 (조회시점 스냅샷) |
+| 수급 | 8종목 (나머지는 수집 대기) | 22,398행 |
 | 지수 | KOSPI(001), KOSDAQ(101) | 각 2,857행 |
 | ETF | KODEX 미국반도체MV(390390) | 1,260행 (2021-06 상장) |
 
-피처 테이블: **22,337행 × 26컬럼**, 학습가능 21,825행
-→ train 13,818 / val 968 / test 4,095 샘플 (lookback 120일 기준)
+**학습샘플 352,876개** (lookback 120일 기준)
+
+| 구간 | 기간 | 샘플 |
+|---|---|---|
+| train | 2015-03 ~ 2022-12 | 260,339 |
+| val | 2023-01 ~ 2023-12 | 17,584 |
+| test | 2024-01 ~ 2026-08 | 74,953 |
+
+유니버스 선정 기준: 2015-01-01 이전 상장 / 감사의견 정상 / 보통주 / 시가총액 상위
+(ETF·리츠·스팩·인프라펀드 제외). 21개 섹터 분산.
 
 ## 다음 세션 시작하기
 

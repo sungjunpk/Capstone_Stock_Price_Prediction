@@ -94,7 +94,23 @@ def load_kiwoom_settings() -> KiwoomSettings:
     )
 
 
+UNIVERSE_PATH = PROJECT_ROOT / "configs" / "universe.yaml"
+
+
 def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
     with open(path, encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
+
+    # 유니버스는 scripts/build_universe.py 가 생성하는 별도 파일이 정본이다.
+    # 종목이 수백 개라 config.yaml 에 인라인으로 두면 읽기 힘들어서 분리했다.
+    # universe.yaml 이 없으면 config.yaml 의 인라인 목록으로 폴백한다.
+    if UNIVERSE_PATH.exists():
+        with open(UNIVERSE_PATH, encoding="utf-8") as f:
+            uni = yaml.safe_load(f) or {}
+        if uni.get("universe"):
+            raw.setdefault("data", {})["universe"] = uni["universe"]
+            raw["data"]["universe_meta"] = {
+                k: v for k, v in uni.items() if k != "universe"
+            }
+
     return Config(raw=raw, kiwoom=load_kiwoom_settings())
