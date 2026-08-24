@@ -99,6 +99,9 @@ def load_kind(kind: str, codes: list[str] | None = None) -> pd.DataFrame:
         if codes is not None and code not in codes:
             continue
         part = pd.read_parquet(f)
+        # stock_info 처럼 응답 자체에 code 가 들어있는 TR 도 있다.
+        # 파일명이 정본이므로 기존 컬럼은 덮어쓰고, 항상 맨 앞에 둔다.
+        part = part.drop(columns=["code"], errors="ignore")
         part.insert(0, "code", code)
         frames.append(part)
 
