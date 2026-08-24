@@ -19,6 +19,7 @@ pytest -q              # 21 tests
 ```bash
 python scripts/collect.py --dry-run     # 수집 계획 확인 (API 호출 없음)
 python scripts/collect.py               # 일봉/수급/종목정보/지수 증분 수집
+python scripts/peek.py                  # 뭐가 얼마나 쌓였는지 확인
 python scripts/build_features.py        # 지표 + 라벨 → data/processed/features.parquet
 python scripts/train.py                 # (미구현) Phase 1 모델 학습
 python scripts/backtest.py              # (미구현) walk-forward 백테스트
@@ -26,6 +27,14 @@ python scripts/paper_trade.py           # (미구현) 모의투자 실행
 ```
 
 모든 수집은 **증분(idempotent)** — 같은 명령을 두 번 돌려도 중복 행이 생기지 않는다.
+
+수집 결과는 `data/` 에 parquet 으로 쌓인다. 이진 파일이라 에디터로 열리지 않으니
+`scripts/peek.py` 로 확인한다.
+
+```
+data/raw/{TR이름}/{종목코드}.parquet   ← API 응답 원본
+data/processed/features.parquet        ← 지표·라벨까지 계산된 학습용 테이블
+```
 
 ## 현재 상태
 
