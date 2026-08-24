@@ -58,7 +58,7 @@ DAILY_CHART = TRSpec(  # VERIFIED 2026-08-24 (005930 mock, 10,914행 1985~현재
 )
 
 # --- 종목 기본정보: static covariate + PER/PBR ------------------------------
-STOCK_INFO = TRSpec(  # UNVERIFIED
+STOCK_INFO = TRSpec(  # VERIFIED 2026-08-24 (005930 mock)
     name="stock_info",
     path="/api/dostk/stkinfo",
     api_id="ka10001",
@@ -66,16 +66,24 @@ STOCK_INFO = TRSpec(  # UNVERIFIED
     schema={
         "code": ("stk_cd", "str"),
         "name": ("stk_nm", "str"),
-        "sector": ("upName", "str"),
-        "market_cap": ("mac", "abs_float"),
+        "market_cap": ("mac", "abs_float"),        # 억원
+        "listed_shares": ("flo_stk", "abs_int"),   # 천주
         "per": ("per", "float"),
         "pbr": ("pbr", "float"),
-        "listed_shares": ("flo_stk", "abs_int"),
+        "eps": ("eps", "float"),
+        "bps": ("bps", "float"),
+        "roe": ("roe", "float"),
+        "foreign_ratio": ("for_exh_rt", "float"),  # 외국인 소진율 %
     },
+    verified=True,
+    note="⚠️ 업종(sector) 필드가 없다 — 초기 가정 'upName' 은 존재하지 않는 필드였다. "
+         "업종은 configs/config.yaml 의 universe 에 직접 적어 static covariate 로 쓴다. "
+         "가격류에 +/- 부호가 붙으므로(cur_prc='-257000') abs_ 필수. "
+         "PER/PBR 등은 조회 시점 스냅샷이라 과거 시계열로는 쓸 수 없다(look-ahead 주의).",
 )
 
 # --- 투자자별 매매동향: 수급 피처 -------------------------------------------
-INVESTOR_FLOW = TRSpec(  # UNVERIFIED
+INVESTOR_FLOW = TRSpec(  # VERIFIED 2026-08-24 (005930 mock)
     name="investor_flow",
     path="/api/dostk/stkinfo",
     api_id="ka10059",
@@ -83,17 +91,23 @@ INVESTOR_FLOW = TRSpec(  # UNVERIFIED
     schema={
         "date": ("dt", "date"),
         "close": ("cur_prc", "abs_float"),
-        "individual": ("ind_invsr", "int"),   # 개인 순매수 (부호 유지)
-        "foreign": ("frgnr_invsr", "int"),    # 외국인 순매수
-        "institution": ("orgn", "int"),       # 기관계 순매수
+        "individual": ("ind_invsr", "int"),    # 개인 순매수 (부호 유지)
+        "foreign": ("frgnr_invsr", "int"),     # 외국인 순매수
+        "institution": ("orgn", "int"),        # 기관계 순매수
+        "fin_invest": ("fnnc_invt", "int"),    # 금융투자 (기관 내 세부)
+        "pension": ("penfnd_etc", "int"),      # 연기금등
+        "etc_corp": ("etc_corp", "int"),       # 기타법인
     },
-    note="순매수는 부호가 의미를 갖는다 — abs_ 쓰지 말 것",
+    verified=True,
+    note="순매수는 부호가 의미를 갖는다 — abs_ 쓰지 말 것. "
+         "페이지당 100건(일봉 TR의 600건보다 작다). next-key 는 날짜 문자열. "
+         "⚠️ flu_rt 가 이 TR 에서는 '-870'(=-8.70%) 형식이라 ka10001('-8.70')과 다르다 — 안 쓴다.",
 )
 
 # --- 지수(KOSPI/KOSDAQ) 일봉: 매크로 시퀀스 --------------------------------
-INDEX_DAILY = TRSpec(  # UNVERIFIED
+INDEX_DAILY = TRSpec(  # VERIFIED 2026-08-24 (KOSPI=001 mock)
     name="index_daily",
-    path="/api/dostk/chart",   # VERIFIED(path) — MCP 패키지 api_paths 기준. sect 아님
+    path="/api/dostk/chart",   # sect 아님 — 초기 가정 오류였다
     api_id="ka20006",
     list_key="inds_dt_pole_qry",
     schema={
@@ -103,7 +117,12 @@ INDEX_DAILY = TRSpec(  # UNVERIFIED
         "low": ("low_pric", "abs_float"),
         "close": ("cur_prc", "abs_float"),
         "volume": ("trde_qty", "abs_int"),
+        "value": ("trde_prica", "abs_int"),
     },
+    verified=True,
+    note="지수값은 100배 스케일로 온다(KOSPI 669696 = 6696.96). "
+         "수익률/비율로만 쓰므로 상수배는 상쇄되어 무해하지만, 그래프에 그릴 땐 /100 할 것. "
+         "페이지당 600건.",
 )
 
 # --- 해외 지수/ETF (SOXX 등): 글로벌 크로스어텐션 입력 ----------------------

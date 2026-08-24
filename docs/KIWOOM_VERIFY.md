@@ -55,9 +55,9 @@ MCP 도구 이름 규칙: `kiwoom_{세그먼트}_{TR ID}` (예: `kiwoom_chart_ka
 | TR | api_id | path | 상태 | 비고 |
 |---|---|---|---|---|
 | daily_chart | ka10081 | `/api/dostk/chart` | ✅ **검증완료 2026-08-24** | 아래 상세 참고 |
-| stock_info | ka10001 | `/api/dostk/stkinfo` | path ✅ / 응답 UNVERIFIED | 단일 객체 응답 — list_key 없음 |
-| investor_flow | ka10059 | `/api/dostk/stkinfo` | path ✅ / 응답 UNVERIFIED | 순매수 부호 유지 필요 |
-| index_daily | ka20006 | `/api/dostk/chart` | path ✅ / 응답 UNVERIFIED | 최초 가정(`/sect`)은 틀렸음. KOSPI=001, KOSDAQ=101 코드 확인 필요 |
+| stock_info | ka10001 | `/api/dostk/stkinfo` | ✅ **검증완료 2026-08-24** | ⚠️ **업종 필드 없음** — 아래 참고 |
+| investor_flow | ka10059 | `/api/dostk/stkinfo` | ✅ **검증완료 2026-08-24** | 스키마 일치. 페이지당 100건 |
+| index_daily | ka20006 | `/api/dostk/chart` | ✅ **검증완료 2026-08-24** | 스키마 일치. 지수값 100배 스케일 |
 | ~~overseas_daily~~ | ~~ka20001~~ | — | ❌ **존재하지 않음** | 키움에 해외 일봉 TR 없음(shsa 세그먼트에 ka10014 하나뿐). ka20001 은 업종 TR 이었다. → 국내상장 ETF fallback 사용 |
 
 *path 는 MCP 패키지의 `api_paths` 정의로 대조 완료.*
@@ -76,6 +76,34 @@ MCP 도구 이름 규칙: `kiwoom_{세그먼트}_{TR ID}` (예: `kiwoom_chart_ka
 | 수정주가 | `upd_stkpc_tp="1"` 정상. 2018-05 삼성전자 50:1 분할 구간에서 ON=53,000원 연속 / OFF=2,650,000→53,000 점프 확인 |
 | `trde_prica` 단위 | **백만원** (32.45M주 × 257,000원 ≈ 8.34조 vs 응답 8,455,948) |
 
+### stock_info (ka10001) 검증 상세
+
+단일 객체 응답(배열 아님). `per` `pbr` `eps` `bps` `roe` `mac`(시총, 억원)
+`flo_stk`(상장주식수, 천주) `for_exh_rt`(외국인소진율) 모두 존재.
+가격 필드에 부호가 붙는다(`cur_prc: "-257000"`) → **`abs_` 필수**.
+
+**⚠️ 업종(sector) 필드가 없다.** 초기 가정한 `upName` 은 존재하지 않는 필드였다.
+→ 업종은 `configs/config.yaml` 의 `data.universe` 에 직접 적어 static covariate 로 쓴다.
+   종목을 추가할 때 이 표도 같이 채울 것.
+
+**⚠️ PER/PBR 은 조회 시점 스냅샷이다.** 과거 시계열이 아니므로 그대로 t 시점 피처로 쓰면
+look-ahead 가 된다. 시계열이 필요하면 별도 TR 을 찾거나 static covariate 로만 쓸 것.
+
+### investor_flow (ka10059) 검증 상세
+
+`stk_invsr_orgn` 배열 ✅. `ind_invsr`(개인) `frgnr_invsr`(외국인) `orgn`(기관계)
+정의와 일치. 추가로 `fnnc_invt`(금융투자) `penfnd_etc`(연기금등) `etc_corp`(기타법인) 수집.
+순매수는 **부호가 의미를 가지므로 abs_ 금지**.
+페이지당 100건(일봉 600건보다 작아 페이지가 많다), next-key 는 날짜 문자열.
+
+⚠️ 이 TR 의 `flu_rt` 는 `"-870"`(= -8.70%) 형식으로, ka10001 의 `"-8.70"` 과 다르다. 사용하지 않는다.
+
+### index_daily (ka20006) 검증 상세
+
+`inds_dt_pole_qry` 배열 ✅, 필드 정의와 일치. KOSPI=`001`, KOSDAQ=`101` 동작 확인.
+**지수값이 100배 스케일**로 온다 (KOSPI `669696` = 6696.96).
+수익률·비율로만 쓰므로 상수배는 상쇄되어 무해하지만, 그래프에 그릴 땐 `/100` 할 것.
+
 **⚠️ 발견된 함정: 거래정지일**
 
 분할 전후 거래정지일(2018-04-30, 05-02, 05-03)이 `volume=0` + `OHLC 전부 직전 종가` 로 채워져 온다.
@@ -90,3 +118,6 @@ MCP 도구 이름 규칙: `kiwoom_{세그먼트}_{TR ID}` (예: `kiwoom_chart_ka
 - **모의투자 데이터 범위**: mock 서버는 과거 데이터 제공 기간이 짧을 수 있다.
   이 경우 학습 데이터 확보 방안을 별도로 정해야 한다 — **초기에 반드시 확인할 것**.
 - **live 금지**: `KIWOOM_ENV=live` 는 `src/utils/config.py` 에서 예외를 던지도록 막아뒀다.
+- **해외 ETF 상장일**: 대체재로 쓰는 KODEX 미국반도체MV(390390)는 **2021-06-30 상장**이라
+  2015~2021 구간이 없다. 글로벌 시퀀스를 필수 입력으로 만들면 학습 구간이 5년으로 줄어든다.
+  → 매크로 결합(`features/build.py`) 단계에서 **마스킹 처리**하거나, 더 오래된 대체 ETF 를 찾을 것.

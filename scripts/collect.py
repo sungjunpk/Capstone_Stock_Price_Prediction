@@ -19,7 +19,11 @@ import pandas as pd  # noqa: E402
 
 from src.data import storage  # noqa: E402
 from src.data.kiwoom.client import KiwoomClient  # noqa: E402
-from src.data.kiwoom.collect import collect_index_daily, collect_universe  # noqa: E402
+from src.data.kiwoom.collect import (  # noqa: E402
+    collect_daily_chart,
+    collect_index_daily,
+    collect_universe,
+)
 from src.data.kiwoom.endpoints import unverified_specs  # noqa: E402
 from src.utils.config import load_config  # noqa: E402
 from src.utils.logging import get_logger, setup_logging  # noqa: E402
@@ -38,7 +42,10 @@ def main() -> int:
     cfg = load_config()
 
     universe = cfg["data"]["universe"]
-    codes = args.codes or [u["code"] for u in universe]
+    # 국내상장 해외지수 ETF 도 일반 종목이라 daily_chart 로 받는다.
+    # (키움에 해외 일봉 TR 이 없어서 이게 글로벌 시퀀스의 대체재다 — docs/KIWOOM_VERIFY.md)
+    etfs = cfg["data"]["macro"].get("overseas_etf_fallback", [])
+    codes = args.codes or [u["code"] for u in universe] + [e["code"] for e in etfs]
     start_date = pd.Timestamp(cfg["data"]["start_date"]).date()
 
     unverified = unverified_specs()
@@ -56,8 +63,20 @@ def main() -> int:
             log.info("  %s — 보유 마지막일: %s", code, storage.last_date(path) or "없음")
         return 0
 
+    # ETF 는 수급/기본정보 TR 이 의미 없거나 미제공이라 일봉만 받는다
+    etf_codes = {e["code"] for e in etfs} - set(args.codes or [])
+    stock_codes = [c for c in codes if c not in etf_codes]
+
     with KiwoomClient() as client:
-        status = collect_universe(client, codes, start_date=start_date)
+        status = collect_universe(client, stock_codes, start_date=start_date)
+        for code in sorted(etf_codes):
+            log.info("[ETF] %s 일봉 수집", code)
+            try:
+                collect_daily_chart(client, code, start_date=start_date)
+                status[code] = "ok"
+            except Exception as exc:  # noqa: BLE001
+                log.error("ETF %s 실패: %s", code, exc)
+                status[code] = f"fail: {exc}"
 
         if not args.skip_index:
             for idx in cfg["data"]["macro"]["indices"]:

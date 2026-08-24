@@ -43,7 +43,7 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 유틸 | `parsing` `ratelimit` `config` `logging` `seed` | ✅ 완료 + 테스트 |
 | 수집 | `kiwoom/client` `kiwoom/collect` `storage` | ✅ 완료 — 실호출 검증(005930, 2015~현재 2,857행) |
 | 피처 | `features/technical` | ✅ 완료 + look-ahead 테스트 |
-| 피처 | `features/build` (종목×매크로 결합, static covariate) | ⬜ |
+| 피처 | `features/build` (종목×매크로 결합, static covariate) | ⬜ ← **다음 작업** |
 | 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ⬜ |
 | 학습 | `split` `losses` | ✅ 완료 + 테스트 |
 | 학습 | `dataset` `train` | ⬜ |
@@ -53,11 +53,25 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 
 ## 다음 할 일
 
-1. ~~일봉 TR 검증~~ ✅ 완료 (mock 도 1985년부터 전체 이력 제공 — 데이터 부족 이슈 없음)
-2. **나머지 TR 검증** — `stock_info`(ka10001) / `investor_flow`(ka10059) / `index_daily`(ka20006).
-   절차는 `docs/KIWOOM_VERIFY.md`.
-3. 유니버스 8종목 전체 수집 → 매크로 지수 + 국내상장 해외ETF 결합 (`features/build.py`)
+1. ~~TR 4종 검증~~ ✅ 완료 — 상세는 `docs/KIWOOM_VERIFY.md`
+2. ~~유니버스 8종목 + 지수 2종 + ETF 수집~~ ✅ 완료 (아래 "수집 현황")
+3. **`features/build.py`** — 종목 피처에 매크로(KOSPI/KOSDAQ/ETF) 시퀀스와
+   static covariate(업종·시총구간·요일)를 결합. 크로스어텐션 입력을 여기서 만든다.
+   ⚠️ ETF(390390)는 2021-06-30 상장이라 앞 구간이 없다 → 마스킹 필요
 4. Phase 1 모델 설계 → **Plan Mode 로 승인 후** 구현
+
+### 수집 현황 (2026-08-24)
+
+| 종류 | 대상 | 행 수 |
+|---|---|---|
+| 일봉 | 유니버스 8종목 | 각 2,857행 (삼성바이오 2,399 — 2016 상장) |
+| 수급 | 유니버스 8종목 | 일봉과 동일 |
+| 종목정보 | 유니버스 8종목 | 각 1행 (조회시점 스냅샷) |
+| 지수 | KOSPI(001), KOSDAQ(101) | 각 2,857행 |
+| ETF | KODEX 미국반도체MV(390390) | 1,260행 (2021-06 상장) |
+
+피처 테이블: **22,337행 × 26컬럼**, 학습가능 21,825행
+→ train 13,818 / val 968 / test 4,095 샘플 (lookback 120일 기준)
 
 ## 다음 세션 시작하기
 

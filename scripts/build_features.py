@@ -37,10 +37,14 @@ def main() -> int:
     feat_cfg = cfg["features"]
     horizon = int(feat_cfg["return_horizon"])
 
-    raw = storage.load_kind("daily_chart")
+    # daily_chart 에는 유니버스 종목 외에 ETF(매크로용)도 섞여 있다.
+    # 피처 테이블은 **예측 대상 종목만** 담는다 — ETF/지수는 매크로 시퀀스로 따로 붙인다.
+    codes = [u["code"] for u in cfg["data"]["universe"]]
+    raw = storage.load_kind("daily_chart", codes=codes)
     if raw.empty:
         log.error("data/raw/daily_chart 가 비었다. 먼저 scripts/collect.py 를 실행할 것.")
         return 1
+    log.info("대상 종목 %d개: %s", len(codes), ", ".join(codes))
 
     frames = []
     total_halted = 0
