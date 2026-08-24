@@ -1,0 +1,14 @@
+# 도구 설정 전용. 패키징은 하지 않는다(스크립트 실행 방식).
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]   # 한글 주석은 시각적 폭이 달라 길이 제한을 느슨하게
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]

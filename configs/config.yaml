@@ -1,0 +1,125 @@
+# 프로젝트 단일 설정 소스.
+# 기간 / 종목 / 하이퍼파라미터 / 매매 임계값을 여기서만 바꾼다.
+# 코드 안에 숫자를 하드코딩하지 말 것.
+
+project:
+  name: capstone_stock_prediction
+  seed: 42
+
+# ---------------------------------------------------------------- 데이터
+data:
+  # 유니버스: 섹터 고정 아님. 데이터 수급 되는 종목 위주로 조정.
+  # 초기값은 반도체/대형주 중심 — 실제 수집 성공 여부 보고 확정할 것.
+  universe:
+    - { code: "005930", name: "삼성전자" }
+    - { code: "000660", name: "SK하이닉스" }
+    - { code: "042700", name: "한미반도체" }
+    - { code: "005380", name: "현대차" }
+    - { code: "035420", name: "NAVER" }
+    - { code: "051910", name: "LG화학" }
+    - { code: "207940", name: "삼성바이오로직스" }
+    - { code: "105560", name: "KB금융" }
+
+  # 매크로 시퀀스 (크로스어텐션의 Key/Value 쪽)
+  macro:
+    indices:
+      - { code: "001", name: "KOSPI" }
+      - { code: "101", name: "KOSDAQ" }
+    # 해외지수 TR 이 계좌 권한 문제로 막히면 국내상장 ETF 로 대체 수집한다.
+    overseas_etf_fallback:
+      - { code: "390390", name: "KODEX 미국반도체MV" }
+
+  start_date: "2015-01-01"
+  end_date: null          # null = 오늘까지
+  storage_format: parquet # data/raw/{kind}/{code}.parquet
+
+# ------------------------------------------------------- 학습/검증 분할
+# 날짜 기준 global split. 정규화 통계는 train 구간에서만 계산한다.
+split:
+  train_end: "2022-12-31"
+  val_end: "2023-12-31"
+  # val_end 이후 ~ end_date = test
+  embargo_days: 5   # 구간 경계에서 라벨 누수 방지용 공백
+
+# ------------------------------------------------------------ 피처
+features:
+  return_horizon: 5        # 예측 대상: t+1 ~ t+5 누적 로그수익률
+  lookback: 120            # 입력 시퀀스 길이(영업일)
+  technical:
+    ma_windows: [5, 20, 60]
+    rsi_period: 14
+    macd: { fast: 12, slow: 26, signal: 9 }
+    bollinger: { window: 20, num_std: 2.0 }
+    atr_period: 14
+    cci_period: 20
+
+# ------------------------------------------------------------ 모델
+model:
+  phase: 1                 # 1 = Transformer, 2 = Mamba 하이브리드(스트레치)
+  revin:
+    affine: true
+    eps: 1.0e-5
+  patch:
+    patch_len: 5           # 5영업일 = 1주 단위 토큰
+    stride: 5              # 겹치지 않게. 겹치려면 stride < patch_len
+  encoder:
+    d_model: 128
+    n_heads: 8
+    n_layers: 3
+    d_ff: 256
+    dropout: 0.2
+  cross_attention:
+    n_heads: 4
+    dropout: 0.1
+  vsn:
+    hidden_size: 64
+    dropout: 0.1
+  head:
+    quantiles: [0.1, 0.5, 0.9]
+
+# ------------------------------------------------------------ 학습
+training:
+  batch_size: 64
+  epochs: 100
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  grad_clip: 1.0
+  early_stopping:
+    patience: 12
+    min_delta: 1.0e-5
+    monitor: val_pinball
+  scheduler: cosine
+  warmup_epochs: 5
+  num_workers: 0           # macOS + MPS 에서는 0 이 안전
+
+# --------------------------------------------------- 매매 신호 (백테스트/모의투자 공용)
+# 아래 수치는 전부 백테스트로 튜닝할 대상 — 확정값 아님.
+trading:
+  abstain:
+    max_interval_width: 0.05   # (q90-q10)이 이보다 넓으면 기권(관망)
+  direction:
+    long_threshold: 0.004      # q50 예측수익률 > 이 값이면 매수
+    short_threshold: -0.004    # q50 예측수익률 < 이 값이면 매도/청산
+  sizing:
+    method: inverse_width      # 신뢰구간 좁을수록 크게. kelly 로 교체 가능
+    kelly_fraction: 0.25       # method=kelly 일 때 사용하는 축소계수
+    max_position_pct: 0.10     # 개별 종목 자산 대비 상한
+  risk:
+    stop_loss_pct: -0.05
+    take_profit_pct: 0.10
+    max_trades_per_day: 5
+    max_gross_exposure: 0.90
+  costs:
+    commission_bps: 1.5        # 편도 수수료 (모의투자 기준)
+    tax_bps: 18.0              # 매도 시 거래세
+    slippage_bps: 5.0
+
+# ------------------------------------------------------------ 백테스트
+backtest:
+  initial_capital: 100000000   # 1억
+  walk_forward:
+    train_months: 36
+    val_months: 6
+    test_months: 6
+    step_months: 6
+  metrics: [sharpe, sortino, calmar, max_drawdown, hit_rate, turnover]

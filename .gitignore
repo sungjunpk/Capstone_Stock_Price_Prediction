@@ -1,0 +1,35 @@
+# --- secrets ---
+.env
+.env.local
+*.pem
+*.key
+
+# --- data & outputs (용량 큼, 재생성 가능) ---
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+outputs/checkpoints/*
+outputs/figures/*
+outputs/reports/*
+outputs/logs/*
+!outputs/**/.gitkeep
+*.parquet
+*.sqlite
+*.db
+
+# --- python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
+
+# --- macOS / editors ---
+.DS_Store
+.vscode/
+.idea/
