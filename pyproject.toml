@@ -3,6 +3,8 @@
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# 노트북은 셀 단위로 import 를 두는 게 정상이라 일반 규칙이 안 맞는다
+extend-exclude = ["notebooks", ".venv"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

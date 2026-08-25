@@ -61,6 +61,7 @@ model:
   revin:
     affine: true
     eps: 1.0e-5
+    scale_target: true     # 윈도우 변동성으로 타깃 스케일링 → 출력에서 역변환
   patch:
     patch_len: 5           # 5영업일 = 1주 단위 토큰
     stride: 5              # 겹치지 않게. 겹치려면 stride < patch_len
@@ -81,9 +82,11 @@ model:
 
 # ------------------------------------------------------------ 학습
 training:
-  batch_size: 64
-  epochs: 100
-  lr: 3.0e-4
+  # 35만 샘플 기준. batch 64 로는 epoch당 4,068 step 이라 MPS에서 19분/epoch.
+  # GPU(T4 등)에서는 512까지 올려도 된다 — scripts/train.py --batch-size 로 덮어쓴다.
+  batch_size: 256
+  epochs: 50               # early stopping 이 먼저 걸린다. 상한만 둔다
+  lr: 6.0e-4               # batch 4배에 맞춘 스케일업
   weight_decay: 1.0e-4
   grad_clip: 1.0
   early_stopping:
@@ -92,7 +95,7 @@ training:
     monitor: val_pinball
   scheduler: cosine
   warmup_epochs: 5
-  num_workers: 0           # macOS + MPS 에서는 0 이 안전
+  num_workers: 0           # macOS + MPS 에서는 0. CUDA 면 train.py 가 자동으로 4로 올린다
 
 # --------------------------------------------------- 매매 신호 (백테스트/모의투자 공용)
 # 아래 수치는 전부 백테스트로 튜닝할 대상 — 확정값 아님.

@@ -23,8 +23,9 @@ python scripts/collect.py --tr chart info   # 일봉+종목정보만 (빠름, �
 python scripts/collect.py --tr flow     # 수급만 (느림, 종목당 30~50초)
 python scripts/collect.py               # 전부
 python scripts/peek.py                  # 뭐가 얼마나 쌓였는지 확인
-python scripts/build_features.py        # 지표 + 라벨 → data/processed/features.parquet
-python scripts/train.py                 # (미구현) Phase 1 모델 학습
+python scripts/build_features.py        # → panel / macro / static parquet
+python scripts/train.py --smoke         # Phase 1 배관 점검 (6종목 2epoch)
+python scripts/train.py                 # Phase 1 학습
 python scripts/backtest.py              # (미구현) walk-forward 백테스트
 python scripts/paper_trade.py           # (미구현) 모의투자 실행
 ```
@@ -46,11 +47,11 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 유틸 | `parsing` `ratelimit` `config` `logging` `seed` | ✅ 완료 + 테스트 |
 | 수집 | `kiwoom/client` `kiwoom/collect` `storage` | ✅ 완료 — 실호출 검증(005930, 2015~현재 2,857행) |
 | 피처 | `features/technical` | ✅ 완료 + look-ahead 테스트 |
-| 피처 | `features/build` (종목×매크로 결합, static covariate) | ⬜ ← **다음 작업** |
-| 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ⬜ |
+| 피처 | `features/build` (종목×매크로 결합, static covariate) | ✅ 완료 |
+| 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ✅ 완료 + 테스트 (1.88M 파라미터) |
 | 학습 | `split` `losses` | ✅ 완료 + 테스트 |
-| 학습 | `dataset` `train` | ⬜ |
-| 평가 | `metrics` `backtest` | ⬜ |
+| 학습 | `dataset` `train` | ✅ 완료 + 테스트 |
+| 평가 | `metrics` `backtest` | ⬜ ← **다음 작업** |
 | 매매 | `trading/signal` | ✅ 완료 + 테스트 |
 | 매매 | `trading/risk` `trading/paper_trader` | ⬜ |
 
@@ -61,7 +62,24 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 3. **`features/build.py`** — 종목 피처에 매크로(KOSPI/KOSDAQ/ETF) 시퀀스와
    static covariate(업종·시총구간·요일)를 결합. 크로스어텐션 입력을 여기서 만든다.
    ⚠️ ETF(390390)는 2021-06-30 상장이라 앞 구간이 없다 → 마스킹 필요
-4. Phase 1 모델 설계 → **Plan Mode 로 승인 후** 구현
+4. ~~Phase 1 모델~~ ✅ 완료 — `--smoke` 로 학습이 끝까지 도는 것 확인
+5. **GPU 학습 실행** (아래 "클라우드 GPU 학습" 참고) → 하이퍼파라미터 조정
+6. `src/evaluation/` walk-forward 백테스트
+
+## 클라우드 GPU 학습
+
+맥북(MPS)은 epoch당 약 19분이라 50 epoch에 16시간이 걸린다. 학습만 외부 GPU로 옮긴다.
+**수집은 로컬에서만 한다** — 키움 API는 등록된 IP에서만 호출되기 때문이다.
+
+```bash
+python scripts/package_data.py     # outputs/train_bundle.zip (35MB)
+```
+
+그 다음 [`notebooks/train_colab.ipynb`](notebooks/train_colab.ipynb) 를 Colab이나 Kaggle에서 연다.
+코드는 GitHub에서 클론되고, 이 zip만 올리면 된다. `.env`는 필요 없다(학습에 API 호출이 없다).
+
+학습 코드가 CUDA를 감지하면 혼합정밀(AMP)과 DataLoader 워커를 자동으로 켠다 —
+같은 명령이 로컬/클라우드 양쪽에서 그대로 돈다.
 
 ### 수집 현황 (2026-08-24)
 

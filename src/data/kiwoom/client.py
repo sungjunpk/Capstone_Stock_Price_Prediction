@@ -36,7 +36,10 @@ _RATE_LIMIT_WORDS = ("초과", "제한", "잠시", "too many", "limit")
 
 def _looks_rate_limited(code, msg: str) -> bool:
     return code in _RATE_LIMIT_CODES or any(w in msg.lower() for w in _RATE_LIMIT_WORDS)
-_MAX_RETRIES = 4
+# 429 가 길게 이어지는 TR(ka10059 등)이 있어 4회로는 부족하다 — 실측 실패율 25%.
+# 지수백오프에 상한을 두고 횟수를 늘린다: 1,2,4,8,16,30,30,30 ≈ 2분까지 버틴다.
+_MAX_RETRIES = 8
+_MAX_BACKOFF = 30.0
 _TOKEN_MARGIN_SEC = 300  # 만료 5분 전 미리 갱신
 
 
@@ -142,13 +145,13 @@ class KiwoomClient:
                 )
             except requests.RequestException as exc:
                 last_err = exc
-                backoff = 2.0**attempt
+                backoff = min(2.0**attempt, _MAX_BACKOFF)
                 log.warning("[%s] 네트워크 오류 (%s) — %.1fs 후 재시도", spec.name, exc, backoff)
                 time.sleep(backoff)
                 continue
 
             if resp.status_code in _RETRY_STATUS:
-                backoff = 2.0**attempt
+                backoff = min(2.0**attempt, _MAX_BACKOFF)
                 if resp.status_code == 429:
                     # 재시도만 하면 같은 속도로 계속 부딪힌다. 속도 자체를 낮춘다.
                     new_rate = self.limiter.penalize(spec.api_id)
@@ -181,7 +184,7 @@ class KiwoomClient:
                 # 제한 초과가 200 으로 오는 경우가 있다(ka10099 에서 관측) — 속도를 낮추고 재시도
                 if _looks_rate_limited(rc, msg) and attempt < _MAX_RETRIES - 1:
                     new_rate = self.limiter.penalize(spec.api_id)
-                    backoff = 2.0**attempt
+                    backoff = min(2.0**attempt, _MAX_BACKOFF)
                     log.warning(
                         "[%s] 제한 초과 응답(return_code=%s) — 속도 %.2f req/s, %.1fs 후 재시도",
                         spec.name, rc, new_rate, backoff,

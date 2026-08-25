@@ -33,6 +33,23 @@ Pinball(Quantile) Loss로 10/50/90 분위를 동시에 학습한다.
 - **Val Loss 기준 early stopping** — train loss로 판단하지 않는다
 - 데이터가 작으므로(학습샘플 ~18,900) 모델을 키우기보다 정규화를 먼저 조인다
 
+## Dataset 메모리 제약
+
+학습샘플 35만 × lookback 120 × 피처 17 × 4바이트 = **2.9GB**.
+윈도우를 미리 펼치면 터진다. 종목별 연속 배열은 28MB뿐이므로
+`dataset.py` 는 배열을 한 번만 만들고 `__getitem__` 에서 구간을 잘라 준다.
+이 계약은 `tests/test_dataset.py::test_no_window_duplication_in_memory` 가 지킨다.
+
+종목마다 거래일이 다르다(공통 1,887 / 전체 2,857 — 거래정지 제거 때문).
+공통 캘린더를 강요하면 34%가 날아가므로 **각 종목의 자기 행 위에서** 윈도우를 만든다.
+
+## 학습 실행 위치
+
+맥북(MPS)은 epoch당 약 19분(260k 샘플, batch 64)이라 전체 학습에 16시간이 걸린다.
+학습은 외부 GPU(Colab/Kaggle)로 옮긴다 — `notebooks/train_colab.ipynb`.
+`train.py` 가 디바이스를 감지해 AMP/워커/pin_memory 를 자동 조정하므로
+같은 명령이 양쪽에서 그대로 돈다.
+
 ## 워크플로 주의
 
 학습 단계는 **결과를 직접 확인하면서** 진행한다.
