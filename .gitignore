@@ -9,10 +9,11 @@ data/raw/*
 data/interim/*
 data/processed/*
 !data/**/.gitkeep
-outputs/checkpoints/*
-outputs/figures/*
-outputs/reports/*
-outputs/logs/*
+# outputs 아래는 전부 재생성 가능 — .gitkeep 만 남긴다.
+# (하위 폴더만 막으면 outputs/ 바로 아래 파일이 새어 들어간다 — train_bundle.zip 사고)
+outputs/*
+!outputs/*/
+outputs/*/*
 !outputs/**/.gitkeep
 *.parquet
 *.sqlite
