@@ -79,10 +79,9 @@ python scripts/package_data.py     # outputs/train_bundle.zip (35MB)
 
 그 다음 노트북을 연다. **Kaggle 권장** — 주당 30시간, 세션 12시간이라 Colab 무료보다 길다.
 
-| | 노트북 | 절차 문서 |
-|---|---|---|
-| Kaggle (권장) | `notebooks/train_kaggle.ipynb` | [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md) |
-| Colab | `notebooks/train_colab.ipynb` | 노트북 안에 설명 |
+노트북은 **`notebooks/kaggle_all_in_one.ipynb` 하나뿐이다** — 학습과 백테스트를
+같은 세션에서 끝내므로 체크포인트를 내려받았다 다시 올릴 필요가 없다.
+절차: [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md)
 
 코드는 GitHub에서 클론되고 이 zip만 올리면 된다.
 **`.env`는 필요 없다** — 학습 과정에 API 호출이 전혀 없다.

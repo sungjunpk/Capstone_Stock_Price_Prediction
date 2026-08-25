@@ -86,8 +86,8 @@ walk-forward 백테스트로 여러 구간에서 재확인해야 한다.
 
 맥북(MPS)은 epoch당 약 19분(260k 샘플, batch 64)이라 전체 학습에 16시간이 걸린다.
 학습은 외부 GPU로 옮긴다. **Kaggle 권장** — 주당 30시간, 세션 12시간이라 Colab 무료보다 길다.
-절차: [`docs/KAGGLE_SETUP.md`](../../docs/KAGGLE_SETUP.md) / 노트북: `notebooks/train_kaggle.ipynb`
-(Colab은 `notebooks/train_colab.ipynb`).
+절차: [`docs/KAGGLE_SETUP.md`](../../docs/KAGGLE_SETUP.md) /
+노트북: `notebooks/kaggle_all_in_one.ipynb` (학습+백테스트 한 세션. 노트북은 이것 하나만 쓴다).
 `train.py` 가 디바이스를 감지해 AMP/워커/pin_memory 를 자동 조정하므로
 같은 명령이 양쪽에서 그대로 돈다.
 

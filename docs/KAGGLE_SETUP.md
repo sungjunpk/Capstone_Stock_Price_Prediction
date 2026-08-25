@@ -42,7 +42,7 @@ python scripts/package_data.py
 
 1. https://www.kaggle.com/code → **New Notebook**
 2. 좌측 상단 **File → Import Notebook**
-3. 저장소의 `notebooks/train_kaggle.ipynb` 를 올린다
+3. 저장소의 `notebooks/kaggle_all_in_one.ipynb` 를 올린다
 
 ### 4단계 — 노트북 설정 3가지 (제일 중요)
 
@@ -106,8 +106,15 @@ python scripts/package_data.py
 | 세션이 갑자기 끊김 | 무료 GPU는 세션 12시간 / 주당 30시간. 잔여량은 우측 상단에 표시 |
 | 다운로드한 체크포인트가 로컬에서 안 열림 | `torch.load(..., map_location='cpu')` — GPU에서 저장돼서 그렇다 |
 
-## Colab을 쓰고 싶다면
+## 노트북은 하나만 쓴다
 
-`notebooks/train_colab.ipynb` 가 따로 있다. 절차는 비슷하지만
-데이터를 매 세션 업로드해야 하고 세션이 더 자주 끊긴다.
-**긴 학습에는 Kaggle이 유리하다.**
+예전에 있던 `train_kaggle.ipynb` / `train_colab.ipynb` 는 삭제했다.
+`/kaggle/working/` 이 세션 간에 남아 있어서 옛 노트북이 낡은 클론을 그대로 재사용했고,
+이미 폐기한 1.88M 설정으로 학습이 도는 사고가 있었다 (2026-08-25).
+
+`kaggle_all_in_one.ipynb` 는 이걸 두 겹으로 막는다:
+- 클론 전에 `shutil.rmtree` 로 기존 폴더를 지운다
+- 클론 직후 `configs/config.yaml` 의 `d_model`/`n_layers` 를 검사해
+  확정 설정(minimal, 0.33M)이 아니면 그 자리에서 멈춘다
+
+**학습 로그에 `파라미터 1.88M` 이 뜨면 낡은 코드다.** 2번 셀부터 다시 실행할 것.
