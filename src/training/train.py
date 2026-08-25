@@ -28,7 +28,7 @@ from src.training.dataset import (
     WindowDataset,
     dynamic_feature_columns,
 )
-from src.training.losses import QuantileLoss
+from src.training.losses import QuantileLoss, pinball_loss
 from src.training.split import SplitSpec, apply_normalizer, fit_normalizer, split_by_date
 from src.utils.config import PROJECT_ROOT
 from src.utils.logging import get_logger
@@ -105,9 +105,17 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
         )
         sizes[name] = len(ds)
 
+    # 무조건부 분위수 = 아무것도 학습하지 않은 모델. 두 곳에 쓴다:
+    #   1) 헤드 bias 초기화 — 기준선에서 출발시켜 스케일 맞추기에 시간을 안 쓰게 한다
+    #   2) 리포트의 기준선 — 이걸 못 이기면 조건부 신호를 못 찾은 것이다
+    quantiles = tuple(float(q) for q in cfg["model"]["head"]["quantiles"])
+    y_train = torch.tensor(train_usable["target"].to_numpy(), dtype=torch.float32)
+    base_q = torch.quantile(y_train, torch.tensor(quantiles))
+
     meta = {
         "feature_cols": feature_cols, "macro_cols": macro_cols,
         "vocab_sizes": vocab.sizes, "sizes": sizes, "split": str(spec),
+        "baseline_quantiles": [float(v) for v in base_q],
     }
     return loaders, meta
 
@@ -118,6 +126,19 @@ def _lr_at(step: int, total: int, warmup: int, base_lr: float) -> float:
         return base_lr * (step + 1) / max(warmup, 1)
     prog = (step - warmup) / max(total - warmup, 1)
     return base_lr * 0.5 * (1 + math.cos(math.pi * min(prog, 1.0)))
+
+
+@torch.no_grad()
+def _baseline_loss(loader, base_q, quantiles, device) -> float:
+    """무조건부 분위수를 상수로 예측했을 때의 손실. 모든 실험의 하한선."""
+    q = torch.tensor(base_q, dtype=torch.float32, device=device)
+    qs = torch.tensor(quantiles, dtype=torch.float32, device=device)
+    total, n = 0.0, 0
+    for *_, y in loader:
+        y = y.to(device)
+        total += pinball_loss(q.expand(y.size(0), -1), y, qs).item() * y.size(0)
+        n += y.size(0)
+    return total / max(n, 1)
 
 
 @torch.no_grad()
@@ -149,12 +170,18 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
         cfg, n_dynamic=len(meta["feature_cols"]),
         n_macro=len(meta["macro_cols"]), static_vocab=meta["vocab_sizes"],
     )
+    mcfg.init_quantiles = tuple(meta["baseline_quantiles"])
     model = Phase1Model(mcfg).to(device)
     n_params = sum(p.numel() for p in model.parameters())
     log.info("파라미터 %.2fM", n_params / 1e6)
 
     t = cfg["training"]
     criterion = QuantileLoss(mcfg.quantiles, crossing_weight=0.01).to(device)
+
+    # 기준선 손실을 먼저 재둔다. 학습이 이걸 못 이기면 의미가 없다.
+    baseline_loss = _baseline_loss(loaders["val"], meta["baseline_quantiles"],
+                                   mcfg.quantiles, device)
+    log.info("기준선(무조건부 분위수) val pinball = %.6f", baseline_loss)
     opt = torch.optim.AdamW(
         model.parameters(), lr=float(t["lr"]), weight_decay=float(t["weight_decay"])
     )
@@ -232,6 +259,9 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
         "config_hash": cfg_hash, "device": str(device), "smoke": smoke,
         "n_params": n_params, "sizes": meta["sizes"],
         "best_val_loss": best, "best_epoch": best_epoch,
+        "baseline_val_loss": baseline_loss,
+        "improvement_vs_baseline_pct": round(100 * (baseline_loss - best) / baseline_loss, 3),
+        "beats_baseline": bool(best < baseline_loss),
         "history": history,
         # VSN 채널 가중치 = 해석가능성 리포트의 근거
         "feature_importance": dict(
@@ -246,4 +276,15 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     log.info("리포트: outputs/reports/%s", name)
+
+    imp = report["improvement_vs_baseline_pct"]
+    if best >= baseline_loss:
+        log.warning(
+            "❌ 기준선(%.6f)을 못 이겼다 (%.2f%%). 조건부 신호를 못 찾았다는 뜻 — "
+            "하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.", baseline_loss, imp,
+        )
+    elif imp < 1.0:
+        log.warning("⚠️ 기준선 대비 %.2f%% 개선에 그쳤다 — 사실상 무조건부 분포만 학습했다", imp)
+    else:
+        log.info("✅ 기준선 대비 %.2f%% 개선", imp)
     return report

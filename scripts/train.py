@@ -43,6 +43,8 @@ def main() -> int:
     report = train(cfg, smoke=args.smoke, max_epochs=args.epochs)
 
     log.info("최고 val loss %.6f (epoch %d)", report["best_val_loss"], report["best_epoch"])
+    log.info("기준선 %.6f → 개선 %+.2f%%",
+             report["baseline_val_loss"], report["improvement_vs_baseline_pct"])
     log.info("피처 중요도 상위 5:")
     for k, v in list(report["feature_importance"].items())[:5]:
         log.info("    %-14s %.4f", k, v)

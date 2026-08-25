@@ -48,7 +48,11 @@ class Phase1Config:
     quantiles: tuple[float, ...] = (0.1, 0.5, 0.9)
     revin_affine: bool = True
     revin_eps: float = 1e-5
-    scale_target: bool = True
+    # 윈도우 변동성으로 출력을 곱하면 상수(무조건부 분위수)조차 표현하기 어려워진다 —
+    # 헤드가 1/scale 을 학습해야 하기 때문. 기본은 끈다.
+    scale_target: bool = False
+    # 학습 데이터의 무조건부 분위수. 헤드 bias 를 여기서 출발시킨다.
+    init_quantiles: tuple[float, ...] | None = None
     target_scale_channel: int = 0   # panel 의 첫 피처(ret_1d)를 변동성 기준으로 쓴다
 
     @classmethod
@@ -72,7 +76,7 @@ class Phase1Config:
             quantiles=tuple(m["head"]["quantiles"]),
             revin_affine=bool(m["revin"]["affine"]),
             revin_eps=float(m["revin"]["eps"]),
-            scale_target=bool(m["revin"].get("scale_target", True)),
+            scale_target=bool(m["revin"].get("scale_target", False)),
         )
 
 
@@ -124,7 +128,8 @@ class Phase1Model(nn.Module):
         # --- 결합 + 출력
         self.cross = CrossAttentionBlock(cfg.d_model, cfg.cross_heads, cfg.cross_dropout)
         self.head = QuantileHead(
-            cfg.d_model, len(cfg.quantiles), dropout=cfg.cross_dropout
+            cfg.d_model, len(cfg.quantiles), dropout=cfg.cross_dropout,
+            init_quantiles=cfg.init_quantiles,
         )
 
     def forward(
