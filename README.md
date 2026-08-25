@@ -26,6 +26,7 @@ python scripts/peek.py                  # 뭐가 얼마나 쌓였는지 확인
 python scripts/build_features.py        # → panel / macro / static parquet
 python scripts/train.py --smoke         # Phase 1 배관 점검 (6종목 2epoch)
 python scripts/train.py                 # Phase 1 학습
+python scripts/sweep.py                 # 정규화 강도 비교 (한 세션에서 여러 설정)
 python scripts/backtest.py              # (미구현) walk-forward 백테스트
 python scripts/paper_trade.py           # (미구현) 모의투자 실행
 ```
