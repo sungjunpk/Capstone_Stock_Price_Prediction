@@ -82,3 +82,37 @@ def test_patch_count_matches_config():
 def test_patch_rejects_bad_lookback():
     with pytest.raises(ValueError, match="lookback"):
         num_patches(3, 5, 5)
+
+
+def test_encoder_runs_once_not_per_channel():
+    """VSN 이 인코더 **앞**에 있어야 한다 (TFT 순서).
+
+    뒤에 두면 인코더가 채널 수만큼 반복 실행돼 비용이 17배가 된다 —
+    실측 259ms → 52ms 차이였다. 인코더 입력이 3차원(B,N,d)이면 채널이
+    이미 합쳐진 것이고, 4차원(B,C,N,d)이면 채널별로 도는 것이다.
+    """
+    model = Phase1Model(Phase1Config(n_dynamic=17, n_macro=13, static_vocab=VOCAB))
+    seen = []
+
+    orig = model.encoder.forward
+    model.encoder.forward = lambda x: (seen.append(x.dim()), orig(x))[1]
+    model(*_batch())
+
+    assert seen == [3], f"인코더가 채널별로 돌고 있다 (입력 차원 {seen})"
+
+
+def test_grouped_grn_matches_per_channel_semantics():
+    """묶음 연산이 채널별 독립 가중치를 유지하는지 — 채널이 섞이면 안 된다."""
+    from src.models.vsn import GroupedGRN
+
+    g = GroupedGRN(n_vars=4, d_model=8, hidden=6, dropout=0.0).eval()
+    x = torch.zeros(2, 3, 4, 8)
+    x[:, :, 1] = 1.0                      # 1번 채널에만 신호
+
+    with torch.no_grad():
+        out = g(x)
+
+    # 0/2/3번 채널 출력은 서로 같아야 한다(입력이 같으므로)
+    assert torch.allclose(out[:, :, 0], out[:, :, 2], atol=1e-6)
+    # 1번 채널은 달라야 한다(입력이 다르므로)
+    assert not torch.allclose(out[:, :, 0], out[:, :, 1], atol=1e-4)

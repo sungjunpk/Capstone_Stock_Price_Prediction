@@ -104,10 +104,13 @@ class Phase1Model(nn.Module):
         self.patch_mac = PatchEmbedding(
             cfg.patch_len, cfg.stride, cfg.d_model, cfg.lookback, cfg.dropout
         )
+        # 매크로는 VSN 을 안 거치므로 채널을 살려둘 이유가 없다.
+        # 채널별로 인코딩한 뒤 합치면 인코더가 13번 도는데, 합친 뒤 한 번 도는 것과
+        # 표현력 차이는 없고 비용만 13배다.
+        self.macro_merge = nn.Linear(cfg.n_macro * cfg.d_model, cfg.d_model)
         self.encoder_mac = TransformerEncoder(
             cfg.d_model, cfg.cross_heads, max(1, cfg.n_layers - 1), cfg.d_ff, cfg.dropout
         )
-        self.macro_merge = nn.Linear(cfg.n_macro * cfg.d_model, cfg.d_model)
 
         # --- VSN
         self.static_vsn = StaticVSN(
@@ -133,20 +136,21 @@ class Phase1Model(nn.Module):
         need_cross_weights: bool = False,
     ) -> Phase1Output:
         """dynamic (B,L,C) / macro (B,L,M) / static (B,n_static) int64"""
-        # 종목 경로
+        # 종목 경로 — TFT 순서대로 **변수 선택을 인코더 앞에서** 한다.
+        # 인코더 뒤에 두면 인코더가 채널 수(17)만큼 반복 실행돼 비용이 17배가 된다.
         x = self.revin_dyn(dynamic)                      # (B,L,C)
         x = self.patch_dyn(x)                            # (B,C,N,d)
-        x = self.encoder(x)                              # (B,C,N,d)
 
         ctx, w_static = self.static_vsn(static)          # (B,d), (B,n_static)
         x, w_dyn = self.dynamic_vsn(x, ctx)              # (B,N,d), (B,N,C)
+        x = self.encoder(x)                              # (B,N,d)
 
-        # 매크로 경로 — 채널을 합쳐 하나의 시퀀스로
+        # 매크로 경로 — 채널을 먼저 합치고 한 번만 인코딩
         m = self.revin_mac(macro)
         m = self.patch_mac(m)                            # (B,M,N,d)
-        m = self.encoder_mac(m)
         b, n_mac, n, d = m.shape
         m = self.macro_merge(m.permute(0, 2, 1, 3).reshape(b, n, n_mac * d))  # (B,N,d)
+        m = self.encoder_mac(m)
 
         # 결합
         z, w_cross = self.cross(x, m, need_weights=need_cross_weights)
