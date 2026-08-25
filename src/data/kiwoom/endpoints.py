@@ -182,3 +182,118 @@ ALL_SPECS: dict[str, TRSpec] = {
 
 def unverified_specs() -> list[str]:
     return [name for name, spec in ALL_SPECS.items() if not spec.verified]
+
+
+# ============================================================================
+# 매매(모의투자) TR — 수집용이 아니라 자동매매 실행용이다.
+#
+# ⚠️ 위 수집 TR 과 달리 **주문 TR 은 상태를 바꾼다.** 잘못된 필드명 하나가
+#    "주문이 안 나간다"가 아니라 "엉뚱한 수량이 나간다"로 이어질 수 있다.
+#    scripts/verify_trading_trs.py 로 조회계 TR 을 먼저 검증하고,
+#    주문은 반드시 --dry-run 으로 수량을 눈으로 확인한 뒤 --execute 한다.
+# ============================================================================
+
+# --- 예수금: 주문가능금액의 근거 --------------------------------------------
+DEPOSIT = TRSpec(  # VERIFIED 2026-08-25 (mock, return_msg="모의투자 조회완료")
+    name="deposit",
+    path="/api/dostk/acnt",
+    api_id="kt00001",
+    list_key="",  # 단일 객체 응답
+    schema={
+        "deposit": ("entr", "abs_float"),             # 예수금
+        "d2_deposit": ("d2_entra", "abs_float"),      # D+2 추정예수금
+        "orderable": ("ord_alow_amt", "abs_float"),   # 주문가능금액
+        "withdrawable": ("pymn_alow_amt", "abs_float"),
+    },
+    verified=True,
+    note="qry_tp: '2'=일반조회, '3'=추정조회. 값은 15자리 zero-pad 문자열"
+         "('000000010000000' = 10,000,000원) — parsing.to_float 가 처리한다. "
+         "검증 시점 모의계좌 예수금 1,000만원.",
+)
+
+# --- 계좌평가잔고: 보유 종목과 매입가 ---------------------------------------
+# 매입가가 여기서 나온다 = **손절 기준가를 로컬 상태가 아니라 브로커가 들고 있다.**
+# 로컬 상태 파일이 날아가도 손절이 계속 동작한다.
+ACCOUNT_BALANCE = TRSpec(  # UNVERIFIED — scripts/verify_trading_trs.py 로 확인할 것
+    name="account_balance",
+    path="/api/dostk/acnt",
+    api_id="kt00018",
+    list_key="acnt_evlt_remn_indv_tot",
+    schema={
+        "code": ("stk_cd", "str"),
+        "name": ("stk_nm", "str"),
+        "quantity": ("rmnd_qty", "abs_int"),          # 보유수량
+        "sellable": ("trde_able_qty", "abs_int"),     # 매도가능수량(미결제 제외)
+        "avg_price": ("pur_pric", "abs_float"),       # 매입단가 — 손절 기준
+        "current_price": ("cur_prc", "abs_float"),
+        "eval_amount": ("evlt_amt", "abs_float"),
+        "pnl_amount": ("evltv_prft", "float"),        # 부호가 의미를 갖는다
+        "pnl_rate": ("prft_rt", "float"),
+    },
+    note="qry_tp: '1'=합산, '2'=개별 / dmst_stex_tp: 'KRX'. "
+         "응답 최상위에 요약(tot_evlt_amt 등)이 함께 오고 보유목록은 list_key 배열이다. "
+         "요약은 ACCOUNT_SUMMARY_FIELDS 로 별도 파싱한다.",
+)
+
+# 계좌 요약(총평가/총손익)은 배열이 아니라 응답 최상위에 붙는다.
+# TRSpec.schema 는 배열 레코드용이라 여기에 따로 둔다.
+ACCOUNT_SUMMARY_FIELDS: dict[str, tuple[str, str]] = {
+    "total_purchase": ("tot_pur_amt", "abs_float"),   # 총매입금액
+    "total_eval": ("tot_evlt_amt", "abs_float"),      # 총평가금액
+    "total_pnl": ("tot_evlt_pl", "float"),            # 총평가손익
+    "total_pnl_rate": ("tot_prft_rt", "float"),
+    "estimated_assets": ("prsm_dpst_aset_amt", "abs_float"),  # 추정예탁자산
+}
+
+# --- 현재가: 주문 수량 계산의 분모 ------------------------------------------
+QUOTE = TRSpec(  # VERIFIED 2026-08-24 (ka10001 검증분과 동일 TR — 필드만 다르게 뽑는다)
+    name="quote",
+    path="/api/dostk/stkinfo",
+    api_id="ka10001",
+    list_key="",
+    schema={
+        "code": ("stk_cd", "str"),
+        "name": ("stk_nm", "str"),
+        "price": ("cur_prc", "abs_float"),
+    },
+    verified=True,
+    note="cur_prc 에 등락 부호가 붙는다('-257000') → abs_float 필수. "
+         "STOCK_INFO 와 같은 TR 이지만 매매 경로에서는 현재가만 필요해 스키마를 좁혔다.",
+)
+
+# --- 주문: 여기부터는 계좌 상태를 바꾼다 ------------------------------------
+BUY_ORDER = TRSpec(  # UNVERIFIED — 모의투자에서 1주 주문으로 확인할 것
+    name="buy_order",
+    path="/api/dostk/ordr",
+    api_id="kt10000",
+    list_key="",
+    schema={
+        "order_no": ("ord_no", "str"),
+        "exchange": ("dmst_stex_tp", "str"),
+    },
+    rate_limit_per_sec=1.0,   # 주문은 천천히. 429 로 중복주문 재시도를 만들지 않는다
+    note="필수: dmst_stex_tp('KRX') stk_cd ord_qty trde_tp. "
+         "trde_tp '3'=시장가(ord_uv 불필요), '0'=보통(지정가, ord_uv 필요).",
+)
+
+SELL_ORDER = TRSpec(  # UNVERIFIED
+    name="sell_order",
+    path="/api/dostk/ordr",
+    api_id="kt10001",
+    list_key="",
+    schema={
+        "order_no": ("ord_no", "str"),
+        "exchange": ("dmst_stex_tp", "str"),
+    },
+    rate_limit_per_sec=1.0,
+    note="BUY_ORDER 와 요청 형식 동일. 매도만 거래세가 붙는다(costs.tax_bps).",
+)
+
+TRADING_SPECS: dict[str, TRSpec] = {
+    spec.name: spec
+    for spec in (DEPOSIT, ACCOUNT_BALANCE, QUOTE, BUY_ORDER, SELL_ORDER)
+}
+
+# 레이트 리미터에 등록할 전체 목록. ALL_SPECS 는 '수집' TR 만 담는다 —
+# collect.py 의 미검증 경고가 매매 TR 까지 끌어오지 않게 분리해 둔다.
+RATE_LIMITED_SPECS: dict[str, TRSpec] = {**ALL_SPECS, **TRADING_SPECS}

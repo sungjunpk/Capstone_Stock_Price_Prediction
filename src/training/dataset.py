@@ -85,10 +85,16 @@ class WindowDataset(Dataset):
         lookback: int,
         feature_cols: list[str],
         vocab: StaticVocab,
+        require_target: bool = True,
     ):
         self.lookback = int(lookback)
         self.feature_cols = list(feature_cols)
         self.vocab = vocab
+        # 학습/백테스트는 타깃이 있는 행만 쓴다.
+        # 모의투자는 **가장 최근 윈도우**를 써야 하는데 그 구간은 아직 t+h 가 오지 않아
+        # 타깃이 NaN 이다. require_target=False 로 그 행들을 살린다.
+        # ⚠️ 이때 나오는 target 값은 의미 없는 0 이다 — 학습에 쓰면 안 된다.
+        self.require_target = bool(require_target)
 
         # --- 매크로: 날짜 → 행 인덱스 맵. 윈도우마다 날짜로 조회한다
         macro = macro.sort_values("date").reset_index(drop=True)
@@ -105,20 +111,32 @@ class WindowDataset(Dataset):
         self._macro_rows: list[np.ndarray] = []
         self._dow: list[np.ndarray] = []
         self._static: list[np.ndarray] = []
+        self._codes: list[str] = []
+        self._dates: list[np.ndarray] = []
         index: list[tuple[int, int]] = []
 
         skipped = 0
         for code, part in panel.groupby("code", sort=True):
             part = part.sort_values("date")
-            usable = part.dropna(subset=self.feature_cols + [TARGET_COL])
+            required = self.feature_cols + ([TARGET_COL] if self.require_target else [])
+            usable = part.dropna(subset=required)
             if len(usable) <= self.lookback:
                 skipped += 1
                 continue
 
             si = len(self._arrays)
             self._arrays.append(usable[self.feature_cols].to_numpy(dtype=np.float32))
-            self._targets.append(usable[TARGET_COL].to_numpy(dtype=np.float32))
+            self._targets.append(
+                usable[TARGET_COL].fillna(0.0).to_numpy(dtype=np.float32)
+                if TARGET_COL in usable.columns
+                else np.zeros(len(usable), dtype=np.float32)
+            )
+            self._codes.append(str(code))
 
+            # ⚠️ 원본 dtype 그대로 보관한다. pd.to_datetime 으로 바꿔 담으면
+            #    sample_keys 의 date 가 Timestamp 가 되어 주가 테이블(date 객체)과
+            #    키가 안 맞고, 백테스트가 조용히 리밸런싱을 0회 한다(실측).
+            self._dates.append(usable["date"].to_numpy())
             dates = pd.to_datetime(usable["date"])
             # 매크로에 없는 날짜는 -1 → 0벡터로 채운다(정상 상황에선 발생하지 않는다)
             self._macro_rows.append(
@@ -153,6 +171,30 @@ class WindowDataset(Dataset):
                 dtype=np.int64,
             )
         return out
+
+    def sample_keys(self) -> pd.DataFrame:
+        """윈도우 i → (code, date, target). 예측을 종목·날짜에 붙일 때 쓴다.
+
+        예측 텐서의 i 번째 행이 어느 종목의 어느 날짜인지는 **여기 하나로만** 복원한다.
+        호출자가 필터·정렬을 따라 재현하면 조건이 한 곳만 어긋나도 예측이
+        엉뚱한 종목에 붙고, 지표는 그럴듯하게 나온다(조용히 틀린다).
+
+        ⚠️ target 은 사후 평가(랭크 IC) 전용이다. 매매 판단에 넣으면 look-ahead 다.
+        """
+        si = self._index[:, 0]
+        end = self._index[:, 1]
+        return pd.DataFrame({
+            "code": [self._codes[i] for i in si],
+            "date": [self._dates[i][e] for i, e in zip(si, end, strict=True)],
+            "target": [self._targets[i][e] for i, e in zip(si, end, strict=True)],
+        })
+
+    def latest_rows(self) -> list[int]:
+        """종목별 **마지막** 윈도우의 샘플 인덱스. 모의투자는 이것만 필요하다."""
+        last: dict[int, int] = {}
+        for row, (si, _) in enumerate(self._index):
+            last[int(si)] = row          # _index 는 종목별로 오름차순이라 마지막이 최신
+        return [last[k] for k in sorted(last)]
 
     @property
     def n_dynamic(self) -> int:

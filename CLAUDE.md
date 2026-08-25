@@ -22,7 +22,10 @@
 6. **정규화 통계는 train 구간에서만 계산한다.** 날짜 기준 global split 필수.
 7. **매매 신호는 `src/trading/signal.py` 하나만 사용한다.**
    백테스트와 모의투자가 같은 코드를 공유 — 실행 경로별 분기 금지.
+   추론도 마찬가지다: `src/models/inference.py` 하나만 쓴다.
 8. **실험 결과는 `outputs/reports/`에 날짜+설정 해시로 남긴다.** 덮어쓰지 않는다.
+9. **주문은 기본이 dry-run 이다.** `scripts/paper_trade.py --execute` 로만 나간다.
+   대시보드에서 주문을 낼 수 있게 만들지 않는다 — 화면은 읽기 전용이다.
 
 ## 상세 문서 (작업할 폴더의 것만 읽으면 된다)
 
@@ -33,7 +36,8 @@
 | [`src/models/CLAUDE.md`](src/models/CLAUDE.md) | Phase 1/2 아키텍처 상세 |
 | [`src/training/CLAUDE.md`](src/training/CLAUDE.md) | 분할 규칙, 손실, anti-overfitting |
 | [`src/evaluation/CLAUDE.md`](src/evaluation/CLAUDE.md) | 평가 지표, walk-forward 백테스트 |
-| [`src/trading/CLAUDE.md`](src/trading/CLAUDE.md) | 매매 판단 5단계, 기권 로직 |
+| [`src/trading/CLAUDE.md`](src/trading/CLAUDE.md) | 매매 판단 5단계, 기권 로직, 모의투자 실행 |
+| [`src/webapp/CLAUDE.md`](src/webapp/CLAUDE.md) | 대시보드 — 읽기 전용 원칙 |
 | [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md) | 실제 API 응답 검증 결과와 함정 |
 | [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md) | 클라우드 GPU 학습 절차 (수집은 로컬, 학습만 외부) |
 | [`README.md`](README.md) | 현재 진행 상태, 다음 할 일, 세션 시작 절차 |
@@ -69,11 +73,15 @@ Capstone_Stock_Price_Prediction/
 │   ├── utils/       parsing(키움 문자열), ratelimit(토큰버킷), config, logging, seed
 │   ├── data/        kiwoom/{client,endpoints,collect}, storage(parquet 증분)
 │   ├── features/    technical(지표), build(조립)
-│   ├── models/      revin, patch_embed, encoder, cross_attention, vsn, quantile_head, phase1
+│   ├── models/      revin, patch_embed, encoder, cross_attention, vsn, quantile_head,
+│   │                phase1, inference(백테스트·모의투자 공용 추론)
 │   ├── training/    dataset, split(날짜 기준), losses(pinball), train
 │   ├── evaluation/  metrics(Sharpe/Calmar/Sortino), backtest(walk-forward)
-│   └── trading/     signal(분위→신호), risk(오버레이), paper_trader(모의투자 실행)
-├── scripts/         CLI (collect / peek / build_features / train / backtest / paper_trade)
+│   ├── trading/     signal(분위→신호), risk(오버레이), broker(키움 계좌·주문),
+│   │                paper_trader(모의투자 실행)
+│   └── webapp/      대시보드 (collect/render/server — 읽기 전용, 의존성 없음)
+├── scripts/         CLI (collect / peek / build_features / train / backtest /
+│                         verify_trading_trs / paper_trade / dashboard)
 ├── tests/           핵심 유틸·모델 스모크 테스트
 └── outputs/         checkpoints, figures, reports, logs (git 미추적)
 ```

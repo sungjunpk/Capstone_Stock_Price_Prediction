@@ -21,7 +21,7 @@ from typing import Any
 
 import requests
 
-from src.data.kiwoom.endpoints import ALL_SPECS, TOKEN_PATH, TRSpec
+from src.data.kiwoom.endpoints import RATE_LIMITED_SPECS, TOKEN_PATH, TRSpec
 from src.utils.config import KiwoomSettings, load_kiwoom_settings
 from src.utils.logging import get_logger
 from src.utils.ratelimit import RateLimiterRegistry
@@ -67,7 +67,8 @@ class KiwoomClient:
 
         self.limiter = RateLimiterRegistry(self.settings.rate_limit_per_sec)
         # TR별 초당 제한을 리미터에 등록. 전역 설정보다 큰 값은 전역으로 깎는다.
-        for spec in ALL_SPECS.values():
+        # 수집 TR 과 매매 TR 을 모두 등록한다 — 주문 TR 은 제한이 더 빡빡하다.
+        for spec in RATE_LIMITED_SPECS.values():
             self.limiter.set_limit(
                 spec.api_id, min(spec.rate_limit_per_sec, self.settings.rate_limit_per_sec)
             )

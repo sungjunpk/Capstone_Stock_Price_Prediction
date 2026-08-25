@@ -11,7 +11,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env   # 키움 모의투자 APP_KEY / APP_SECRET 채우기
-pytest -q              # 21 tests
+pytest -q              # 131 tests
 ```
 
 ## 파이프라인
@@ -28,8 +28,22 @@ python scripts/train.py --smoke         # Phase 1 배관 점검 (6종목 2epoch)
 python scripts/train.py                 # Phase 1 학습
 python scripts/sweep.py                 # 정규화 강도 비교 (한 세션에서 여러 설정)
 python scripts/backtest.py              # 거래비용 반영 백테스트 (체크포인트 필요)
-python scripts/paper_trade.py           # (미구현) 모의투자 실행
+python scripts/verify_trading_trs.py    # 계좌/주문 TR 응답 스키마 검증 (읽기 전용)
+python scripts/paper_trade.py           # 모의투자 — 계획만 출력 (주문 안 나감)
+python scripts/paper_trade.py --execute # 모의투자 주문 전송
+python scripts/dashboard.py             # 결과 대시보드 (http://127.0.0.1:8765)
 ```
+
+### 하루 한 번 도는 자동매매
+
+```bash
+python scripts/collect.py --tr chart \
+  && python scripts/build_features.py \
+  && python scripts/paper_trade.py --execute
+```
+
+`--execute` 없이 돌리면 **계획만 출력하고 주문은 나가지 않는다**(기본값).
+리밸런싱 주기(5일)가 아닌 날은 신규 진입 없이 손절/익절만 본다.
 
 모든 수집은 **증분(idempotent)** — 같은 명령을 두 번 돌려도 중복 행이 생기지 않는다.
 
@@ -55,7 +69,10 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 평가 | `metrics` `backtest` | ✅ 완료 + 테스트 — 랭크 IC 진단 포함 |
 | 매매 | `trading/signal` | ✅ 완료 + 테스트 17개 (횡단면 순위 모드) |
 | 매매 | `trading/risk` | ✅ 완료 + 테스트 9개 |
-| 매매 | `trading/paper_trader` | ⬜ |
+| 매매 | `trading/broker` (키움 계좌·주문) | ✅ 완료 + 테스트 12개 |
+| 매매 | `trading/paper_trader` | ✅ 완료 + 테스트 15개 |
+| 추론 | `models/inference` (백테스트·모의투자 공용) | ✅ 완료 |
+| 화면 | `webapp` 대시보드 | ✅ 완료 + 테스트 7개 |
 
 ### 2026-08-25 학습·백테스트 결과
 
@@ -94,7 +111,20 @@ IC 0.024는 주식 횡단면 예측에서 정상 범위(0.02~0.05)이고 **t=4.0
 
 → **이력 버퍼 + 최소 거래폭**으로 회전율을 낮췄고, 비용·보유일수·차단사유를
 실측으로 남기게 했다. `python scripts/backtest.py --compare` 가 규칙 5가지를
-한 세션에서 비교한다. 검증 결과 대기 중.
+한 세션에서 비교한다.
+
+**2026-08-25 실측 (phase1_0db568ae, test 구간)**
+
+| | 버퍼 전 | 버퍼+밴드 |
+|---|---|---|
+| 연 회전율 | 46.9 | **32.5** |
+| 평균 보유일수 | — | **10.0일** (리밸런싱 주기 5일의 2배) |
+| 실지불 비용(연) | 추정 7% | **4.06%** (실측) |
+| Sharpe | 0.88 | **1.10** |
+| CAGR | 12.28% | **14.97%** |
+
+매수후보유(Sharpe 1.55 / CAGR 49.2%)에는 여전히 진다 — 베타 0.5 라 폭등장에서
+구조적으로 뒤처진다. 다만 **최대낙폭은 -13.5% vs -25.7%** 로 절반이다.
 
 ⚠️ 회전율을 낮춰도 **알파가 생기지는 않는다.** 이 작업의 산출물은 알파가 아니라
 **귀속**이다 — 매수후보유와의 격차 중 얼마가 비용이고 얼마가 종목선택인지 가르는 것.
@@ -110,13 +140,21 @@ IC 0.024는 주식 횡단면 예측에서 정상 범위(0.02~0.05)이고 **t=4.0
 5. ~~GPU 학습 실행~~ ✅ 완료 — 기준선 대비 +3.34%, 스윕으로 0.33M 확정
 6. ~~백테스트 구축~~ ✅ 완료 — 절대 임계값의 한계를 실측으로 확인
 7. ~~순위 방식 검증~~ ✅ 완료 — 랭크 IC t=4.00, 전략이 실제로 거래한다
-8. **캐글에서 규칙 비교** ← 지금 할 일.
-   `notebooks/kaggle_all_in_one.ipynb` 를 다시 Import 한 뒤 위에서부터 실행.
-   **이번 한 번만 Import 하면 그 뒤로는 재시작만 하면 된다** — 백테스트 셀이
-   `scripts/backtest.py --compare` 한 줄로 고정됐다
+8. ~~기본 규칙 실측~~ ✅ 완료 — 로컬에서 `scripts/backtest.py` 실행,
+   버퍼+밴드 결과가 위 표에 있다. `--compare` 5개 변형 비교는 아직 —
+   `notebooks/kaggle_all_in_one.ipynb` 를 Import 하면 한 세션에서 끝난다
 9. walk-forward 다구간 백테스트 — test 가 2024-07~2026-08 한 국면(역사적 폭등장)뿐이다.
    베타 0.5짜리 전략을 이 구간 하나로 판단할 수 없다
-10. `src/trading/paper_trader.py` 모의투자 실행
+10. ~~`src/trading/paper_trader.py` 모의투자 실행~~ ✅ 완료 — 대시보드까지
+11. **매매 TR 검증** ← 지금 할 일. 계좌/주문 TR 은 아직 `UNVERIFIED` 다.
+    ```bash
+    python scripts/verify_trading_trs.py          # 조회계만 (읽기 전용, 안전)
+    python scripts/verify_trading_trs.py --order 005930   # 1주 매수까지 (실제 주문)
+    ```
+    ⚠️ **잔고 필드명이 틀리면 보유수량이 0 으로 읽히고 중복 매수가 나간다.**
+    수집 TR 과 달리 조용히 틀리는 쪽이라 주문 전에 반드시 통과시킬 것.
+12. 모의투자 첫 실행 — `python scripts/paper_trade.py` 로 계획을 눈으로 확인한 뒤
+    `--execute`. 결과는 `python scripts/dashboard.py` 로 본다
 
 ## 클라우드 GPU 학습
 
@@ -185,5 +223,10 @@ claude --resume          # 이전 대화 이어가기 (목록에서 선택)
 ## 안전장치
 
 - `KIWOOM_ENV=live` 는 `src/utils/config.py` 에서 예외를 던진다. 실전투자 경로 없음.
+  `PaperBroker` 가 생성 시점에 한 번 더 확인한다 (2중 방어).
 - `.env` 는 gitignore. `.env.example` 에는 키 **이름만** 둔다.
 - 매매 신호는 `src/trading/signal.py` 하나만 사용 — 백테스트/모의투자가 같은 코드를 공유한다.
+  추론도 `src/models/inference.py` 하나만 쓴다.
+- `scripts/paper_trade.py` 는 **기본이 dry-run**. `--execute` 를 붙여야 주문이 나간다.
+- 대시보드는 **읽기 전용**이다. 화면에서 주문을 낼 수 없고, 기본 바인딩은 127.0.0.1 이다.
+- 패널이 영업일 3일 이상 낡으면 실주문을 막는다(`--ignore-stale` 로만 강행).

@@ -25,11 +25,16 @@ from src.evaluation.metrics import (
     summarize,
 )
 from src.trading.risk import Position, apply_risk_overlay
+
+# should_trade / one_way_cost 는 모의투자도 그대로 쓴다 —
+# 백테스트에서 검증한 최소 거래폭 규칙이 실거래에서 달라지면 안 된다.
 from src.trading.signal import (
     QuantilePrediction,
     generate_signals,
+    one_way_cost,
     resolve_abstain_threshold,
     round_trip_cost,
+    should_trade,
 )
 from src.utils.logging import get_logger
 
@@ -44,28 +49,6 @@ class BacktestResult:
     trades: pd.DataFrame
     signal_stats: dict = field(default_factory=dict)
     diagnostics: dict = field(default_factory=dict)   # 랭크 IC 등 예측력 진단
-
-
-def should_trade(w_old: float, w_new: float, min_trade: float) -> bool:
-    """이 비중 변화를 실제로 체결할 것인가.
-
-    잔챙이 거래를 막는다 — 이력 버퍼로 종목을 유지해도 매 회차 재정규화 때문에
-    아주 작은 비중 조정이 남고, 거기에도 편도 수수료·세금이 그대로 붙는다.
-
-    ⚠️ **전량 청산은 밴드와 무관하게 항상 통과시킨다.**
-       밴드가 청산을 막으면 손절이 무력화되고, 팔지 못한 포지션이 영원히 남는다.
-    """
-    if w_new <= 1e-6 and w_old > 1e-6:      # 전량 청산
-        return True
-    return abs(w_new - w_old) >= max(min_trade, 1e-6)
-
-
-def _one_way_cost(costs: dict, *, selling: bool) -> float:
-    """편도 비용(비율). 매도에는 거래세가 붙는다."""
-    bps = float(costs.get("commission_bps", 0)) + float(costs.get("slippage_bps", 0))
-    if selling:
-        bps += float(costs.get("tax_bps", 0))
-    return bps / 10_000.0
 
 
 def run_backtest(
@@ -202,7 +185,7 @@ def run_backtest(
             is_exit = w_new <= 1e-6 and w_old > 1e-6
             if should_trade(w_old, w_new, min_trade):
                 if abs(delta) > 1e-6:
-                    cost_today += abs(delta) * _one_way_cost(costs, selling=delta < 0)
+                    cost_today += abs(delta) * one_way_cost(costs, selling=delta < 0)
                     turnover_today += abs(delta)
                     trades.append({
                         "date": today, "code": code, "from": round(w_old, 4),

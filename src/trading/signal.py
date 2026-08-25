@@ -88,6 +88,28 @@ def round_trip_cost(costs: dict) -> float:
     return bps / 10_000.0
 
 
+def should_trade(w_old: float, w_new: float, min_trade: float) -> bool:
+    """이 비중 변화를 실제로 체결할 것인가. **백테스트/모의투자 공용.**
+
+    잔챙이 거래를 막는다 — 이력 버퍼로 종목을 유지해도 매 회차 재정규화 때문에
+    아주 작은 비중 조정이 남고, 거기에도 편도 수수료·세금이 그대로 붙는다.
+
+    ⚠️ **전량 청산은 밴드와 무관하게 항상 통과시킨다.**
+       밴드가 청산을 막으면 손절이 무력화되고, 팔지 못한 포지션이 영원히 남는다.
+    """
+    if w_new <= 1e-6 and w_old > 1e-6:      # 전량 청산
+        return True
+    return abs(w_new - w_old) >= max(min_trade, 1e-6)
+
+
+def one_way_cost(costs: dict, *, selling: bool) -> float:
+    """편도 비용(비율). 매도에는 거래세가 붙는다."""
+    bps = float(costs.get("commission_bps", 0)) + float(costs.get("slippage_bps", 0))
+    if selling:
+        bps += float(costs.get("tax_bps", 0))
+    return bps / 10_000.0
+
+
 def _confidence(width: float, max_width: float) -> float:
     """구간이 좁을수록 1 에 가깝게. max_width 에서 0."""
     if max_width <= 0:

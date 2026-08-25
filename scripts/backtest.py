@@ -26,23 +26,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd  # noqa: E402
-import torch  # noqa: E402
-from torch.utils.data import DataLoader  # noqa: E402
 
-from src.data.storage import PROCESSED_DIR  # noqa: E402
 from src.evaluation.backtest import buy_and_hold, run_backtest  # noqa: E402
 from src.evaluation.metrics import summarize  # noqa: E402
-from src.models.phase1 import Phase1Config, Phase1Model  # noqa: E402
-from src.training.dataset import StaticVocab, WindowDataset  # noqa: E402
-from src.training.split import (  # noqa: E402
-    SplitSpec,
-    apply_normalizer,
-    fit_normalizer,
-    split_by_date,
+from src.models.inference import (  # noqa: E402
+    load_features,
+    load_model,
+    predict_split,
 )
 from src.utils.config import PROJECT_ROOT, load_config  # noqa: E402
 from src.utils.logging import get_logger, setup_logging  # noqa: E402
-from src.utils.seed import get_device  # noqa: E402
 
 log = get_logger("backtest")
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
@@ -68,78 +61,16 @@ def find_checkpoint(explicit: str | None) -> Path:
     return latest
 
 
-@torch.no_grad()
 def predict(ckpt_path: Path, cfg: dict, split: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """지정 구간에 대해 (예측 q10/q50/q90, 주가) 를 만든다."""
-    device = get_device()
-    # 캐글(CUDA)에서 저장한 것을 맥에서 열 수 있어야 한다
-    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    meta = ckpt["meta"]
+    """지정 구간에 대해 (예측 q10/q50/q90, 주가) 를 만든다.
 
-    panel = pd.read_parquet(PROCESSED_DIR / "panel.parquet")
-    macro = pd.read_parquet(PROCESSED_DIR / "macro.parquet")
-    static = pd.read_parquet(PROCESSED_DIR / "static.parquet")
-
-    feature_cols = meta["feature_cols"]
-    missing = set(feature_cols) - set(panel.columns)
-    if missing:
-        raise SystemExit(
-            f"체크포인트가 기대하는 피처가 패널에 없다: {sorted(missing)}\n"
-            "  학습 때와 다른 데이터다 — build_features.py 를 다시 돌렸는지 확인할 것."
-        )
-
-    spec = SplitSpec.from_config(cfg)
-    parts = split_by_date(panel, spec)
-    # 정규화 통계는 학습 때와 동일하게 **train 구간에서만** 계산한다
-    stats = fit_normalizer(
-        parts["train"].dropna(subset=feature_cols + ["target"]), feature_cols
-    )
-    macro_cols = meta["macro_cols"]
-    macro_train = macro[pd.to_datetime(macro["date"]).dt.date <= spec.train_end]
-    macro_stats = fit_normalizer(macro_train.dropna(subset=macro_cols), macro_cols)
-    macro_n = apply_normalizer(macro.fillna(0.0), macro_stats)
-
-    part = parts[split]
-    ds = WindowDataset(
-        apply_normalizer(part, stats), macro_n, static,
-        lookback=int(cfg["features"]["lookback"]),
-        feature_cols=feature_cols, vocab=StaticVocab.build(static),
-    )
-
-    mcfg = Phase1Config(**{**ckpt["config"], "static_vocab": meta["vocab_sizes"]})
-    model = Phase1Model(mcfg).to(device).eval()
-    model.load_state_dict(ckpt["model"])
-    log.info("모델 로드 완료 (val loss %.6f, epoch %d)",
-             ckpt.get("val_loss", float("nan")), ckpt.get("epoch", -1))
-
-    loader = DataLoader(ds, batch_size=1024, shuffle=False)
-    out = []
-    for dyn, mac, stat, _ in loader:
-        q = model(dyn.to(device), mac.to(device), stat.to(device)).quantiles
-        out.append(q.float().cpu())
-    q = torch.cat(out).numpy()
-
-    # 종목/날짜 복원 — Dataset 이 윈도우를 만든 순서와 **정확히 같게** 재구성해야
-    # 예측이 엉뚱한 종목/날짜에 붙는다. 같은 필터·정렬을 그대로 반복한다.
-    usable_by_stock = []
-    for code, g in apply_normalizer(part, stats).groupby("code", sort=True):
-        g = g.sort_values("date").dropna(subset=feature_cols + ["target"])
-        if len(g) > ds.lookback:
-            usable_by_stock.append((code, g))
-    # target 도 같이 뽑는다 — 랭크 IC 진단용.
-    # ⚠️ 사후 평가 전용이다. 매매 판단에는 절대 들어가지 않는다(들어가면 look-ahead).
-    #    WindowDataset 의 end 는 포함 인덱스이고 타깃도 같은 end 를 쓰므로,
-    #    date 와 똑같이 .iloc[end] 로 뽑으면 정렬이 맞는다.
-    rows = [
-        {"code": usable_by_stock[si][0],
-         "date": usable_by_stock[si][1]["date"].iloc[end],
-         "target": usable_by_stock[si][1]["target"].iloc[end]}
-        for si, end in ds._index
-    ]
-    preds = pd.DataFrame(rows)
-    preds[["q10", "q50", "q90"]] = q
-    prices = part[["code", "date", "close"]].copy()
-    return preds, prices
+    추론 경로는 `src/models/inference.py` 하나뿐이다 — 모의투자도 같은 코드를 쓴다.
+    예측을 종목·날짜에 붙이는 일도 거기(`WindowDataset.sample_keys`)서 한다.
+    여기서 필터·정렬을 재현하면 조건 하나가 어긋나도 조용히 틀린다.
+    """
+    loaded = load_model(ckpt_path)
+    bundle = load_features(cfg, loaded)
+    return predict_split(loaded, bundle, cfg, split)
 
 
 # 규칙 변형 — 예측을 한 번만 계산하고 규칙만 갈아끼워 한 세션에서 비교한다.
