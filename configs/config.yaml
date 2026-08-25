@@ -119,7 +119,12 @@ trading:
     #    매수 임계값 0.40% 가 예측 90분위(0.27%)보다 높아 2.1년간 체결 64건.
     #    순위 방식은 모든 종목에 공통으로 낀 편차가 상쇄되어 이 문제를 안 받는다.
     mode: cross_sectional      # absolute | cross_sectional
-    top_n: 10                  # 기권 통과분 중 q50 상위 N개 매수
+    top_n: 10                  # 살 때: 기권 통과분 중 q50 상위 N개
+    # 팔 때: 이 순위 밖으로 나갈 때만. top_n 과 같게 두면 버퍼 없음.
+    # 11등이 된 종목을 파는 건 정보가 아니라 노이즈에 반응하는 것이다 —
+    # 그 노이즈에 연 7%(회전율 46.9 x 편도 15.5bp)를 냈다.
+    # 합성 검증: 신규 편입이 리밸런싱당 5.69 → 2.51개 (-56%).
+    exit_rank: 20
     min_candidates: 20         # 후보가 이보다 적으면 순위가 무의미 → 전원 관망
     long_threshold: 0.004      # mode=absolute 에서만 쓰인다
     short_threshold: -0.004    # mode=absolute 에서만 쓰인다
@@ -131,6 +136,10 @@ trading:
     exposure_scaling: true     # 생존 후보 수에 비례해 총 노출 조절 → "언제 쉬는가"가 성과에 반영된다
     kelly_fraction: 0.25       # method=kelly 일 때 사용하는 축소계수
     max_position_pct: 0.10     # 개별 종목 자산 대비 상한
+    # 비중 변화가 이보다 작으면 거래하지 않는다. 버퍼로 종목을 유지해도
+    # 매 회차 재정규화 때문에 잔챙이 거래가 남는데, 그걸 막는다.
+    # ⚠️ 전량 청산(w=0)은 이 밴드와 무관하게 항상 실행된다 — 안 그러면 손절이 막힌다.
+    min_trade_weight: 0.01
   risk:
     stop_loss_pct: -0.05
     take_profit_pct: 0.10

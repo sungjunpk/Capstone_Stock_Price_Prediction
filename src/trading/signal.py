@@ -166,9 +166,13 @@ def _size(
 
 def generate_signals(
     preds: list[QuantilePrediction], trading_cfg: dict,
-    *, max_width: float | None = None,
+    *, max_width: float | None = None, held: set[str] | None = None,
 ) -> list[Signal]:
     """유니버스 전체 신호. **백테스트/모의투자 공용 진입점이다.**
+
+    held: 현재 보유 중인 종목 코드. 이력(hysteresis) 버퍼에 쓰인다.
+        None 이면 버퍼 없이 순위대로만 고른다.
+        모의투자도 자기 보유분을 넣으면 된다 — 같은 함수다.
 
     방향 판단 방식이 두 가지다 (`direction.mode`):
 
@@ -186,7 +190,9 @@ def generate_signals(
     if mode == "absolute":
         signals = [generate_signal(p, trading_cfg, max_width=max_width) for p in preds]
     elif mode == "cross_sectional":
-        signals = _cross_sectional_signals(preds, trading_cfg, max_width=max_width)
+        signals = _cross_sectional_signals(
+            preds, trading_cfg, max_width=max_width, held=held or set()
+        )
     else:
         raise ValueError(f"알 수 없는 direction.mode: {mode}")
 
@@ -265,11 +271,40 @@ def _normalize_weights(
     return [min(w, max_pos) for w in weights]
 
 
+def _select_with_buffer(
+    ranked: list[QuantilePrediction], held: set[str], top_n: int, exit_rank: int
+) -> list[QuantilePrediction]:
+    """상위 top_n 을 사되, 보유 중인 종목은 exit_rank 밖으로 나갈 때만 판다.
+
+    **11등이 된 종목을 파는 건 정보가 아니라 노이즈에 반응하는 것이다.**
+    실측(2026-08-25): 버퍼 없이 5일마다 갈아타니 연 회전율이 46.9 였고,
+    편도 평균 15.5bp 를 곱하면 연 7% 가 거래비용으로 나갔다.
+    십분위 스프레드(+0.19%)가 왕복비용(0.31%)보다 작으므로 회전할수록 잃는 구조였다.
+
+    exit_rank == top_n 이면 버퍼가 없는 것과 같다(기존 동작).
+
+    보유분을 먼저 채우고 남은 자리만 신규로 메우므로 결과는 항상 top_n 이하다.
+    """
+    if not held or exit_rank <= top_n:
+        return ranked[:top_n]
+
+    # 보유 중이고 아직 exit_rank 안 → 순위가 밀렸어도 계속 들고 간다
+    keep = [p for p in ranked[:exit_rank] if p.code in held][:top_n]
+
+    # 남은 자리는 상위 top_n 의 미보유 종목으로 채운다
+    kept_codes = {p.code for p in keep}
+    room = top_n - len(keep)
+    add = [p for p in ranked[:top_n] if p.code not in kept_codes][:room]
+
+    return keep + add
+
+
 def _cross_sectional_signals(
     preds: list[QuantilePrediction], trading_cfg: dict,
-    *, max_width: float | None = None,
+    *, max_width: float | None = None, held: set[str] = frozenset(),
 ) -> list[Signal]:
-    """기권 -> 순위 -> 사이징. 판단 순서에서 **기권이 여전히 맨 앞이다.**"""
+    """기권 -> 순위(+이력 버퍼) -> 사이징.
+    판단 순서에서 **기권이 여전히 맨 앞이다.**"""
     dir_cfg = trading_cfg["direction"]
     sizing_cfg = trading_cfg["sizing"]
 
@@ -278,6 +313,7 @@ def _cross_sectional_signals(
     max_pos = float(sizing_cfg["max_position_pct"])
     top_n = int(dir_cfg.get("top_n", 10))
     min_candidates = int(dir_cfg.get("min_candidates", 0))
+    exit_rank = max(int(dir_cfg.get("exit_rank", top_n)), top_n)
 
     # 1) 기권 — 신뢰구간이 넓으면 순위 경쟁에 아예 참여시키지 않는다
     survivors, out = [], {}
@@ -299,14 +335,17 @@ def _cross_sectional_signals(
             )
         return [out[p.code] for p in preds]
 
-    # 3) q50 내림차순 상위 top_n 만 매수. 공통 편차는 여기서 상쇄된다
+    # 3) q50 내림차순 정렬. 공통 편차는 여기서 상쇄된다
     ranked = sorted(survivors, key=lambda p: -p.q50)
-    chosen, rest = ranked[:top_n], ranked[top_n:]
+    chosen = _select_with_buffer(ranked, held, top_n, exit_rank)
 
-    for rank, p in enumerate(rest, start=len(chosen) + 1):
+    chosen_codes = {p.code for p in chosen}
+    for rank, p in enumerate(ranked, start=1):
+        if p.code in chosen_codes:
+            continue
         out[p.code] = Signal(
             p.code, Action.HOLD, 0.0, _confidence(p.interval_width, max_width),
-            f"q50 순위 {rank}/{len(ranked)} — 상위 {top_n} 밖",
+            f"q50 순위 {rank}/{len(ranked)} — 미선택",
         )
 
     # 4) 사이징 — 확신도 비율대로 나눠 담는다
@@ -314,10 +353,13 @@ def _cross_sectional_signals(
     confs = [_confidence(p.interval_width, max_width) for p in chosen]
     weights = _normalize_weights(confs, exposure, max_pos)
 
-    for rank, (p, conf, w) in enumerate(zip(chosen, confs, weights, strict=True), 1):
+    rank_of = {p.code: i for i, p in enumerate(ranked, start=1)}
+    for p, conf, w in zip(chosen, confs, weights, strict=True):
+        rank = rank_of[p.code]
+        tag = " [보유 유지]" if p.code in held and rank > top_n else ""
         out[p.code] = Signal(
             p.code, Action.BUY, w, conf,
-            f"q50 순위 {rank}/{len(ranked)} (q50={p.q50:.4f}, "
+            f"q50 순위 {rank}/{len(ranked)}{tag} (q50={p.q50:.4f}, "
             f"\ud3ed={p.interval_width:.4f}, \ub178\ucd9c={exposure:.0%})",
         )
 

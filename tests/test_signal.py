@@ -214,3 +214,89 @@ def test_unknown_mode_is_rejected():
     cfg = {**XS_CFG, "direction": {**XS_CFG["direction"], "mode": "몰라요"}}
     with pytest.raises(ValueError, match="direction.mode"):
         generate_signals(_universe(30), cfg, max_width=0.05)
+
+
+# ------------------------------------------------------------ 이력(hysteresis) 버퍼
+#
+# 살 때는 top_n, 팔 때는 exit_rank. 11등이 된 종목을 파는 건 정보가 아니라
+# 노이즈에 반응하는 것이고, 그 노이즈에 연 7% 의 거래비용을 냈다.
+
+BUF_CFG = {
+    **XS_CFG,
+    "direction": {**XS_CFG["direction"], "top_n": 5, "exit_rank": 10},
+}
+
+
+def test_held_name_survives_outside_top_n():
+    """8등으로 밀린 보유 종목이 exit_rank 10 안이면 계속 들고 간다."""
+    preds = _universe(30)                      # q50 오름차순 → 029 가 1등
+    held = {"022"}                             # 1등부터 세면 8등
+
+    chosen = _chosen(generate_signals(preds, BUF_CFG, max_width=0.05, held=held))
+    assert "022" in chosen
+    assert len(chosen) == 5
+
+
+def test_held_name_sold_beyond_exit_rank():
+    """exit_rank 밖(15등)이면 보유 중이어도 판다."""
+    held = {"015"}                             # 1등부터 세면 15등
+    chosen = _chosen(generate_signals(_universe(30), BUF_CFG, max_width=0.05, held=held))
+    assert "015" not in chosen
+
+
+def test_buffer_never_exceeds_top_n():
+    """보유가 exit_rank 를 가득 채워도 선택은 top_n 이하다."""
+    held = {f"{i:03d}" for i in range(20, 30)}     # 상위 10개 전부 보유
+    sigs = generate_signals(_universe(30), BUF_CFG, max_width=0.05, held=held)
+    assert len(_chosen(sigs)) == BUF_CFG["direction"]["top_n"]
+
+
+def test_buffer_prefers_incumbents_over_newcomers():
+    """자리가 모자라면 보유분이 우선이다 — 그래야 회전율이 준다."""
+    held = {"026", "025", "024"}               # 4,5,6등
+    chosen = _chosen(generate_signals(_universe(30), BUF_CFG, max_width=0.05, held=held))
+    assert {"026", "025", "024"} <= chosen
+
+
+def test_abstain_beats_buffer():
+    """보유 중이어도 신뢰구간이 넓어지면 판다 — 기권이 항상 먼저다."""
+    preds = _universe(30)
+    preds[22] = _narrow("022", preds[22].q50, width=0.20)      # 폭이 넓어졌다
+
+    sigs = {s.code: s for s in
+            generate_signals(preds, BUF_CFG, max_width=0.05, held={"022"})}
+    assert sigs["022"].action is Action.ABSTAIN
+
+
+def test_no_held_means_old_behavior():
+    """held 를 안 주면 버퍼 이전과 똑같이 상위 top_n 을 고른다."""
+    preds = _universe(30)
+    assert _chosen(generate_signals(preds, BUF_CFG, max_width=0.05)) == \
+           _chosen(generate_signals(preds, BUF_CFG, max_width=0.05, held=set()))
+
+
+def test_exit_rank_equal_to_top_n_disables_buffer():
+    cfg = {**XS_CFG, "direction": {**XS_CFG["direction"], "top_n": 5, "exit_rank": 5}}
+    preds = _universe(30)
+    assert _chosen(generate_signals(preds, cfg, max_width=0.05, held={"022"})) == \
+           _chosen(generate_signals(preds, cfg, max_width=0.05))
+
+
+def test_buffer_reduces_turnover():
+    """순위가 매 회차 흔들릴 때, 버퍼가 있으면 교체가 확실히 줄어든다."""
+    import random
+
+    def rotations(cfg) -> int:
+        rnd = random.Random(0)
+        held, swaps = set(), 0
+        for _ in range(60):
+            # 진짜 순위 + 노이즈 — 경계 근처 종목들이 매번 자리를 바꾼다
+            preds = [_narrow(f"{i:03d}", -0.01 + 0.02*i/29 + rnd.gauss(0, 0.002))
+                     for i in range(30)]
+            new = _chosen(generate_signals(preds, cfg, max_width=0.05, held=held))
+            swaps += len(new - held)
+            held = new
+        return swaps
+
+    no_buffer = {**XS_CFG, "direction": {**XS_CFG["direction"], "top_n": 5, "exit_rank": 5}}
+    assert rotations(BUF_CFG) < rotations(no_buffer)

@@ -108,3 +108,45 @@ def test_abstain_and_hold_never_reach_orders():
     sigs = [Signal("A", Action.ABSTAIN, 0.0, 0.0, ""), Signal("B", Action.HOLD, 0.0, 0.3, "")]
     d = apply_risk_overlay(sigs, {}, {"A": 100.0, "B": 100.0}, CFG)
     assert d.signals == []
+
+
+# ------------------------------------------------------------ 차단 사유 집계
+#
+# 발생 지점에서 센다. 문자열을 파싱하면 메시지 문구를 바꾸는 순간 조용히 깨진다.
+
+
+def test_reasons_counted_by_category():
+    positions = {
+        "LOSS": Position("LOSS", 0.09, 100.0, 3),
+        "GAIN": Position("GAIN", 0.09, 100.0, 3),
+    }
+    sigs = [Signal("NOHOLD", Action.SELL, 0.09, 0.5, "")]
+    prices = {"LOSS": 94.0, "GAIN": 111.0, "NOHOLD": 100.0}
+
+    d = apply_risk_overlay(sigs, positions, prices, CFG)
+    assert d.blocked_by_reason == {"손절": 1, "익절": 1, "공매도불가": 1}
+
+
+def test_trade_cap_counted():
+    cfg = {**CFG, "risk": {**CFG["risk"], "max_trades_per_day": 3}}
+    sigs = [Signal(f"S{i}", Action.BUY, 0.05, i / 10, "") for i in range(10)]
+    d = apply_risk_overlay(sigs, {}, _prices([s.code for s in sigs]), cfg)
+    assert d.blocked_by_reason == {"거래한도": 7}
+
+
+def test_reasons_empty_when_nothing_blocked():
+    sigs = _buys(3)
+    d = apply_risk_overlay(sigs, {}, _prices([s.code for s in sigs]), CFG)
+    assert d.blocked_by_reason == {}
+
+
+def test_reason_counts_match_blocked_dict():
+    """카테고리 합계는 항상 blocked 항목 수와 같아야 한다."""
+    cfg = {**CFG, "risk": {**CFG["risk"], "max_trades_per_day": 2}}
+    positions = {"LOSS": Position("LOSS", 0.09, 100.0, 3)}
+    sigs = _buys(6) + [Signal("X", Action.SELL, 0.09, 0.5, "")]
+    prices = _prices(positions, [s.code for s in sigs])
+    prices["LOSS"] = 90.0
+
+    d = apply_risk_overlay(sigs, positions, prices, cfg)
+    assert sum(d.blocked_by_reason.values()) == len(d.blocked)

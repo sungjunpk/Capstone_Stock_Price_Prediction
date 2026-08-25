@@ -12,7 +12,7 @@ signal.py 가 낸 신호를 **주문 직전에** 걸러낸다.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 from src.trading.signal import Action, Signal
 
@@ -30,6 +30,14 @@ class Position:
         return current_price / self.entry_price - 1.0
 
 
+# 차단 사유 카테고리. **발생 지점에서 세고, 문자열을 파싱하지 않는다.**
+# (파싱은 메시지 문구를 바꾸는 순간 조용히 깨진다)
+STOP_LOSS = "손절"
+TAKE_PROFIT = "익절"
+TRADE_CAP = "거래한도"
+NO_SHORT = "공매도불가"
+
+
 @dataclass(frozen=True)
 class RiskDecision:
     """오버레이를 통과한 최종 주문."""
@@ -37,6 +45,7 @@ class RiskDecision:
     signals: list[Signal]
     forced_exits: list[str]        # 손절/익절로 강제 청산되는 종목
     blocked: dict[str, str]        # 종목 → 차단 사유 (리포트용)
+    blocked_by_reason: dict[str, int] = field(default_factory=dict)
 
 
 def apply_risk_overlay(
@@ -68,6 +77,11 @@ def apply_risk_overlay(
     take_profit = float(risk.get("take_profit_pct", 10.0))
 
     blocked: dict[str, str] = {}
+    reasons: dict[str, int] = {}
+
+    def _block(code: str, category: str, detail: str) -> None:
+        blocked[code] = detail
+        reasons[category] = reasons.get(category, 0) + 1
 
     # --- 1) 손절/익절: 신호와 무관하게 먼저 강제 청산
     forced_exits = []
@@ -78,10 +92,10 @@ def apply_risk_overlay(
         pnl = pos.pnl_pct(px)
         if pnl <= stop_loss:
             forced_exits.append(code)
-            blocked[code] = f"손절 {pnl:+.1%}"
+            _block(code, STOP_LOSS, f"손절 {pnl:+.1%}")
         elif pnl >= take_profit:
             forced_exits.append(code)
-            blocked[code] = f"익절 {pnl:+.1%}"
+            _block(code, TAKE_PROFIT, f"익절 {pnl:+.1%}")
 
     # --- 2) 공매도 불가면 SELL 은 '보유 시 청산'으로만 해석
     kept: list[Signal] = []
@@ -93,7 +107,7 @@ def apply_risk_overlay(
                 kept.append(replace(s, target_weight=0.0,
                                     reason=s.reason + " [청산]"))
             else:
-                blocked[s.code] = "공매도 불가 — 무시"
+                _block(s.code, NO_SHORT, "공매도 불가 — 무시")
             continue
         if s.action in (Action.ABSTAIN, Action.HOLD):
             continue
@@ -109,7 +123,7 @@ def apply_risk_overlay(
     if len(new_entries) > max_trades:
         new_entries.sort(key=lambda s: -s.confidence)
         for s in new_entries[max_trades:]:
-            blocked[s.code] = f"일일 거래한도 {max_trades} 초과"
+            _block(s.code, TRADE_CAP, f"일일 거래한도 {max_trades} 초과")
         keep_codes = {s.code for s in new_entries[:max_trades]}
         kept = [s for s in kept if s.target_weight == 0 or s.code in keep_codes]
 
@@ -133,4 +147,5 @@ def apply_risk_overlay(
             for s in kept
         ]
 
-    return RiskDecision(signals=kept, forced_exits=forced_exits, blocked=blocked)
+    return RiskDecision(signals=kept, forced_exits=forced_exits,
+                        blocked=blocked, blocked_by_reason=reasons)

@@ -46,6 +46,20 @@ class BacktestResult:
     diagnostics: dict = field(default_factory=dict)   # 랭크 IC 등 예측력 진단
 
 
+def should_trade(w_old: float, w_new: float, min_trade: float) -> bool:
+    """이 비중 변화를 실제로 체결할 것인가.
+
+    잔챙이 거래를 막는다 — 이력 버퍼로 종목을 유지해도 매 회차 재정규화 때문에
+    아주 작은 비중 조정이 남고, 거기에도 편도 수수료·세금이 그대로 붙는다.
+
+    ⚠️ **전량 청산은 밴드와 무관하게 항상 통과시킨다.**
+       밴드가 청산을 막으면 손절이 무력화되고, 팔지 못한 포지션이 영원히 남는다.
+    """
+    if w_new <= 1e-6 and w_old > 1e-6:      # 전량 청산
+        return True
+    return abs(w_new - w_old) >= max(min_trade, 1e-6)
+
+
 def _one_way_cost(costs: dict, *, selling: bool) -> float:
     """편도 비용(비율). 매도에는 거래세가 붙는다."""
     bps = float(costs.get("commission_bps", 0)) + float(costs.get("slippage_bps", 0))
@@ -70,6 +84,7 @@ def run_backtest(
     lag = int(bcfg.get("execution_lag_days", 1))
     rebalance_every = int(bcfg.get("rebalance_days", cfg["features"]["return_horizon"]))
     costs = tcfg.get("costs", {})
+    min_trade = float(tcfg["sizing"].get("min_trade_weight", 0.0))
 
     px = (
         prices.pivot_table(index="date", columns="code", values="close")
@@ -108,6 +123,9 @@ def run_backtest(
     turnovers: list[float] = []          # 리밸런싱마다 sum|Δw| — 비용에 직결된다
     gross_history: list[float] = []
     n_pos_history: list[int] = []
+    holding_days: list[int] = []         # 청산 시점의 보유일수 — 버퍼가 먹혔는지 본다
+    total_cost = 0.0                     # 실제 지불한 거래비용 누계 (추정 아님)
+    blocked_reasons: dict[str, int] = {}
     daily_returns: list[float] = []
     ret_index: list = []
     trades: list[dict] = []
@@ -151,7 +169,9 @@ def run_backtest(
         if not preds:
             continue
 
-        sigs = generate_signals(preds, tcfg, max_width=max_width)
+        # 보유분을 넘겨야 이력 버퍼가 동작한다 — 밀려난 종목을 바로 팔지 않는다
+        sigs = generate_signals(preds, tcfg, max_width=max_width,
+                                held=set(positions))
         stats["decisions"] += len(sigs)
         for s in sigs:
             stats[s.action.value] = stats.get(s.action.value, 0) + 1
@@ -160,6 +180,8 @@ def run_backtest(
             sigs, positions, today_px, tcfg, allow_short=allow_short
         )
         stats["blocked"] += len(decision.blocked)
+        for reason, cnt in decision.blocked_by_reason.items():
+            blocked_reasons[reason] = blocked_reasons.get(reason, 0) + cnt
 
         # --- 3) 목표 비중으로 이동 + 거래비용
         target = {s.code: s.target_weight for s in decision.signals}
@@ -174,13 +196,23 @@ def run_backtest(
         for code, w_new in target.items():
             w_old = positions[code].weight if code in positions else 0.0
             delta = w_new - w_old
-            if abs(delta) > 1e-6:
-                cost_today += abs(delta) * _one_way_cost(costs, selling=delta < 0)
-                turnover_today += abs(delta)
-                trades.append({
-                    "date": today, "code": code, "from": round(w_old, 4),
-                    "to": round(w_new, 4), "price": today_px.get(code),
-                })
+
+            # 잔챙이 거래를 막는다. 단 **전량 청산은 항상 통과**시킨다 —
+            # 밴드가 청산을 막으면 손절이 무력화된다.
+            is_exit = w_new <= 1e-6 and w_old > 1e-6
+            if should_trade(w_old, w_new, min_trade):
+                if abs(delta) > 1e-6:
+                    cost_today += abs(delta) * _one_way_cost(costs, selling=delta < 0)
+                    turnover_today += abs(delta)
+                    trades.append({
+                        "date": today, "code": code, "from": round(w_old, 4),
+                        "to": round(w_new, 4), "price": today_px.get(code),
+                    })
+                if is_exit:
+                    holding_days.append(positions[code].days_held)
+            else:
+                w_new = w_old            # 거래하지 않으므로 기존 비중을 유지한다
+
             if w_new > 1e-6:
                 entry = positions[code].entry_price if code in positions and w_old > 0 \
                     else today_px.get(code, 0.0)
@@ -193,6 +225,7 @@ def run_backtest(
         turnovers.append(turnover_today)
         gross_history.append(gross)
         n_pos_history.append(len(positions))
+        total_cost += cost_today
         daily_returns[-1] -= cost_today       # 비용은 거래 당일에 반영
         last_rebalance = i
 
@@ -223,6 +256,13 @@ def run_backtest(
             _mean(turnovers) * TRADING_DAYS / max(rebalance_every, 1), 2
         ),
         "n_rebalances": len(turnovers),
+        # --- 실제로 지불한 비용. 회전율 x 단가로 추정하지 않는다
+        "total_cost_pct": round(total_cost, 5),
+        "annual_cost_pct": round(total_cost * TRADING_DAYS / max(len(returns), 1), 5),
+        "avg_holding_days": round(_mean(holding_days), 1),
+        "exit_rank": int(tcfg["direction"].get("exit_rank", 0)),
+        "min_trade_weight": round(min_trade, 4),
+        "blocked_by_reason": dict(sorted(blocked_reasons.items())),
     }
 
     # --- 예측력 진단: 거래 규칙을 통째로 우회해 "방향을 맞히는가"만 직접 본다.
