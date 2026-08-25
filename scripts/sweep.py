@@ -126,6 +126,7 @@ def main() -> int:
             "best_val": r["best_val_loss"],
             "improve_pct": r["improvement_vs_baseline_pct"],
             "best_epoch": r["best_epoch"],
+            "checkpoint": r["checkpoint"],
             "minutes": round((time.time() - t0) / 60, 1),
         })
 
@@ -146,6 +147,8 @@ def main() -> int:
 
     win = results[0]
     print(f"\n승자: {win['preset']} (기준선 대비 {win['improve_pct']:+.2f}%)")
+    print(f"승자 체크포인트: {win['checkpoint']}")
+    print("  → 백테스트에 이 파일을 쓴다: python scripts/backtest.py --checkpoint <경로>")
     if win["best_epoch"] <= 1:
         print("⚠️ 승자의 최고 epoch 이 1 이다 — 여전히 즉시 과적합. 더 줄이거나 정규화를 더 걸 것")
 

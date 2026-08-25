@@ -27,7 +27,7 @@ python scripts/build_features.py        # → panel / macro / static parquet
 python scripts/train.py --smoke         # Phase 1 배관 점검 (6종목 2epoch)
 python scripts/train.py                 # Phase 1 학습
 python scripts/sweep.py                 # 정규화 강도 비교 (한 세션에서 여러 설정)
-python scripts/backtest.py              # (미구현) walk-forward 백테스트
+python scripts/backtest.py              # 거래비용 반영 백테스트 (체크포인트 필요)
 python scripts/paper_trade.py           # (미구현) 모의투자 실행
 ```
 
@@ -52,9 +52,10 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ✅ 완료 + 테스트 (1.88M 파라미터) |
 | 학습 | `split` `losses` | ✅ 완료 + 테스트 |
 | 학습 | `dataset` `train` | ✅ 완료 + 테스트 |
-| 평가 | `metrics` `backtest` | ⬜ ← **다음 작업** (3.35% 개선이 거래 가능한 신호인지 확인) |
+| 평가 | `metrics` `backtest` | ✅ 완료 — 실제 체크포인트로 검증 대기 |
 | 매매 | `trading/signal` | ✅ 완료 + 테스트 |
-| 매매 | `trading/risk` `trading/paper_trader` | ⬜ |
+| 매매 | `trading/risk` | ✅ 완료 |
+| 매매 | `trading/paper_trader` | ⬜ |
 
 ## 다음 할 일
 

@@ -51,6 +51,28 @@ class Signal:
     reason: str
 
 
+def resolve_abstain_threshold(widths, abstain_cfg: dict) -> float:
+    """기권 임계값을 절대값으로 확정한다.
+
+    설정이 숫자면 그대로 쓰고, `percentile: 30` 이면 **관측된 예측 폭의 30분위**를
+    임계값으로 삼는다(= 가장 확신하는 30%만 거래).
+
+    절대값을 미리 추측하면 거의 항상 틀린다. 실측: 5일 수익률의 자연 폭이 0.124 인데
+    초기 추측값은 0.05 여서 기권률이 95.8% 가 나왔다(거래 0건).
+
+    백테스트와 모의투자가 **같은 함수**를 쓴다 — 모의투자에서는 최근 예측 폭들을
+    넣어 같은 방식으로 임계값을 구한다.
+    """
+    if "percentile" in abstain_cfg:
+        import numpy as np
+
+        w = np.asarray([float(x) for x in widths])
+        if w.size == 0:
+            raise ValueError("percentile 방식은 관측된 폭이 필요하다")
+        return float(np.percentile(w, float(abstain_cfg["percentile"])))
+    return float(abstain_cfg["max_interval_width"])
+
+
 def round_trip_cost(costs: dict) -> float:
     """왕복 거래비용(비율). 임계값은 반드시 이보다 커야 의미가 있다."""
     bps = (
@@ -68,14 +90,20 @@ def _confidence(width: float, max_width: float) -> float:
     return max(0.0, min(1.0, 1.0 - width / max_width))
 
 
-def generate_signal(pred: QuantilePrediction, trading_cfg: dict) -> Signal:
-    """단일 종목 신호. 백테스트/모의투자 공용 진입점."""
-    abstain_cfg = trading_cfg["abstain"]
+def generate_signal(
+    pred: QuantilePrediction, trading_cfg: dict, *, max_width: float | None = None
+) -> Signal:
+    """단일 종목 신호. 백테스트/모의투자 공용 진입점.
+
+    max_width: 기권 임계값을 밖에서 확정해 넘길 때 사용(percentile 방식).
+        None 이면 설정의 절대값을 쓴다.
+    """
     dir_cfg = trading_cfg["direction"]
     sizing_cfg = trading_cfg["sizing"]
     cost = round_trip_cost(trading_cfg.get("costs", {}))
 
-    max_width = float(abstain_cfg["max_interval_width"])
+    if max_width is None:
+        max_width = float(trading_cfg["abstain"]["max_interval_width"])
     max_pos = float(sizing_cfg["max_position_pct"])
 
     # 1) 기권 판단 — 방향보다 먼저 온다
@@ -129,10 +157,11 @@ def _size(
 
 
 def generate_signals(
-    preds: list[QuantilePrediction], trading_cfg: dict
+    preds: list[QuantilePrediction], trading_cfg: dict,
+    *, max_width: float | None = None,
 ) -> list[Signal]:
     """유니버스 전체. 총 익스포저 상한을 넘으면 비중을 비례 축소한다."""
-    signals = [generate_signal(p, trading_cfg) for p in preds]
+    signals = [generate_signal(p, trading_cfg, max_width=max_width) for p in preds]
 
     max_gross = float(trading_cfg.get("risk", {}).get("max_gross_exposure", 1.0))
     gross = sum(s.target_weight for s in signals)

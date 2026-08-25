@@ -107,7 +107,12 @@ training:
 # 아래 수치는 전부 백테스트로 튜닝할 대상 — 확정값 아님.
 trading:
   abstain:
-    max_interval_width: 0.05   # (q90-q10)이 이보다 넓으면 기권(관망)
+    # (q90-q10)이 임계값보다 넓으면 기권(관망).
+    # ⚠️ 절대값을 추측하면 거의 항상 틀린다 — 초기 추측 0.05 로는 기권률 95.8%,
+    #    거래 0건이 나왔다(5일 수익률의 자연 폭은 0.124).
+    # percentile: 30 = 예측 폭이 가장 좁은(=가장 확신하는) 30%만 거래한다.
+    percentile: 30
+    max_interval_width: 0.05   # percentile 이 없을 때만 쓰이는 절대값
   direction:
     long_threshold: 0.004      # q50 예측수익률 > 이 값이면 매수
     short_threshold: -0.004    # q50 예측수익률 < 이 값이면 매도/청산

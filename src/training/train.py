@@ -40,6 +40,14 @@ CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
 REPORT_DIR = PROJECT_ROOT / "outputs" / "reports"
 
 
+def _config_hash(cfg: dict) -> str:
+    """모델/학습/피처 설정의 짧은 해시. 체크포인트·리포트 이름에 쓴다."""
+    return hashlib.sha256(
+        json.dumps({k: cfg[k] for k in ("model", "training", "features")},
+                   sort_keys=True, default=str).encode()
+    ).hexdigest()[:8]
+
+
 # ------------------------------------------------------------ 디바이스 설정
 def loader_settings(device: torch.device, requested_workers: int) -> dict:
     """디바이스에 맞는 DataLoader 설정. 클라우드 GPU 에서 자동으로 올라간다."""
@@ -199,9 +207,13 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     es = t.get("early_stopping", {})
     patience, min_delta = int(es.get("patience", 12)), float(es.get("min_delta", 1e-5))
 
+    # 설정 해시를 이름에 넣는다. 스윕이 여러 설정을 돌 때 서로 덮어쓰지 않아야
+    # 나중에 승자 체크포인트를 골라 쓸 수 있다 (CLAUDE.md: 결과를 덮어쓰지 않는다).
+    cfg_hash = _config_hash(cfg)
     best, best_epoch, bad, step = float("inf"), -1, 0, 0
     CKPT_DIR.mkdir(parents=True, exist_ok=True)
-    ckpt_path = CKPT_DIR / ("phase1_smoke.pt" if smoke else "phase1_best.pt")
+    suffix = "_smoke" if smoke else ""
+    ckpt_path = CKPT_DIR / f"phase1_{cfg_hash}{suffix}.pt"
     history = []
 
     for epoch in range(epochs):
@@ -250,10 +262,6 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
                 break
 
     # --- 실험 리포트 (덮어쓰지 않는다: 날짜 + 설정 해시)
-    cfg_hash = hashlib.sha256(
-        json.dumps({k: cfg[k] for k in ("model", "training", "features")},
-                   sort_keys=True, default=str).encode()
-    ).hexdigest()[:8]
     report = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "config_hash": cfg_hash, "device": str(device), "smoke": smoke,
