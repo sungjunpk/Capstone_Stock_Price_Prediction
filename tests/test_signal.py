@@ -83,3 +83,134 @@ def test_percentile_threshold_makes_trades_happen():
     sigs = generate_signals(preds, cfg, max_width=th)
     traded = [s for s in sigs if s.action is Action.BUY]
     assert traded, "백분위 방식인데 거래가 하나도 없다"
+
+
+# ------------------------------------------------------------ 횡단면 순위 모드
+#
+# 절대 임계값에서 순위로 바꾼 이유는 하나다: **공통 수준 편차에 안 흔들리게 하려고.**
+# 그 성질을 test_level_shift_does_not_change_selection 이 지킨다.
+
+XS_CFG = {
+    "abstain": {"max_interval_width": 0.05, "percentile": 30},
+    "direction": {
+        "mode": "cross_sectional", "top_n": 5, "min_candidates": 10,
+        "long_threshold": 0.004, "short_threshold": -0.004,
+    },
+    "sizing": {"method": "rank_normalized", "exposure_scaling": False,
+               "max_position_pct": 0.10},
+    "risk": {"max_gross_exposure": 0.90},
+    "costs": {"commission_bps": 1.5, "tax_bps": 18.0, "slippage_bps": 5.0},
+}
+
+
+def _narrow(code: str, q50: float, width: float = 0.02) -> QuantilePrediction:
+    """폭을 직접 지정한 예측. q10/q90 을 q50 중심으로 대칭 배치한다."""
+    return QuantilePrediction(code, q50 - width / 2, q50, q50 + width / 2)
+
+
+def _universe(n: int = 30, width: float = 0.02) -> list[QuantilePrediction]:
+    # q50 을 -0.01 ~ +0.01 로 고르게 깔아 순위가 명확하게 갈리도록 한다
+    return [_narrow(f"{i:03d}", -0.01 + 0.02 * i / (n - 1), width) for i in range(n)]
+
+
+def _chosen(sigs) -> set[str]:
+    return {s.code for s in sigs if s.action is Action.BUY}
+
+
+def test_cross_sectional_picks_exactly_top_n():
+    sigs = generate_signals(_universe(30), XS_CFG, max_width=0.05)
+    buys = [s for s in sigs if s.action is Action.BUY]
+    assert len(buys) == XS_CFG["direction"]["top_n"]
+    # q50 이 가장 큰 5개여야 한다 (029 가 최상위)
+    assert _chosen(sigs) == {"029", "028", "027", "026", "025"}
+
+
+def test_level_shift_does_not_change_selection():
+    """모든 q50 에 같은 값을 더해도 선택 종목이 같아야 한다.
+
+    이 성질 하나 때문에 절대 임계값을 버렸다. 실측에서 모델의 예측 수준이
+    실제보다 약 1%p 낮았는데, 절대 임계값 방식은 그 편차를 그대로 얻어맞아
+    거래가 사실상 멈췄다.
+    """
+    base = _universe(30)
+    shifted = [QuantilePrediction(p.code, p.q10 + 0.05, p.q50 + 0.05, p.q90 + 0.05)
+               for p in base]
+
+    assert _chosen(generate_signals(base, XS_CFG, max_width=0.05)) == \
+           _chosen(generate_signals(shifted, XS_CFG, max_width=0.05))
+
+
+def test_level_shift_would_break_absolute_mode():
+    """대조: absolute 모드는 같은 이동에 결과가 뒤집힌다 — 순위 방식의 존재 이유."""
+    cfg = {**XS_CFG, "direction": {**XS_CFG["direction"], "mode": "absolute"}}
+    base = _universe(30)
+    down = [QuantilePrediction(p.code, p.q10 - 0.02, p.q50 - 0.02, p.q90 - 0.02)
+            for p in base]
+
+    assert len(_chosen(generate_signals(base, cfg, max_width=0.05))) > 0
+    assert len(_chosen(generate_signals(down, cfg, max_width=0.05))) == 0
+
+
+def test_abstain_still_applied_before_ranking():
+    """폭이 넓으면 q50 이 1등이어도 기권한다 — 판단 순서가 안 바뀌었는지 확인."""
+    preds = _universe(30)
+    preds[-1] = _narrow("029", 0.05, width=0.20)      # q50 최고, 그러나 폭이 넓다
+
+    sigs = {s.code: s for s in generate_signals(preds, XS_CFG, max_width=0.05)}
+    assert sigs["029"].action is Action.ABSTAIN
+    assert "029" not in _chosen(sigs.values())
+
+
+def test_too_few_candidates_all_abstain():
+    preds = _universe(30)
+    # 25개를 넓은 폭으로 만들어 생존자를 5개(< min_candidates 10)로 줄인다
+    preds = [_narrow(p.code, p.q50, width=0.20) if i < 25 else p
+             for i, p in enumerate(preds)]
+
+    sigs = generate_signals(preds, XS_CFG, max_width=0.05)
+    assert all(s.action is Action.ABSTAIN for s in sigs)
+    assert sum(s.target_weight for s in sigs) == 0.0
+
+
+def test_cross_sectional_respects_gross_and_position_caps():
+    sigs = generate_signals(_universe(30), XS_CFG, max_width=0.05)
+    assert sum(s.target_weight for s in sigs) <= XS_CFG["risk"]["max_gross_exposure"] + 1e-9
+    assert all(s.target_weight <= XS_CFG["sizing"]["max_position_pct"] + 1e-9 for s in sigs)
+
+
+def test_normalized_sizing_actually_invests():
+    """inverse_width 의 실패 지점: 상위 종목을 골라도 총 노출이 미미했다."""
+    # 폭이 임계값 바로 아래라 conf 가 0 에 가까운 상황
+    preds = [_narrow(f"{i:03d}", -0.01 + 0.02 * i / 29, width=0.0495) for i in range(30)]
+    sigs = generate_signals(preds, XS_CFG, max_width=0.05)
+
+    gross = sum(s.target_weight for s in sigs)
+    assert gross > 0.4, f"정규화가 안 먹었다 (gross={gross:.3f})"
+
+
+def test_exposure_scales_with_survivor_count():
+    """생존 후보가 줄면 총 노출도 줄어야 한다 — 기권이 '얼마나 쉬는가'에도 반영."""
+    # top_n 은 10으로 둔다. 5로 두면 5 x 종목상한 10% = 0.50 이 노출 상한 0.90 보다
+    # 낮아서, 스케일링이 아니라 종목상한이 총 노출을 결정해버려 검증이 무의미해진다.
+    cfg = {
+        **XS_CFG,
+        "direction": {**XS_CFG["direction"], "top_n": 10},
+        "sizing": {**XS_CFG["sizing"], "exposure_scaling": True},
+    }
+
+    # 유니버스 100개 중 30개 생존(=percentile 30, 정상) vs 15개 생존(불확실)
+    def gross_with(n_survivors: int) -> float:
+        preds = [_narrow(f"{i:03d}", -0.01 + 0.02 * i / 99,
+                         width=0.02 if i >= 100 - n_survivors else 0.20)
+                 for i in range(100)]
+        return sum(s.target_weight for s in generate_signals(preds, cfg, max_width=0.05))
+
+    full, half = gross_with(30), gross_with(15)
+    assert full > half > 0
+    assert half == pytest.approx(full / 2, rel=0.15)
+
+
+def test_unknown_mode_is_rejected():
+    cfg = {**XS_CFG, "direction": {**XS_CFG["direction"], "mode": "몰라요"}}
+    with pytest.raises(ValueError, match="direction.mode"):
+        generate_signals(_universe(30), cfg, max_width=0.05)

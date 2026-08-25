@@ -46,11 +46,19 @@ def apply_risk_overlay(
     trading_cfg: dict,
     *,
     allow_short: bool = False,
+    liquidate_unsignaled: bool = True,
 ) -> RiskDecision:
     """신호 목록 → 리스크 규칙을 적용한 최종 주문.
 
     allow_short: 국내 개인 공매도는 사실상 제한적이고 모의투자도 매수 위주라
         기본은 False. SELL 신호는 '보유 중이면 청산, 아니면 무시'로 처리한다.
+
+    liquidate_unsignaled: 호출자가 **신호 없는 보유분을 청산**하는지 여부.
+        백테스트가 그렇게 동작하므로 기본 True 다.
+        이걸 틀리게 잡으면 총 익스포저 계산이 무너진다 — 곧 팔 종목을 '보유 중'으로
+        세어 신규 진입 비중을 깎아버린다. 실측(2026-08-25): 9종목을 교체 매매하는
+        상황에서 목표 0.81 이 0.09 로 잘렸다(9배 축소).
+        매 회차 종목을 갈아타는 횡단면 순위 방식에서는 특히 치명적이다.
     """
     risk = trading_cfg.get("risk", {})
     max_pos = float(trading_cfg["sizing"]["max_position_pct"])
@@ -105,10 +113,16 @@ def apply_risk_overlay(
         keep_codes = {s.code for s in new_entries[:max_trades]}
         kept = [s for s in kept if s.target_weight == 0 or s.code in keep_codes]
 
-    # --- 5) 총 익스포저 상한 (기존 보유분 포함)
-    held = sum(
+    # --- 5) 총 익스포저 상한 (**계속 들고 갈** 보유분만 포함)
+    #
+    # 여기에 셀 것은 "이번 주문 뒤에도 남아 있을 비중"이다.
+    #   - forced_exits    : 손절/익절로 청산 → 안 남는다
+    #   - kept 에 있는 종목: 아래 신호의 target_weight 로 대체된다 → 중복으로 세면 안 된다
+    #   - 나머지 보유분   : 호출자가 청산한다면 안 남고, 유지한다면 남는다
+    kept_codes = {s.code for s in kept}
+    held = 0.0 if liquidate_unsignaled else sum(
         p.weight for c, p in positions.items()
-        if c not in forced_exits and c not in {s.code for s in kept}
+        if c not in forced_exits and c not in kept_codes
     )
     new_gross = sum(s.target_weight for s in kept)
     if held + new_gross > max_gross and new_gross > 0:

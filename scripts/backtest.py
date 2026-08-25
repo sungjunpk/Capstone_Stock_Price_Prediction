@@ -125,9 +125,14 @@ def predict(ckpt_path: Path, cfg: dict, split: str) -> tuple[pd.DataFrame, pd.Da
         g = g.sort_values("date").dropna(subset=feature_cols + ["target"])
         if len(g) > ds.lookback:
             usable_by_stock.append((code, g))
+    # target 도 같이 뽑는다 — 랭크 IC 진단용.
+    # ⚠️ 사후 평가 전용이다. 매매 판단에는 절대 들어가지 않는다(들어가면 look-ahead).
+    #    WindowDataset 의 end 는 포함 인덱스이고 타깃도 같은 end 를 쓰므로,
+    #    date 와 똑같이 .iloc[end] 로 뽑으면 정렬이 맞는다.
     rows = [
         {"code": usable_by_stock[si][0],
-         "date": usable_by_stock[si][1]["date"].iloc[end]}
+         "date": usable_by_stock[si][1]["date"].iloc[end],
+         "target": usable_by_stock[si][1]["target"].iloc[end]}
         for si, end in ds._index
     ]
     preds = pd.DataFrame(rows)
@@ -142,10 +147,24 @@ def main() -> int:
     ap.add_argument("--split", default="test", choices=["val", "test"])
     ap.add_argument("--allow-short", action="store_true",
                     help="공매도 허용 (기본은 매수 전용 — 모의투자 현실 반영)")
+    ap.add_argument("--mode", choices=["absolute", "cross_sectional"],
+                    help="방향 판단 방식. config 의 trading.direction.mode 를 덮어쓴다")
+    ap.add_argument("--exposure", choices=["scaled", "fixed"],
+                    help="scaled=생존 후보 수에 비례해 노출 조절, fixed=항상 상한까지")
     args = ap.parse_args()
 
     setup_logging(run_name="backtest")
     cfg = load_config().raw
+
+    # 같은 체크포인트로 여러 매매 규칙을 비교할 수 있게 설정을 덮어쓴다.
+    # 신호 코드는 하나뿐이고 분기는 설정값에만 있다 (CLAUDE.md 절대 규칙 7).
+    if args.mode:
+        cfg["trading"]["direction"]["mode"] = args.mode
+    if args.exposure:
+        cfg["trading"]["sizing"]["exposure_scaling"] = args.exposure == "scaled"
+    log.info("매매 규칙: mode=%s | exposure_scaling=%s",
+             cfg["trading"]["direction"]["mode"],
+             cfg["trading"]["sizing"]["exposure_scaling"])
     ckpt_path = find_checkpoint(args.checkpoint)
 
     preds, prices = predict(ckpt_path, cfg, args.split)
@@ -163,18 +182,48 @@ def main() -> int:
               "max_drawdown", "hit_rate", "total_return"):
         print(f"  {k:<14}{result.metrics[k]:>14.4f}{bh[k]:>14.4f}")
 
+    # --- 예측력 진단을 성과보다 먼저 읽어야 한다.
+    # 방향 예측력이 없으면 아래 성과 지표는 매매 규칙의 부산물일 뿐이다.
     s = result.signal_stats
+
+    if result.diagnostics:
+        ic = result.diagnostics["rank_ic"]
+        spread = result.diagnostics["decile_spread"]
+        cost = s["round_trip_cost"]
+
+        print("\n예측력 진단 — 매매 규칙을 우회해 '방향을 맞히는가'만 본다")
+        print(f"  랭크 IC        {ic['ic_mean']:+.4f}  (t={ic['t_stat']:+.2f}, "
+              f"{ic['n_dates']}일, 양수비율 {ic['ic_positive_rate']:.1%})")
+        print(f"  십분위 스프레드 {spread['spread_mean']:+.4f}  "
+              f"(t={spread['t_stat']:+.2f})   왕복비용 {cost:.4f}")
+
+        if abs(ic["t_stat"]) < 2:
+            verdict = "방향 예측력 확인 안 됨 (|t| < 2) — 매매 규칙을 손봐도 성과는 안 나온다"
+        elif spread["spread_mean"] <= cost:
+            verdict = "순위는 맞히지만 스프레드가 거래비용 이하 — 매매로 못 옮긴다"
+        else:
+            verdict = "방향 알파 있음 — 거래비용을 넘는다"
+        print(f"  판정           {verdict}")
+
     print("\n신호 통계 — 기권 로직이 이 프로젝트의 핵심 차별점")
+    print(f"  판단 방식    {s['mode']}"
+          + (f" (상위 {s['top_n']}개)" if s['mode'] == 'cross_sectional' else ""))
     print(f"  총 판단      {s['decisions']:,}회")
     print(f"  기권률       {s['abstain_rate']:.1%}   (신뢰구간이 넓어 관망)")
     print(f"  실거래율     {s['trade_rate']:.1%}")
     print(f"  체결 건수    {s['n_trades']:,}")
     print(f"  리스크 차단  {s['blocked']:,}회")
     print(f"  왕복비용     {s['round_trip_cost']:.2%}")
+    print("\n  실제로 투자했는가 — 이게 0 에 가까우면 위 성과는 읽을 의미가 없다")
+    print(f"    평균 노출도    {s['avg_gross_exposure']:.1%}")
+    print(f"    평균 보유종목  {s['avg_n_positions']:.1f}개")
+    print(f"    연 회전율      {s['annual_turnover']:.1f}회 "
+          f"(리밸런싱 {s['n_rebalances']}회)")
 
     report = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "checkpoint": ckpt_path.name, "split": args.split,
+        "diagnostics": result.diagnostics,
         "allow_short": args.allow_short,
         "strategy": result.metrics, "buy_and_hold": bh,
         "signal_stats": s,

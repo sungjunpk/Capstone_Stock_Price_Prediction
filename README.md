@@ -49,13 +49,31 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 수집 | `kiwoom/client` `kiwoom/collect` `storage` | ✅ 완료 — 실호출 검증(005930, 2015~현재 2,857행) |
 | 피처 | `features/technical` | ✅ 완료 + look-ahead 테스트 |
 | 피처 | `features/build` (종목×매크로 결합, static covariate) | ✅ 완료 |
-| 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ✅ 완료 + 테스트 (1.88M 파라미터) |
+| 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ✅ 완료 + 테스트 (**0.33M** — 스윕으로 축소 확정) |
 | 학습 | `split` `losses` | ✅ 완료 + 테스트 |
-| 학습 | `dataset` `train` | ✅ 완료 + 테스트 |
-| 평가 | `metrics` `backtest` | ✅ 완료 — 실제 체크포인트로 검증 대기 |
-| 매매 | `trading/signal` | ✅ 완료 + 테스트 |
-| 매매 | `trading/risk` | ✅ 완료 |
+| 학습 | `dataset` `train` | ✅ 완료 — GPU 학습 실행, 기준선 대비 **+3.34%** |
+| 평가 | `metrics` `backtest` | ✅ 완료 + 테스트 — 랭크 IC 진단 포함 |
+| 매매 | `trading/signal` | ✅ 완료 + 테스트 17개 (횡단면 순위 모드) |
+| 매매 | `trading/risk` | ✅ 완료 + 테스트 9개 |
 | 매매 | `trading/paper_trader` | ⬜ |
+
+### 2026-08-25 학습·백테스트 결과
+
+**학습은 재현됐다.** 캐글 GPU 에서 기준선(무조건부 분위수) 대비 **+3.34%**,
+best epoch 3 — 로컬 스윕(+3.35%)과 소수점 둘째 자리까지 일치.
+
+**백테스트는 전략이 거래를 거의 안 했다.** 2.1년 체결 64건, 평균 노출 8.9%.
+진 게 아니라 참여를 안 했다. 원인은 기권 로직이 아니라 **절대 임계값**이었다 —
+모델 예측 중앙값(-0.15%)이 실제 평균(+0.80%)과 어긋나 매수 임계값(+0.40%)에
+구조적으로 못 닿았다. 상세는 [`src/trading/CLAUDE.md`](src/trading/CLAUDE.md).
+
+→ 매매 신호를 **횡단면 순위**로 전환했다. 공통 편차가 상쇄되어 이 문제를 안 받는다.
+검증 결과 대기 중.
+
+⚠️ **주의해서 읽어야 할 지점**: 피처 중요도 상위 5개가 전부 변동성 계열이고,
+q50(방향)의 분산이 구간폭(변동성)의 1/25 이다. pinball 개선의 대부분이 변동성에서
+나왔을 수 있다. **랭크 IC** 가 그 둘을 갈라놓는다 —
+[`src/evaluation/CLAUDE.md`](src/evaluation/CLAUDE.md).
 
 ## 다음 할 일
 
@@ -65,8 +83,13 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
    static covariate(업종·시총구간·요일)를 결합. 크로스어텐션 입력을 여기서 만든다.
    ⚠️ ETF(390390)는 2021-06-30 상장이라 앞 구간이 없다 → 마스킹 필요
 4. ~~Phase 1 모델~~ ✅ 완료 — `--smoke` 로 학습이 끝까지 도는 것 확인
-5. **GPU 학습 실행** (아래 "클라우드 GPU 학습" 참고) → 하이퍼파라미터 조정
-6. `src/evaluation/` walk-forward 백테스트
+5. ~~GPU 학습 실행~~ ✅ 완료 — 기준선 대비 +3.34%, 스윕으로 0.33M 확정
+6. ~~백테스트 구축~~ ✅ 완료 — 절대 임계값의 한계를 실측으로 확인
+7. **캐글에서 순위 방식 검증** ← 지금 할 일.
+   `notebooks/kaggle_all_in_one.ipynb` 를 위에서부터 실행하면 매매 규칙 3가지가
+   나란히 비교된다. **랭크 IC 의 t 값을 성과보다 먼저 볼 것**
+8. walk-forward 다구간 백테스트 — test 가 2024-07~2026-08 한 국면뿐이다
+9. `src/trading/paper_trader.py` 모의투자 실행
 
 ## 클라우드 GPU 학습
 

@@ -114,16 +114,29 @@ trading:
     percentile: 30
     max_interval_width: 0.05   # percentile 이 없을 때만 쓰이는 절대값
   direction:
-    long_threshold: 0.004      # q50 예측수익률 > 이 값이면 매수
-    short_threshold: -0.004    # q50 예측수익률 < 이 값이면 매도/청산
+    # ⚠️ absolute 는 예측 수준(level)이 국면과 어긋나면 그대로 무너진다.
+    #    실측(2026-08-25 test): 모델 5일 중앙값 -0.15% vs 실제 평균 +0.80%,
+    #    매수 임계값 0.40% 가 예측 90분위(0.27%)보다 높아 2.1년간 체결 64건.
+    #    순위 방식은 모든 종목에 공통으로 낀 편차가 상쇄되어 이 문제를 안 받는다.
+    mode: cross_sectional      # absolute | cross_sectional
+    top_n: 10                  # 기권 통과분 중 q50 상위 N개 매수
+    min_candidates: 20         # 후보가 이보다 적으면 순위가 무의미 → 전원 관망
+    long_threshold: 0.004      # mode=absolute 에서만 쓰인다
+    short_threshold: -0.004    # mode=absolute 에서만 쓰인다
   sizing:
-    method: inverse_width      # 신뢰구간 좁을수록 크게. kelly 로 교체 가능
+    # inverse_width 는 conf x max_pos 라 기권 통과 종목들의 conf 가 0 근처에 몰려
+    # 총 노출이 20%를 못 넘었다. rank_normalized 는 선택된 종목들 사이에서
+    # 비중을 정규화해 목표 노출을 채운다 (상대적 확신도 순서는 그대로 보존).
+    method: rank_normalized    # rank_normalized | inverse_width | kelly
+    exposure_scaling: true     # 생존 후보 수에 비례해 총 노출 조절 → "언제 쉬는가"가 성과에 반영된다
     kelly_fraction: 0.25       # method=kelly 일 때 사용하는 축소계수
     max_position_pct: 0.10     # 개별 종목 자산 대비 상한
   risk:
     stop_loss_pct: -0.05
     take_profit_pct: 0.10
-    max_trades_per_day: 5
+    # 리밸런싱이 5일마다이므로 실질적으로 '리밸런싱당 한도'다.
+    # 5 였을 때 10종목 포트폴리오가 절반에서 잘렸다(실측: 리스크 차단 57회).
+    max_trades_per_day: 20
     max_gross_exposure: 0.90
   costs:
     commission_bps: 1.5        # 편도 수수료 (모의투자 기준)
@@ -133,6 +146,8 @@ trading:
 # ------------------------------------------------------------ 백테스트
 backtest:
   initial_capital: 100000000   # 1억
+  execution_lag_days: 1        # t 예측 → t+1 종가 체결. 0 이면 방금 본 가격에 거래하는 셈
+  rebalance_days: 5            # 예측 지평과 맞춘다. 더 자주 하면 같은 베팅이 중복으로 실린다
   walk_forward:
     train_months: 36
     val_months: 6

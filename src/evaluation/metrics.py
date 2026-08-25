@@ -91,3 +91,95 @@ def summarize(returns: pd.Series, extra: dict | None = None) -> dict:
     if extra:
         out.update(extra)
     return out
+
+
+# ---------------------------------------------------------------- 예측력 진단
+#
+# 아래 두 함수는 **거래 로직을 통째로 우회해서** "모델이 방향을 맞히는가"만 직접 묻는다.
+# 임계값·사이징·리스크 오버레이가 전부 빠지므로, 성과가 안 나올 때
+# "모델이 못 맞히는 것"인지 "거래 규칙이 막는 것"인지 구분할 수 있다.
+#
+# ⚠️ 실현 수익률(target)을 쓰지만 **사후 평가 전용**이다.
+#    매매 판단에는 절대 들어가지 않는다 — 들어가면 look-ahead 다.
+
+
+def _spearman(a: pd.Series, b: pd.Series) -> float:
+    """순위상관. 순위로 바꾼 뒤의 Pearson 이 곧 Spearman 이다.
+
+    한쪽이 전부 같은 값이면 순위 분산이 0 이라 상관계수가 정의되지 않는다.
+    (구간 끝에서 forward return 이 전부 0 이 되는 날 등) numpy 경고를 띄우는 대신
+    NaN 을 돌려주고, 호출부에서 그 날짜를 빼도록 한다.
+    """
+    if len(a) < 3:
+        return float("nan")
+    ra, rb = a.rank(), b.rank()
+    if ra.std(ddof=0) < 1e-12 or rb.std(ddof=0) < 1e-12:
+        return float("nan")
+    r = ra.corr(rb)
+    return float(r) if pd.notna(r) else float("nan")
+
+
+def _t_stat(x: pd.Series) -> float:
+    """평균이 0과 다른지의 t값. 날짜별 값들이 서로 독립이라는 가정 위에 선다."""
+    x = x.dropna()
+    sd = x.std(ddof=1)
+    if len(x) < 2 or sd == 0 or np.isnan(sd):
+        return 0.0
+    return float(x.mean() / sd * np.sqrt(len(x)))
+
+
+def rank_ic(preds: pd.DataFrame, *, min_names: int = 10) -> dict:
+    """날짜별 Spearman(q50, 실현수익) → 횡단면 방향 예측력.
+
+    preds: date, q50, target (target = t+1~t+h 실현 수익률)
+
+    **날짜 단위로 먼저 집계한다.** 전체를 한 번에 상관계수 내면 같은 날 종목들이
+    시장 공통 요인으로 묶여 있어 유효 표본이 부풀고 유의성이 과대평가된다
+    (스윕에서 블록 부트스트랩을 쓴 것과 같은 이유).
+
+    판정: t_stat 이 2 이상이면 방향 알파가 있다고 볼 만하다. 0 근처면 없다.
+    """
+    ics = {}
+    for d, g in preds.dropna(subset=["q50", "target"]).groupby("date"):
+        if len(g) >= min_names:
+            ics[d] = _spearman(g["q50"], g["target"])
+
+    s = pd.Series(ics, dtype="float64").dropna()
+    if s.empty:
+        return {"n_dates": 0, "ic_mean": 0.0, "ic_std": 0.0,
+                "ic_ir": 0.0, "t_stat": 0.0, "ic_positive_rate": 0.0}
+
+    sd = float(s.std(ddof=1)) if len(s) > 1 else 0.0
+    return {
+        "n_dates": int(len(s)),
+        "ic_mean": round(float(s.mean()), 5),
+        "ic_std": round(sd, 5),
+        "ic_ir": round(float(s.mean() / sd), 4) if sd > 0 else 0.0,
+        "t_stat": round(_t_stat(s), 3),
+        "ic_positive_rate": round(float((s > 0).mean()), 4),
+    }
+
+
+def decile_spread(preds: pd.DataFrame, *, min_names: int = 20, pct: float = 0.1) -> dict:
+    """날짜별 [q50 상위 pct 평균수익 − 하위 pct 평균수익].
+
+    랭크 IC 가 순위의 일치도만 본다면 이건 **실제로 먹을 수 있는 폭**을 본다.
+    IC 가 양수여도 스프레드가 거래비용보다 작으면 매매로는 못 옮긴다.
+    """
+    spreads = {}
+    for d, g in preds.dropna(subset=["q50", "target"]).groupby("date"):
+        if len(g) < min_names:
+            continue
+        k = max(int(len(g) * pct), 1)
+        g = g.sort_values("q50")
+        spreads[d] = float(g["target"].iloc[-k:].mean() - g["target"].iloc[:k].mean())
+
+    s = pd.Series(spreads, dtype="float64").dropna()
+    if s.empty:
+        return {"n_dates": 0, "spread_mean": 0.0, "t_stat": 0.0, "positive_rate": 0.0}
+    return {
+        "n_dates": int(len(s)),
+        "spread_mean": round(float(s.mean()), 5),
+        "t_stat": round(_t_stat(s), 3),
+        "positive_rate": round(float((s > 0).mean()), 4),
+    }

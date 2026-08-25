@@ -17,7 +17,13 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from src.evaluation.metrics import equity_curve, summarize
+from src.evaluation.metrics import (
+    TRADING_DAYS,
+    decile_spread,
+    equity_curve,
+    rank_ic,
+    summarize,
+)
 from src.trading.risk import Position, apply_risk_overlay
 from src.trading.signal import (
     QuantilePrediction,
@@ -37,6 +43,7 @@ class BacktestResult:
     metrics: dict
     trades: pd.DataFrame
     signal_stats: dict = field(default_factory=dict)
+    diagnostics: dict = field(default_factory=dict)   # 랭크 IC 등 예측력 진단
 
 
 def _one_way_cost(costs: dict, *, selling: bool) -> float:
@@ -98,6 +105,9 @@ def run_backtest(
 
     positions: dict[str, Position] = {}
     cash_weight = 1.0
+    turnovers: list[float] = []          # 리밸런싱마다 sum|Δw| — 비용에 직결된다
+    gross_history: list[float] = []
+    n_pos_history: list[int] = []
     daily_returns: list[float] = []
     ret_index: list = []
     trades: list[dict] = []
@@ -159,12 +169,14 @@ def run_backtest(
             target.setdefault(c, 0.0)     # 신호 없으면 청산
 
         cost_today = 0.0
+        turnover_today = 0.0
         new_positions: dict[str, Position] = {}
         for code, w_new in target.items():
             w_old = positions[code].weight if code in positions else 0.0
             delta = w_new - w_old
             if abs(delta) > 1e-6:
                 cost_today += abs(delta) * _one_way_cost(costs, selling=delta < 0)
+                turnover_today += abs(delta)
                 trades.append({
                     "date": today, "code": code, "from": round(w_old, 4),
                     "to": round(w_new, 4), "price": today_px.get(code),
@@ -176,7 +188,11 @@ def run_backtest(
                                                positions[code].days_held if code in positions else 0)
 
         positions = new_positions
-        cash_weight = 1.0 - sum(p.weight for p in positions.values())
+        gross = sum(p.weight for p in positions.values())
+        cash_weight = 1.0 - gross
+        turnovers.append(turnover_today)
+        gross_history.append(gross)
+        n_pos_history.append(len(positions))
         daily_returns[-1] -= cost_today       # 비용은 거래 당일에 반영
         last_rebalance = i
 
@@ -196,15 +212,61 @@ def run_backtest(
         "q50_p90": round(float(q50.quantile(0.9)), 5),
         "long_threshold": round(long_th, 5),
         "q50_over_threshold_rate": round(over, 4),
+        # --- 실제로 포지션을 잡았는가. 이게 0 에 가까우면 성과 지표는 읽을 가치가 없다
+        "mode": str(tcfg["direction"].get("mode", "absolute")),
+        "top_n": int(tcfg["direction"].get("top_n", 0)),
+        "exposure_scaling": bool(tcfg["sizing"].get("exposure_scaling", False)),
+        "avg_gross_exposure": round(_mean(gross_history), 4),
+        "avg_n_positions": round(_mean(n_pos_history), 2),
+        "avg_turnover_per_rebalance": round(_mean(turnovers), 4),
+        "annual_turnover": round(
+            _mean(turnovers) * TRADING_DAYS / max(rebalance_every, 1), 2
+        ),
+        "n_rebalances": len(turnovers),
     }
+
+    # --- 예측력 진단: 거래 규칙을 통째로 우회해 "방향을 맞히는가"만 직접 본다.
+    # 성과가 안 나올 때 '모델이 못 맞힌 것'인지 '거래 규칙이 막은 것'인지 여기서 갈린다.
+    diagnostics = {}
+    if "target" in predictions.columns:
+        diagnostics = {
+            "rank_ic": rank_ic(predictions),
+            "decile_spread": decile_spread(predictions),
+        }
+        ic = diagnostics["rank_ic"]
+        log.info(
+            "랭크 IC %.4f (t=%.2f, %d일, 양수비율 %.1f%%) | 십분위 스프레드 %.4f (t=%.2f)",
+            ic["ic_mean"], ic["t_stat"], ic["n_dates"], 100 * ic["ic_positive_rate"],
+            diagnostics["decile_spread"]["spread_mean"],
+            diagnostics["decile_spread"]["t_stat"],
+        )
+        if abs(ic["t_stat"]) < 2.0:
+            log.warning(
+                "방향 예측력이 통계적으로 확인되지 않는다 (|t| < 2). "
+                "매매 규칙을 아무리 손봐도 성과는 안 나온다 — 피처/타깃 설계 문제다."
+            )
+
+    if signal_stats["avg_n_positions"] < 1:
+        log.warning(
+            "평균 보유 종목이 1개 미만이다 — 사실상 현금만 들고 있었다. "
+            "성과 지표(Sharpe 등)를 해석하지 말 것."
+        )
 
     return BacktestResult(
         returns=returns,
         equity=equity_curve(returns, float(bcfg.get("initial_capital", 1.0))),
-        metrics=summarize(returns, {"n_trades": len(trades)}),
+        metrics=summarize(returns, {
+            "n_trades": len(trades),
+            "annual_turnover": signal_stats["annual_turnover"],
+        }),
         trades=pd.DataFrame(trades),
         signal_stats=signal_stats,
+        diagnostics=diagnostics,
     )
+
+
+def _mean(xs: list) -> float:
+    return float(sum(xs) / len(xs)) if xs else 0.0
 
 
 def buy_and_hold(prices: pd.DataFrame, codes: list[str] | None = None) -> pd.Series:
@@ -212,4 +274,4 @@ def buy_and_hold(prices: pd.DataFrame, codes: list[str] | None = None) -> pd.Ser
     px = prices.pivot_table(index="date", columns="code", values="close").sort_index()
     if codes:
         px = px[[c for c in codes if c in px.columns]]
-    return px.pct_change().mean(axis=1).fillna(0.0)
+    return px.pct_change(fill_method=None).mean(axis=1).fillna(0.0)
