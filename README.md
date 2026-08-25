@@ -75,8 +75,15 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 python scripts/package_data.py     # outputs/train_bundle.zip (35MB)
 ```
 
-그 다음 [`notebooks/train_colab.ipynb`](notebooks/train_colab.ipynb) 를 Colab이나 Kaggle에서 연다.
-코드는 GitHub에서 클론되고, 이 zip만 올리면 된다. `.env`는 필요 없다(학습에 API 호출이 없다).
+그 다음 노트북을 연다. **Kaggle 권장** — 주당 30시간, 세션 12시간이라 Colab 무료보다 길다.
+
+| | 노트북 | 절차 문서 |
+|---|---|---|
+| Kaggle (권장) | `notebooks/train_kaggle.ipynb` | [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md) |
+| Colab | `notebooks/train_colab.ipynb` | 노트북 안에 설명 |
+
+코드는 GitHub에서 클론되고 이 zip만 올리면 된다.
+**`.env`는 필요 없다** — 학습 과정에 API 호출이 전혀 없다.
 
 학습 코드가 CUDA를 감지하면 혼합정밀(AMP)과 DataLoader 워커를 자동으로 켠다 —
 같은 명령이 로컬/클라우드 양쪽에서 그대로 돈다.

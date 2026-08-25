@@ -13,12 +13,12 @@
 
 | 구간 | 기간 | 샘플 |
 |---|---|---|
-| train | ~2022-12-31 | 13,818 |
-| val | ~2023-12-31 | 968 |
-| test | 2024-01 ~ | 4,095 |
+| train | ~2022-12-31 | 260,339 |
+| val | ~2023-12-31 | 17,584 |
+| test | 2024-01 ~ | 74,953 |
 
-⚠️ val 968샘플은 early stopping 판단이 불안정할 수 있는 규모다.
-유니버스를 늘리면 함께 커진다 — 종목 추가 시 다시 볼 것.
+(146종목 기준. 8종목이던 시절 val이 968샘플이라 early stopping이 불안정할 우려가 있었는데,
+유니버스 확대로 해소됐다.)
 
 ## 손실
 
@@ -31,7 +31,7 @@ Pinball(Quantile) Loss로 10/50/90 분위를 동시에 학습한다.
 
 - dropout, weight decay
 - **Val Loss 기준 early stopping** — train loss로 판단하지 않는다
-- 데이터가 작으므로(학습샘플 ~18,900) 모델을 키우기보다 정규화를 먼저 조인다
+- 학습샘플 약 35만, 파라미터 1.88M. 과소적합이 확인되기 전에는 모델을 키우지 않는다
 
 ## Dataset 메모리 제약
 
@@ -46,7 +46,9 @@ Pinball(Quantile) Loss로 10/50/90 분위를 동시에 학습한다.
 ## 학습 실행 위치
 
 맥북(MPS)은 epoch당 약 19분(260k 샘플, batch 64)이라 전체 학습에 16시간이 걸린다.
-학습은 외부 GPU(Colab/Kaggle)로 옮긴다 — `notebooks/train_colab.ipynb`.
+학습은 외부 GPU로 옮긴다. **Kaggle 권장** — 주당 30시간, 세션 12시간이라 Colab 무료보다 길다.
+절차: [`docs/KAGGLE_SETUP.md`](../../docs/KAGGLE_SETUP.md) / 노트북: `notebooks/train_kaggle.ipynb`
+(Colab은 `notebooks/train_colab.ipynb`).
 `train.py` 가 디바이스를 감지해 AMP/워커/pin_memory 를 자동 조정하므로
 같은 명령이 양쪽에서 그대로 돈다.
 

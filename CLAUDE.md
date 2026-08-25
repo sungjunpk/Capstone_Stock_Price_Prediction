@@ -35,6 +35,7 @@
 | [`src/evaluation/CLAUDE.md`](src/evaluation/CLAUDE.md) | 평가 지표, walk-forward 백테스트 |
 | [`src/trading/CLAUDE.md`](src/trading/CLAUDE.md) | 매매 판단 5단계, 기권 로직 |
 | [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md) | 실제 API 응답 검증 결과와 함정 |
+| [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md) | 클라우드 GPU 학습 절차 (수집은 로컬, 학습만 외부) |
 | [`README.md`](README.md) | 현재 진행 상태, 다음 할 일, 세션 시작 절차 |
 
 **진행 상황은 이 문서가 아니라 `README.md`에 적는다.** 여기는 규칙만 담는다.
