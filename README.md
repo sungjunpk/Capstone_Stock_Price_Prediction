@@ -52,7 +52,7 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ✅ 완료 + 테스트 (1.88M 파라미터) |
 | 학습 | `split` `losses` | ✅ 완료 + 테스트 |
 | 학습 | `dataset` `train` | ✅ 완료 + 테스트 |
-| 평가 | `metrics` `backtest` | ⬜ ← **다음 작업** |
+| 평가 | `metrics` `backtest` | ⬜ ← **다음 작업** (3.35% 개선이 거래 가능한 신호인지 확인) |
 | 매매 | `trading/signal` | ✅ 완료 + 테스트 |
 | 매매 | `trading/risk` `trading/paper_trader` | ⬜ |
 

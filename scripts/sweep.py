@@ -51,6 +51,16 @@ PRESETS: dict[str, dict] = {
         "d_model": 32, "n_layers": 1, "d_ff": 64,
         "dropout": 0.5, "weight_decay": 1e-2, "lr": 2e-4,
     },
+    # 스윕에서 작을수록 좋았고 minimal 이 가장 작았다 — 바닥을 아직 못 찾았다.
+    # 이 둘이 minimal 을 못 이기면 거기가 최적이다.
+    "nano": {
+        "d_model": 24, "n_layers": 1, "d_ff": 48,
+        "dropout": 0.5, "weight_decay": 1e-2, "lr": 2e-4,
+    },
+    "pico": {
+        "d_model": 16, "n_layers": 1, "d_ff": 32,
+        "dropout": 0.5, "weight_decay": 3e-2, "lr": 2e-4,
+    },
 }
 
 
