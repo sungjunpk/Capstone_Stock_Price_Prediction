@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.capstone.stock.collect</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/scripts/daily_collect.sh</string>
+    </array>
+
+    <!-- 평일 16:00. 장 마감(15:30) 뒤라 당일 종가가 확정돼 있다. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>16</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>16</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>16</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>16</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>16</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/outputs/logs/daily/launchd.out</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/outputs/logs/daily/launchd.err</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

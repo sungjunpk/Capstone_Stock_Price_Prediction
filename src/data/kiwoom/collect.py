@@ -100,11 +100,16 @@ def collect_daily_chart(
     df = df.dropna(subset=["date"])
     if start_date is not None:
         df = df[df["date"] >= start_date]
+    if end_date is not None:
+        # base_dt 를 줘도 응답에 그 뒤 날짜가 섞여 올 수 있다. 장중 미완성 봉을 막는 게
+        # 목적이라 여기서 한 번 더 자른다.
+        df = df[df["date"] <= end_date]
     return storage.upsert(df, path, key=["date"], sort_by=["date"])
 
 
 def collect_investor_flow(
-    client: KiwoomClient, code: str, *, start_date: date | None = None
+    client: KiwoomClient, code: str, *, start_date: date | None = None,
+    end_date: date | None = None,
 ) -> pd.DataFrame:
     """외국인/기관/개인 순매수 증분 수집."""
     spec = ep.INVESTOR_FLOW
@@ -114,7 +119,7 @@ def collect_investor_flow(
 
     body = {  # UNVERIFIED
         "stk_cd": code,
-        "dt": date.today().strftime("%Y%m%d"),
+        "dt": (end_date or date.today()).strftime("%Y%m%d"),
         "amt_qty_tp": "1",   # 1=수량
         "trde_tp": "0",      # 0=순매수
         "unit_tp": "1000",
@@ -125,6 +130,8 @@ def collect_investor_flow(
     df = df.dropna(subset=["date"])
     if start_date is not None:
         df = df[df["date"] >= start_date]
+    if end_date is not None:
+        df = df[df["date"] <= end_date]
     return storage.upsert(df, path, key=["date"], sort_by=["date"])
 
 
@@ -143,7 +150,8 @@ def collect_stock_info(client: KiwoomClient, code: str) -> pd.DataFrame:
 
 
 def collect_index_daily(
-    client: KiwoomClient, index_code: str, *, start_date: date | None = None
+    client: KiwoomClient, index_code: str, *, start_date: date | None = None,
+    end_date: date | None = None,
 ) -> pd.DataFrame:
     """KOSPI/KOSDAQ 등 지수 일봉 — 매크로 시퀀스."""
     spec = ep.INDEX_DAILY
@@ -153,7 +161,7 @@ def collect_index_daily(
 
     body = {  # UNVERIFIED
         "inds_cd": index_code,
-        "base_dt": date.today().strftime("%Y%m%d"),
+        "base_dt": (end_date or date.today()).strftime("%Y%m%d"),
     }
     df = _collect_paged(client, spec, body, stop_before=stop_before)
     if df.empty:
@@ -161,6 +169,8 @@ def collect_index_daily(
     df = df.dropna(subset=["date"])
     if start_date is not None:
         df = df[df["date"] >= start_date]
+    if end_date is not None:
+        df = df[df["date"] <= end_date]
     return storage.upsert(df, path, key=["date"], sort_by=["date"])
 
 
@@ -169,6 +179,7 @@ def collect_universe(
     codes: list[str],
     *,
     start_date: date | None = None,
+    end_date: date | None = None,
     with_chart: bool = True,
     with_flow: bool = True,
     with_info: bool = True,
@@ -184,9 +195,11 @@ def collect_universe(
     for i, code in enumerate(codes, 1):
         try:
             if with_chart:
-                collect_daily_chart(client, code, start_date=start_date)
+                collect_daily_chart(client, code, start_date=start_date,
+                                    end_date=end_date)
             if with_flow:
-                collect_investor_flow(client, code, start_date=start_date)
+                collect_investor_flow(client, code, start_date=start_date,
+                                      end_date=end_date)
             if with_info:
                 collect_stock_info(client, code)
             status[code] = "ok"

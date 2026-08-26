@@ -5,6 +5,10 @@
     python scripts/collect.py                 # config 유니버스 전체
     python scripts/collect.py --codes 005930  # 특정 종목만
     python scripts/collect.py --dry-run       # 호출 없이 계획만 출력
+    python scripts/collect.py --end-date 2026-08-25   # 그날까지만
+
+⚠️ 장중에 --end-date 없이 돌리면 **오늘의 미완성 일봉**이 종가 자리에 들어간다.
+   장 마감 전에 수집한다면 전 거래일을 --end-date 로 지정할 것.
 """
 
 from __future__ import annotations
@@ -40,6 +44,8 @@ def main() -> int:
         choices=["all", "chart", "flow", "info"],
         help="수집할 TR 선택. flow(수급)는 종목당 30~50초로 느리다. 기본 all",
     )
+    ap.add_argument("--end-date", help="이 날짜까지만 수집 (YYYY-MM-DD). "
+                                       "장중 실행 시 미완성 일봉을 막는다")
     ap.add_argument("--dry-run", action="store_true", help="API 호출 없이 계획만")
     args = ap.parse_args()
 
@@ -52,6 +58,7 @@ def main() -> int:
     etfs = cfg["data"]["macro"].get("overseas_etf_fallback", [])
     codes = args.codes or [u["code"] for u in universe] + [e["code"] for e in etfs]
     start_date = pd.Timestamp(cfg["data"]["start_date"]).date()
+    end_date = pd.Timestamp(args.end_date).date() if args.end_date else None
 
     unverified = unverified_specs()
     if unverified:
@@ -62,7 +69,8 @@ def main() -> int:
         )
 
     if args.dry_run:
-        log.info("[dry-run] 종목 %d개, 시작일 %s", len(codes), start_date)
+        log.info("[dry-run] 종목 %d개, 시작일 %s, 종료일 %s",
+                 len(codes), start_date, end_date or "오늘")
         for code in codes:
             path = storage.raw_path("daily_chart", code)
             log.info("  %s — 보유 마지막일: %s", code, storage.last_date(path) or "없음")
@@ -83,13 +91,14 @@ def main() -> int:
 
     with KiwoomClient() as client:
         status = collect_universe(
-            client, stock_codes, start_date=start_date,
+            client, stock_codes, start_date=start_date, end_date=end_date,
             with_chart=with_chart, with_flow=with_flow, with_info=with_info,
         )
         for code in sorted(etf_codes):
             log.info("[ETF] %s 일봉 수집", code)
             try:
-                collect_daily_chart(client, code, start_date=start_date)
+                collect_daily_chart(client, code, start_date=start_date,
+                                    end_date=end_date)
                 status[code] = "ok"
             except Exception as exc:  # noqa: BLE001
                 log.error("ETF %s 실패: %s", code, exc)
@@ -98,7 +107,8 @@ def main() -> int:
         if not args.skip_index and with_chart:
             for idx in cfg["data"]["macro"]["indices"]:
                 try:
-                    collect_index_daily(client, idx["code"], start_date=start_date)
+                    collect_index_daily(client, idx["code"], start_date=start_date,
+                                        end_date=end_date)
                     status[idx["name"]] = "ok"
                 except Exception as exc:  # noqa: BLE001 — 지수 실패로 전체를 죽이지 않는다
                     log.error("지수 %s 실패: %s", idx["name"], exc)

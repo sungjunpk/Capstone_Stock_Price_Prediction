@@ -19,6 +19,7 @@ pytest -q              # 133 tests
 ```bash
 python scripts/build_universe.py        # 유니버스 자동 선정 → configs/universe.yaml
 python scripts/collect.py --dry-run     # 수집 계획 확인 (API 호출 없음)
+python scripts/collect.py --end-date 2026-08-25  # 그날까지만 (장중 실행 시 필수)
 python scripts/collect.py --tr chart info   # 일봉+종목정보만 (빠름, 약 15분)
 python scripts/collect.py --tr flow     # 수급만 (느림, 종목당 30~50초)
 python scripts/collect.py               # 전부
@@ -36,11 +37,24 @@ python scripts/dashboard.py             # 결과 대시보드 (http://127.0.0.1:
 
 ### 하루 한 번 도는 자동매매
 
+수집·피처는 **평일 16:00 에 launchd 로 자동**이다(2026-08-26 등록).
+
 ```bash
-python scripts/collect.py --tr chart \
-  && python scripts/build_features.py \
-  && python scripts/paper_trade.py --execute
+bash scripts/install_daily_collect.sh            # 설치
+bash scripts/install_daily_collect.sh --status   # 등록 확인
+bash scripts/install_daily_collect.sh --uninstall # 해제
+tail -f outputs/logs/daily/$(date +%F).log       # 오늘 로그
 ```
+
+주문은 자동화에 넣지 않았다 — 절대 규칙 9를 자동화로 우회하지 않는다. 매매는 직접 낸다:
+
+```bash
+python scripts/paper_trade.py             # 계획 확인
+python scripts/paper_trade.py --execute   # 전송
+```
+
+⚠️ **장중에 `--end-date` 없이 수집하면 오늘의 미완성 일봉이 종가 자리에 들어간다.**
+16:00 자동 실행은 장 마감 뒤라 해당 없지만, 낮에 손으로 돌릴 땐 전 거래일을 지정할 것.
 
 `--execute` 없이 돌리면 **계획만 출력하고 주문은 나가지 않는다**(기본값).
 리밸런싱 주기(5일)가 아닌 날은 신규 진입 없이 손절/익절만 본다.
