@@ -6,6 +6,7 @@
   3) 리밸런싱 날이 아니면 신규 진입을 하지 않는가
   4) 손절 기준가가 **브로커 매입단가**인가 (로컬 상태가 아니라)
   5) 매수가 주문가능금액을 못 넘는가
+  6) 미체결이 남은 종목에 주문을 얹지 않는가 (중복 매수 방지)
 """
 
 from __future__ import annotations
@@ -65,6 +66,40 @@ def account(cash: float, holdings: list[Holding] = (), deposit=None) -> AccountS
         holdings=hs,
         total_eval=sum(h.eval_amount for h in hs.values()),
     )
+
+
+class TestUnfilledGuard:
+    """부분체결이 남은 종목은 이번 회차에서 건드리지 않는다.
+
+    2026-08-26 실측: 시장가 207주 주문에 16주만 즉시 체결되고 191주가 미체결로
+    남았다. 이 상태에서 다시 실행하면 부족분을 또 사서 목표비중을 넘긴다.
+    """
+
+    def test_pending_code_is_excluded_from_orders(self):
+        cfg = make_cfg()
+        preds = make_preds([("AAA", -0.01, 0.02, 0.03), ("BBB", -0.01, 0.01, 0.03)])
+        acct = account(1_000_000)
+
+        base = build_plan(preds, acct, {"AAA": 30_000, "BBB": 7_000},
+                          cfg, state=TraderState(), today=TODAY)
+        assert {o.code for o in base.orders} == {"AAA", "BBB"}
+
+        guarded = build_plan(preds, acct, {"AAA": 30_000, "BBB": 7_000},
+                             cfg, state=TraderState(), today=TODAY,
+                             unfilled={"AAA": 191})
+        assert {o.code for o in guarded.orders} == {"BBB"}   # AAA 는 빠졌다
+        assert guarded.pending == {"AAA": 191}
+        assert any("미체결" in n for n in guarded.notes)
+
+    def test_unrelated_pending_does_not_shrink_plan(self):
+        """오늘 계획에 없는 종목의 미체결은 아무것도 바꾸지 않는다."""
+        cfg = make_cfg()
+        preds = make_preds([("AAA", -0.01, 0.02, 0.03), ("BBB", -0.01, 0.01, 0.03)])
+        plan = build_plan(preds, account(1_000_000), {"AAA": 30_000, "BBB": 7_000},
+                          cfg, state=TraderState(), today=TODAY,
+                          unfilled={"ZZZ": 10})
+        assert {o.code for o in plan.orders} == {"AAA", "BBB"}
+        assert plan.pending == {} and not plan.notes
 
 
 class TestWeightToQuantity:

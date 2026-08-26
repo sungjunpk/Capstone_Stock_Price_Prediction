@@ -11,7 +11,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env   # 키움 모의투자 APP_KEY / APP_SECRET 채우기
-pytest -q              # 133 tests
+pytest -q              # 135 tests
 ```
 
 ## 파이프라인
@@ -177,6 +177,8 @@ IC 0.024는 주식 횡단면 예측에서 정상 범위(0.02~0.05)이고 **t=4.0
     잔고 종목코드에 **접두어 `A` 가 실제로 붙어서 온다**(`A005930`). 상세는
     [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md)
 12. ~~모의투자 첫 실행~~ ✅ 완료 2026-08-26 — 11건 전송, 실패 0 (위 참고)
+13. ~~부분체결 처리~~ ✅ 완료 2026-08-26 — `ka10075` 로 미체결을 조회해 해당 종목을
+    이번 회차에서 제외한다. 체결 제약 4번째 항목이다
 
 ## 클라우드 GPU 학습
 

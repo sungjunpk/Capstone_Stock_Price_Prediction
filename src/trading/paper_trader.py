@@ -13,8 +13,10 @@
   2) 매수는 **주문가능금액**을 못 넘는다. 매도 대금이 언제 쓸 수 있게 되는지는
      계좌마다 다르므로 추정하지 않고, 매도를 먼저 보내고 **계좌를 다시 조회**한다.
   3) 매도는 **매도가능수량**까지만. 미결제분은 브로커가 거부한다.
+  4) **미체결이 남은 종목은 건드리지 않는다.** 시장가라도 호가 잔량이 모자라면
+     남는다(실측: 207주 중 16주만 즉시 체결). 남은 걸 모르고 또 주문하면 중복 매수다.
 
-이 셋은 판단이 아니라 체결 제약이라 백테스트와의 등가성을 깨지 않는다.
+이 넷은 판단이 아니라 체결 제약이라 백테스트와의 등가성을 깨지 않는다.
 다만 결과는 달라질 수 있어서, 실행 로그에 계획과 실제를 나란히 남긴다.
 """
 
@@ -128,6 +130,7 @@ class TradingPlan:
     blocked_by_reason: dict[str, int] = field(default_factory=dict)
     stats: dict = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    pending: dict[str, int] = field(default_factory=dict)   # 미체결로 제외한 종목
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -162,6 +165,7 @@ def build_plan(
     state: TraderState,
     today: date | None = None,
     rebalancing: bool = True,
+    unfilled: dict[str, int] | None = None,
 ) -> TradingPlan:
     """예측 + 계좌 → 오늘의 주문 계획. **여기서 API 를 호출하지 않는다.**
 
@@ -174,6 +178,9 @@ def build_plan(
         판단할 수 없다(`src/models/inference.py: predict_recent`).
     rebalancing: False 면 신규 진입/비중 조정을 하지 않고 **강제 청산만** 본다.
         리밸런싱 주기(기본 5일) 사이에도 손절이 동작하게 하기 위한 경로다.
+    unfilled: 종목코드 → 미체결수량. 아직 체결을 기다리는 종목은 이번 회차에서
+        건드리지 않는다. 판단이 아니라 **체결 제약**이다 — 남은 주문을 모르고
+        다시 주문하면 부족분을 또 사서 목표비중을 넘긴다.
     """
     tcfg = cfg["trading"]
     today = today or date.today()
@@ -222,7 +229,17 @@ def build_plan(
         for code in held:
             target.setdefault(code, 0.0)   # 신호가 없으면 청산 — 백테스트와 같다
 
-    # 4) 비중 → 수량
+    # 4) 미체결 제외 — 아직 채워지는 중인 종목에 또 주문을 얹지 않는다
+    pending = {c: q for c, q in (unfilled or {}).items() if c in target}
+    for code in pending:
+        target.pop(code, None)
+    if pending:
+        notes.append(
+            "미체결이 남아 제외: "
+            + ", ".join(f"{c}({q}주)" for c, q in sorted(pending.items()))
+        )
+
+    # 5) 비중 → 수량
     orders = _weights_to_orders(target, account, prices, min_trade, decision)
 
     stats = _signal_stats(signals, decision, max_width, len(preds))
@@ -243,6 +260,7 @@ def build_plan(
         blocked_by_reason=dict(decision.blocked_by_reason),
         stats=stats,
         notes=notes,
+        pending=dict(pending),
     )
 
 

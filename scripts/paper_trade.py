@@ -168,6 +168,9 @@ def main() -> int:
     # --- 3) 계좌
     with PaperBroker() as broker:
         account = broker.snapshot()
+        # 미체결 조회는 계획 수립 **전에** 한다. 실패하면 예외로 멈춘다 —
+        # '미체결 없음'으로 오해하고 주문을 얹는 것보다 안 내는 쪽이 낫다.
+        unfilled = broker.fetch_unfilled()
         state = TraderState.load()
         state.sync_entries(set(account.holdings), today)
 
@@ -180,7 +183,7 @@ def main() -> int:
         #     현재가는 그 다음, 실제로 건드릴 종목만 조회한다(호출 수 절약).
         closes = latest_prices(bundle)
         draft = build_plan(recent, account, closes, cfg, state=state,
-                           today=today, rebalancing=rebalancing)
+                           today=today, rebalancing=rebalancing, unfilled=unfilled)
 
         touch = sorted({o.code for o in draft.orders} | set(account.holdings))
         quotes = broker.fetch_prices(touch) if touch else {}
@@ -189,7 +192,7 @@ def main() -> int:
         # --- 5) 최종 계획: 손절 판정과 주문 수량이 현재가 기준이 된다
         prices = {**closes, **quotes}
         plan = build_plan(recent, account, prices, cfg, state=state,
-                          today=today, rebalancing=rebalancing)
+                          today=today, rebalancing=rebalancing, unfilled=unfilled)
         plan.notes.extend(notes)
 
         _print_holdings(account)

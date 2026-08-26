@@ -188,6 +188,35 @@ class PaperBroker:
         )
         return snap
 
+    def fetch_unfilled(self) -> dict[str, int]:
+        """종목코드 → 미체결 수량. **중복 매수를 막는 유일한 근거다.**
+
+        시장가라도 호가 잔량이 모자라면 남는다. 남은 걸 모르고 다시 주문하면
+        부족분을 또 사서 목표비중을 넘긴다.
+
+        ⚠️ `ord_stt` 가 '체결' 이어도 `oso_qty` 가 남아 있다(부분체결). 상태 문자열이
+           아니라 수량으로 판단한다.
+        """
+        out: dict[str, int] = {}
+        body = {"all_stk_tp": "0", "trde_tp": "0", "stk_cd": "", "stex_tp": "0"}
+        try:
+            data, _ = self.client.request(ep.UNFILLED_ORDERS, body)
+        except KiwoomAPIError as exc:
+            # 조회 실패를 '미체결 없음'으로 읽으면 중복 주문이 나간다.
+            log.error("[미체결] 조회 실패: %s — 주문 전에 확인할 것", exc)
+            raise
+        df = parse_records(data.get(ep.UNFILLED_ORDERS.list_key) or [],
+                           ep.UNFILLED_ORDERS.schema)
+        for r in df.itertuples():
+            code = _normalize_code(r.code)
+            qty = int(r.unfilled_qty or 0)
+            if code and qty > 0:
+                out[code] = out.get(code, 0) + qty
+        if out:
+            log.warning("[미체결] %d종목 남아 있다 — 이번 회차에서 제외한다: %s",
+                        len(out), ", ".join(f"{c}({q}주)" for c, q in sorted(out.items())))
+        return out
+
     def fetch_prices(self, codes: list[str]) -> dict[str, float]:
         """현재가. 종목당 1회 호출이라 유니버스 전체가 아니라 **거래 대상만** 넘길 것."""
         out: dict[str, float] = {}

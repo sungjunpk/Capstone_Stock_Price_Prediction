@@ -265,6 +265,30 @@ QUOTE = TRSpec(  # VERIFIED 2026-08-24 (ka10001 검증분과 동일 TR — 필�
          "STOCK_INFO 와 같은 TR 이지만 매매 경로에서는 현재가만 필요해 스키마를 좁혔다.",
 )
 
+# --- 미체결: 같은 종목을 두 번 사지 않기 위한 것 -----------------------------
+# 시장가라도 호가 잔량이 모자라면 남는다(실측: 셀트리온제약 207주 중 16주만 즉시 체결).
+# 미체결을 모르고 다시 주문하면 부족분을 또 사서 **중복 매수**가 된다.
+UNFILLED_ORDERS = TRSpec(  # VERIFIED 2026-08-26 (mock, 부분체결 3건 상태에서 확인)
+    name="unfilled_orders",
+    path="/api/dostk/acnt",
+    api_id="ka10075",
+    list_key="oso",
+    schema={
+        "code": ("stk_cd", "str"),
+        "name": ("stk_nm", "str"),
+        "order_no": ("ord_no", "str"),
+        "order_qty": ("ord_qty", "abs_int"),
+        "filled_qty": ("cntr_qty", "abs_int"),
+        "unfilled_qty": ("oso_qty", "abs_int"),   # 남은 수량 — 이게 본체다
+        "side": ("io_tp_nm", "str"),              # '+매수' / '-매도'
+    },
+    rate_limit_per_sec=1.0,
+    verified=True,
+    note="all_stk_tp '0'=전체 / trde_tp '0'=전체 / stex_tp '0'=통합. "
+         "ord_stt 는 '체결'로 와도 oso_qty 가 남아 있을 수 있다 — 부분체결이다. "
+         "상태 문자열이 아니라 oso_qty 로 판단할 것.",
+)
+
 # --- 주문: 여기부터는 계좌 상태를 바꾼다 ------------------------------------
 BUY_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 시장가 → ord_no=0123420)
     name="buy_order",
@@ -299,7 +323,8 @@ SELL_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 → ord_no=012599
 
 TRADING_SPECS: dict[str, TRSpec] = {
     spec.name: spec
-    for spec in (DEPOSIT, ACCOUNT_BALANCE, QUOTE, BUY_ORDER, SELL_ORDER)
+    for spec in (DEPOSIT, ACCOUNT_BALANCE, QUOTE, UNFILLED_ORDERS,
+                 BUY_ORDER, SELL_ORDER)
 }
 
 # 레이트 리미터에 등록할 전체 목록. ALL_SPECS 는 '수집' TR 만 담는다 —
