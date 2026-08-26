@@ -214,7 +214,7 @@ DEPOSIT = TRSpec(  # VERIFIED 2026-08-25 (mock, return_msg="모의투자 조회�
 # --- 계좌평가잔고: 보유 종목과 매입가 ---------------------------------------
 # 매입가가 여기서 나온다 = **손절 기준가를 로컬 상태가 아니라 브로커가 들고 있다.**
 # 로컬 상태 파일이 날아가도 손절이 계속 동작한다.
-ACCOUNT_BALANCE = TRSpec(  # UNVERIFIED — scripts/verify_trading_trs.py 로 확인할 것
+ACCOUNT_BALANCE = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 보유 상태에서 확인)
     name="account_balance",
     path="/api/dostk/acnt",
     api_id="kt00018",
@@ -230,9 +230,13 @@ ACCOUNT_BALANCE = TRSpec(  # UNVERIFIED — scripts/verify_trading_trs.py 로 �
         "pnl_amount": ("evltv_prft", "float"),        # 부호가 의미를 갖는다
         "pnl_rate": ("prft_rt", "float"),
     },
+    verified=True,
     note="qry_tp: '1'=합산, '2'=개별 / dmst_stex_tp: 'KRX'. "
          "응답 최상위에 요약(tot_evlt_amt 등)이 함께 오고 보유목록은 list_key 배열이다. "
-         "요약은 ACCOUNT_SUMMARY_FIELDS 로 별도 파싱한다.",
+         "요약은 ACCOUNT_SUMMARY_FIELDS 로 별도 파싱한다. "
+         "⚠️ stk_cd 에 접두어가 붙어서 온다('A005930') — 실측 확인. "
+         "broker._normalize_code 가 벗기지 않으면 보유분을 미보유로 읽어 이력 버퍼가 죽는다. "
+         "보유가 0이면 배열이 비고 return_msg='모의투자 해당조회내역이 없습니다.' 다.",
 )
 
 # 계좌 요약(총평가/총손익)은 배열이 아니라 응답 최상위에 붙는다.
@@ -262,7 +266,7 @@ QUOTE = TRSpec(  # VERIFIED 2026-08-24 (ka10001 검증분과 동일 TR — 필�
 )
 
 # --- 주문: 여기부터는 계좌 상태를 바꾼다 ------------------------------------
-BUY_ORDER = TRSpec(  # UNVERIFIED — 모의투자에서 1주 주문으로 확인할 것
+BUY_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 시장가 → ord_no=0123420)
     name="buy_order",
     path="/api/dostk/ordr",
     api_id="kt10000",
@@ -272,11 +276,13 @@ BUY_ORDER = TRSpec(  # UNVERIFIED — 모의투자에서 1주 주문으로 확�
         "exchange": ("dmst_stex_tp", "str"),
     },
     rate_limit_per_sec=1.0,   # 주문은 천천히. 429 로 중복주문 재시도를 만들지 않는다
+    verified=True,
     note="필수: dmst_stex_tp('KRX') stk_cd ord_qty trde_tp. "
-         "trde_tp '3'=시장가(ord_uv 불필요), '0'=보통(지정가, ord_uv 필요).",
+         "trde_tp '3'=시장가(ord_uv 불필요), '0'=보통(지정가, ord_uv 필요). "
+         "응답 주문번호 키는 ord_no 가 맞다. 계좌번호는 요청에 없다 — 계좌는 APP_KEY 에 묶인다.",
 )
 
-SELL_ORDER = TRSpec(  # UNVERIFIED
+SELL_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 → ord_no=0125994)
     name="sell_order",
     path="/api/dostk/ordr",
     api_id="kt10001",
@@ -286,7 +292,9 @@ SELL_ORDER = TRSpec(  # UNVERIFIED
         "exchange": ("dmst_stex_tp", "str"),
     },
     rate_limit_per_sec=1.0,
-    note="BUY_ORDER 와 요청 형식 동일. 매도만 거래세가 붙는다(costs.tax_bps).",
+    verified=True,
+    note="BUY_ORDER 와 요청 형식 동일. 매도만 거래세가 붙는다(costs.tax_bps). "
+         "실측 확인: 264,750 매수 → 264,000 매도에 수수료·세금 2,368원, 실현손익 -3,118원.",
 )
 
 TRADING_SPECS: dict[str, TRSpec] = {

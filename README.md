@@ -11,7 +11,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env   # 키움 모의투자 APP_KEY / APP_SECRET 채우기
-pytest -q              # 131 tests
+pytest -q              # 133 tests
 ```
 
 ## 파이프라인
@@ -69,10 +69,23 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 평가 | `metrics` `backtest` | ✅ 완료 + 테스트 — 랭크 IC 진단 포함 |
 | 매매 | `trading/signal` | ✅ 완료 + 테스트 17개 (횡단면 순위 모드) |
 | 매매 | `trading/risk` | ✅ 완료 + 테스트 9개 |
-| 매매 | `trading/broker` (키움 계좌·주문) | ✅ 완료 + 테스트 12개 |
+| 매매 | `trading/broker` (키움 계좌·주문) | ✅ 완료 + 테스트 14개 — 실계좌 검증 완료 |
 | 매매 | `trading/paper_trader` | ✅ 완료 + 테스트 15개 |
 | 추론 | `models/inference` (백테스트·모의투자 공용) | ✅ 완료 |
 | 화면 | `webapp` 대시보드 | ✅ 완료 + 테스트 7개 |
+
+### 2026-08-26 모의투자 첫 실행
+
+계좌 1억으로 **11건 전송, 실패 0.** 기권 66.4%(97/146), 매수 10종목, 목표 노출 90%.
+실측 노출 88.3% — 정수 주 반올림 오차가 1000만원일 때(목표 대비 최대 2%p 미달)보다
+크게 줄었다.
+
+주문을 내고 나서야 보인 것 둘:
+
+| 발견 | 내용 |
+|---|---|
+| **부분체결** | 시장가인데 호가 잔량 부족으로 남는다. 셀트리온제약 207주 중 16주만 즉시 체결됐다. 백테스트는 종가에 원하는 만큼 산다고 가정한다 — 그 가정이 깨지는 자리 |
+| **총자산 부풀림** (수정됨) | `예수금 + 주식평가` 로 계산하면 D+2 결제 전 매수대금을 두 번 센다. 실제 9,929만 계좌가 **1억 8,203만**으로 나왔다. 키움이 주는 `prsm_dpst_aset_amt` 로 교체 |
 
 ### 2026-08-25 학습·백테스트 결과
 
@@ -146,15 +159,10 @@ IC 0.024는 주식 횡단면 예측에서 정상 범위(0.02~0.05)이고 **t=4.0
 9. walk-forward 다구간 백테스트 — test 가 2024-07~2026-08 한 국면(역사적 폭등장)뿐이다.
    베타 0.5짜리 전략을 이 구간 하나로 판단할 수 없다
 10. ~~`src/trading/paper_trader.py` 모의투자 실행~~ ✅ 완료 — 대시보드까지
-11. **매매 TR 검증** ← 지금 할 일. 계좌/주문 TR 은 아직 `UNVERIFIED` 다.
-    ```bash
-    python scripts/verify_trading_trs.py          # 조회계만 (읽기 전용, 안전)
-    python scripts/verify_trading_trs.py --order 005930   # 1주 매수까지 (실제 주문)
-    ```
-    ⚠️ **잔고 필드명이 틀리면 보유수량이 0 으로 읽히고 중복 매수가 나간다.**
-    수집 TR 과 달리 조용히 틀리는 쪽이라 주문 전에 반드시 통과시킬 것.
-12. 모의투자 첫 실행 — `python scripts/paper_trade.py` 로 계획을 눈으로 확인한 뒤
-    `--execute`. 결과는 `python scripts/dashboard.py` 로 본다
+11. ~~매매 TR 검증~~ ✅ 완료 2026-08-26 — deposit/balance/quote/buy/sell 전부 실호출 확인.
+    잔고 종목코드에 **접두어 `A` 가 실제로 붙어서 온다**(`A005930`). 상세는
+    [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md)
+12. ~~모의투자 첫 실행~~ ✅ 완료 2026-08-26 — 11건 전송, 실패 0 (위 참고)
 
 ## 클라우드 GPU 학습
 

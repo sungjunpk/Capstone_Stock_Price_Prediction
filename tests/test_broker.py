@@ -122,9 +122,52 @@ class TestSnapshot:
         assert snap.weight_of("005930") == pytest.approx(0.7)
         assert snap.weight_of("없음") == 0.0
 
+    def test_equity_does_not_double_count_before_settlement(self):
+        """매수 직후 예수금은 D+2 라 안 빠져 있다 — 같은 돈을 두 번 세면 안 된다.
+
+        2026-08-26 실측 회귀: 실제 9,929만원 계좌가 1억(예수금) + 8,203만(주식)
+        = 1억 8,203만으로 계산됐다. 분모가 1.8배면 목표비중 10% 가 주문가능금액을
+        넘는 주문이 된다.
+        """
+        client = FakeClient(responses={
+            "kt00001": {
+                "entr": "000000100000000",          # 예수금 1억 — 매수했는데 그대로
+                "ord_alow_amt": "000000007046297",  # 주문가능은 즉시 차감됐다
+            },
+            "kt00018": {
+                "tot_evlt_amt": "000000082031660",
+                "prsm_dpst_aset_amt": "000000099290271",   # 키움이 준 진짜 총자산
+                "acnt_evlt_remn_indv_tot": [{
+                    "stk_cd": "A032640", "stk_nm": "LG유플러스", "rmnd_qty": "673",
+                    "trde_able_qty": "673", "pur_pric": "14899", "cur_prc": "14890",
+                    "evlt_amt": "000000010020970",
+                }],
+            },
+        })
+        snap = PaperBroker(client).snapshot()
+        assert snap.equity == pytest.approx(99_290_271)
+        assert snap.equity != snap.deposit + snap.total_eval   # 부풀지 않는다
+        # 비중도 실제 값이어야 한다 — 부푼 분모면 5.5% 로 축소돼 보인다
+        assert snap.weight_of("032640") == pytest.approx(0.1009, abs=1e-4)
+
+    def test_equity_falls_back_to_orderable_not_deposit(self):
+        """추정예탁자산이 안 오면 예수금이 아니라 주문가능금액으로 물러난다."""
+        client = FakeClient(responses={
+            "kt00001": {"entr": "000000100000000", "ord_alow_amt": "000000007046297"},
+            "kt00018": {"tot_evlt_amt": "000000082031660",
+                        "acnt_evlt_remn_indv_tot": []},
+        })
+        snap = PaperBroker(client).snapshot()
+        assert snap.equity == pytest.approx(7_046_297 + 82_031_660)
+
     def test_empty_account_has_zero_weights(self):
-        client = FakeClient(responses={"kt00001": {"entr": "000000010000000"},
-                                       "kt00018": {}})
+        # 실제 kt00001 은 entr 와 ord_alow_amt 를 항상 같이 준다(2026-08-25 검증).
+        # 현금 100% 라 둘이 같은 값이다.
+        client = FakeClient(responses={
+            "kt00001": {"entr": "000000010000000",
+                        "ord_alow_amt": "000000010000000"},
+            "kt00018": {},
+        })
         snap = PaperBroker(client).snapshot()
         assert snap.holdings == {} and snap.equity == 10_000_000
 

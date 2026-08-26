@@ -60,16 +60,25 @@ class AccountSnapshot:
     holdings: dict[str, Holding] = field(default_factory=dict)
     total_eval: float = 0.0           # 주식 평가금액 합
     total_pnl: float = 0.0
+    estimated_assets: float = 0.0     # 추정예탁자산 — 키움이 계산해준 총자산
     fetched_at: str = ""
 
     @property
     def equity(self) -> float:
-        """총자산 = 예수금 + 주식평가금액.
+        """총자산. 비중(target_weight)의 분모다.
 
-        비중(target_weight)의 분모다. 주식평가금액만 쓰면 현금 100% 상태에서
-        분모가 0 이 되어 아무것도 못 산다.
+        **예수금 + 주식평가로 계산하면 안 된다.** 예수금은 D+2 결제라 매수 대금이
+        아직 안 빠져 있어서, 매수 직후 같은 돈을 현금과 주식으로 두 번 센다.
+        2026-08-26 실측: 실제 9,929만원인 계좌가 1억 + 8,203만 = 1억 8,203만으로 나왔다.
+        결제 전에 리밸런싱이 돌면 목표비중의 분모가 1.8배라 주문가능금액을
+        훨씬 넘는 주문이 나간다.
+
+        키움이 `prsm_dpst_aset_amt`(추정예탁자산)로 정답을 준다 — 추정하지 않는다.
+        폴백은 예수금이 아니라 **주문가능금액**을 쓴다. 이쪽은 매수 즉시 차감된다.
         """
-        return self.deposit + self.total_eval
+        if self.estimated_assets > 0:
+            return self.estimated_assets
+        return self.cash + self.total_eval
 
     def weight_of(self, code: str) -> float:
         eq = self.equity
@@ -169,11 +178,12 @@ class PaperBroker:
             holdings=holdings,
             total_eval=float(total_eval),
             total_pnl=float(summary.get("total_pnl") or 0.0),
+            estimated_assets=float(summary.get("estimated_assets") or 0.0),
             fetched_at=datetime.now().isoformat(timespec="seconds"),
         )
         log.info(
-            "계좌: 총자산 %s원 (예수금 %s / 주식 %s) | 보유 %d종목",
-            f"{snap.equity:,.0f}", f"{snap.deposit:,.0f}",
+            "계좌: 총자산 %s원 (주문가능 %s / 예수금 %s / 주식 %s) | 보유 %d종목",
+            f"{snap.equity:,.0f}", f"{snap.cash:,.0f}", f"{snap.deposit:,.0f}",
             f"{snap.total_eval:,.0f}", len(holdings),
         )
         return snap
