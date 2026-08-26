@@ -174,6 +174,25 @@ def collect_index_daily(
     return storage.upsert(df, path, key=["date"], sort_by=["date"])
 
 
+def is_trading_day(client: KiwoomClient, on: date) -> bool:
+    """오늘 장이 열렸는가. **공휴일 테이블을 만들지 않는다 — 데이터에 묻는다.**
+
+    지수 일봉을 읽기 전용으로 1회 호출해 최신 봉 날짜가 `on` 인지 본다.
+    휴장일이면 그날 봉이 아예 없다. 장중에 부르면 진행 중인 봉이 오므로
+    개장 여부 판정에는 그대로 쓸 수 있다.
+
+    ⚠️ 저장하지 않는다. 장중 미완성 봉이 raw 에 들어가면 안 되기 때문이다.
+    """
+    spec = ep.INDEX_DAILY
+    data, _ = client.request(spec, {"inds_cd": "001",
+                                    "base_dt": on.strftime("%Y%m%d")})
+    df = parse_records(data.get(spec.list_key) or [], spec.schema)
+    if df.empty:
+        return False
+    latest = pd.to_datetime(df["date"]).max()
+    return bool(pd.notna(latest) and latest.date() == on)
+
+
 def collect_universe(
     client: KiwoomClient,
     codes: list[str],

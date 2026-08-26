@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.capstone.stock.trade</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/scripts/daily_trade.sh</string>
+    </array>
+
+    <!-- 평일 15:15. 장 마감(15:30) 직전이라 종가 근처에서 체결된다 —
+         백테스트가 '종가 체결'을 가정하므로 비교 가능성이 가장 높다. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/outputs/logs/daily/trade_launchd.out</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/outputs/logs/daily/trade_launchd.err</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

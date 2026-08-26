@@ -5,7 +5,8 @@
 #   로그:   outputs/logs/daily/YYYY-MM-DD.log
 #   해제:   launchctl bootout gui/$(id -u)/com.capstone.stock.collect
 #
-# 주문은 여기서 내지 않는다 — 절대 규칙 9(주문은 기본 dry-run)를 자동화로 우회하지 않는다.
+# 주문은 여기서 내지 않는다. 자동 매매는 scripts/daily_trade.sh 가 15:15 에 따로 돈다 —
+# 주문을 내는 자동화는 스스로 켜는 동작이어야 해서 설치를 분리했다.
 
 set -uo pipefail
 
@@ -34,5 +35,10 @@ echo "--- 일봉 수집 ---"
 
 echo "--- 피처 재생성 ---"
 "$PY" scripts/build_features.py || { echo "피처 생성 실패"; exit 1; }
+
+# 장 마감 후 확정 총자산을 하루 한 줄 남긴다. 거래가 없는 날에도 찍어야
+# 누적 수익률 곡선에 구멍이 안 생긴다. 읽기 전용 — 주문 경로 없음.
+echo "--- 계좌 스냅샷 ---"
+"$PY" scripts/snapshot_account.py || echo "스냅샷 실패 (수집은 성공했다)"
 
 echo "=========== $(date '+%F %T') 완료 ==========="

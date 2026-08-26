@@ -11,7 +11,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env   # 키움 모의투자 APP_KEY / APP_SECRET 채우기
-pytest -q              # 135 tests
+pytest -q              # 139 tests
 ```
 
 ## 파이프라인
@@ -46,12 +46,38 @@ bash scripts/install_daily_collect.sh --uninstall # 해제
 tail -f outputs/logs/daily/$(date +%F).log       # 오늘 로그
 ```
 
-주문은 자동화에 넣지 않았다 — 절대 규칙 9를 자동화로 우회하지 않는다. 매매는 직접 낸다:
+**자동 매매는 평일 15:15 에 따로 돈다**(2026-08-26 등록). 설치를 분리한 이유는
+주문을 내는 자동화가 스스로 켜는 동작이어야 하기 때문이다.
+
+```bash
+bash scripts/install_daily_trade.sh              # ⚠️ 실제 주문이 나간다
+bash scripts/install_daily_trade.sh --status
+bash scripts/install_daily_trade.sh --uninstall
+tail -f outputs/logs/daily/trade_$(date +%F).log
+```
+
+15:15 인 이유: 장 마감(15:30) 직전이라 종가 근처에서 체결된다 — 백테스트가
+'종가 체결'을 가정하므로 비교 가능성이 가장 높다. 휴장일은 지수 일봉에 오늘 봉이
+있는지로 판정한다(`is_trading_day`) — **공휴일 테이블을 만들지 않는다.**
+
+손으로 낼 때는 그대로다:
 
 ```bash
 python scripts/paper_trade.py             # 계획 확인
 python scripts/paper_trade.py --execute   # 전송
+python scripts/snapshot_account.py        # 계좌 기록 (읽기 전용)
 ```
+
+### 하루가 도는 순서
+
+```
+15:15  daily_trade.sh    개장 확인 → paper_trade --execute
+16:00  daily_collect.sh  collect → build_features → snapshot_account
+```
+
+판단은 **전일 종가** 기준이다(수집이 16:00이라 당일 데이터를 못 쓴다).
+백테스트는 t 시점 데이터로 t 종가에 체결하므로 **실거래에 1세션 시차가 있다** —
+15:15 실행이 이 격차를 줄이지만 없애지는 못한다. 성과가 갈리면 후보 원인이다.
 
 ⚠️ **장중에 `--end-date` 없이 수집하면 오늘의 미완성 일봉이 종가 자리에 들어간다.**
 16:00 자동 실행은 장 마감 뒤라 해당 없지만, 낮에 손으로 돌릴 땐 전 거래일을 지정할 것.
@@ -100,6 +126,26 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 |---|---|
 | **부분체결** | 시장가인데 호가 잔량 부족으로 남는다. 셀트리온제약 207주 중 16주만 즉시 체결됐다. 백테스트는 종가에 원하는 만큼 산다고 가정한다 — 그 가정이 깨지는 자리 |
 | **총자산 부풀림** (수정됨) | `예수금 + 주식평가` 로 계산하면 D+2 결제 전 매수대금을 두 번 센다. 실제 9,929만 계좌가 **1억 8,203만**으로 나왔다. 키움이 주는 `prsm_dpst_aset_amt` 로 교체 |
+
+### 3개월 실거래 기록 (2026-08-26 시작)
+
+발표용 기록이 매일 자동으로 쌓인다.
+
+```
+outputs/paper_trading/equity.jsonl      하루 한 줄 — 총자산·현금·주식·KOSPI
+outputs/paper_trading/fills.jsonl       하루 × 종목 — 체결 기준 실현손익 (ka10170)
+outputs/paper_trading/performance.json  위에서 계산한 지표 + 병합된 곡선
+outputs/paper_trading/baseline.json     계좌 개시 잔고 (첫날 진입 비용을 포함시키려면 필요)
+```
+
+지표는 **백테스트와 같은 함수**(`evaluation/metrics.py`)로 계산한다 — 그래야
+"백테스트 Sharpe 1.10 vs 실거래 Sharpe X" 비교가 성립한다.
+관측 20일 미만이면 `reliable: false` 로 표시하고 화면이 스스로 경고한다.
+
+**⚠️ 모의투자 수수료가 백테스트 가정의 2.3배다.** 실측: 기아 6,814,700원 매수에
+23,850원 = **0.35%**. 백테스트는 편도 15.5bp(0.155%)를 가정한다. 첫날 11건에
+317,358원(0.32%)이 나갔다. 실거래 성과가 백테스트보다 나쁘게 나올 구조적 이유이고,
+발표에서 이 격차를 비용으로 귀속시킬 수 있다.
 
 ### 2026-08-25 학습·백테스트 결과
 
@@ -176,9 +222,12 @@ IC 0.024는 주식 횡단면 예측에서 정상 범위(0.02~0.05)이고 **t=4.0
 11. ~~매매 TR 검증~~ ✅ 완료 2026-08-26 — deposit/balance/quote/buy/sell 전부 실호출 확인.
     잔고 종목코드에 **접두어 `A` 가 실제로 붙어서 온다**(`A005930`). 상세는
     [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md)
-12. ~~모의투자 첫 실행~~ ✅ 완료 2026-08-26 — 11건 전송, 실패 0 (위 참고)
+12. ~~모의투자 첫 실행~~ ✅ 완료 2026-08-26 — 11건 전송, 실패 0 (아래 참고)
 13. ~~부분체결 처리~~ ✅ 완료 2026-08-26 — `ka10075` 로 미체결을 조회해 해당 종목을
     이번 회차에서 제외한다. 체결 제약 4번째 항목이다
+14. ~~자동 매매 + 성과 기록 + 대시보드~~ ✅ 완료 2026-08-26 — 아래 "3개월 실거래 기록"
+15. **3개월치 쌓기** ← 지금 할 일. 코드는 다 됐고 시간이 필요하다.
+    ⚠️ **모의투자 계좌 만료일을 확인할 것** — 신청 기간이 1개월이면 3개월을 못 채운다
 
 ## 클라우드 GPU 학습
 

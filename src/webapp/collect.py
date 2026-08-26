@@ -19,6 +19,10 @@ RUNS_DIR = PROJECT_ROOT / "outputs" / "paper_trading" / "runs"
 STATE_PATH = PROJECT_ROOT / "outputs" / "paper_trading" / "state.json"
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
 PANEL_PATH = PROJECT_ROOT / "data" / "processed" / "panel.parquet"
+_PT = PROJECT_ROOT / "outputs" / "paper_trading"
+EQUITY_PATH = _PT / "equity.jsonl"
+FILLS_PATH = _PT / "fills.jsonl"
+PERFORMANCE_PATH = _PT / "performance.json"
 
 
 def _read_json(path: Path) -> dict | None:
@@ -26,6 +30,22 @@ def _read_json(path: Path) -> dict | None:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
+
+
+def _read_jsonl(path: Path) -> list[dict]:
+    """날짜순 정렬된 줄들. 없거나 깨져도 빈 목록 — 화면은 죽지 않아야 한다."""
+    if not path.exists():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return sorted(rows, key=lambda r: str(r.get("date", "")))
 
 
 def _newest(paths: list[Path]) -> Path | None:
@@ -164,6 +184,44 @@ def data_status() -> dict:
         return {"available": False, "error": str(exc)}
 
 
+def performance() -> dict | None:
+    """모의투자 누적 성과. `src/trading/record.py` 가 계산해 남긴 값이다."""
+    return _read_json(PERFORMANCE_PATH)
+
+
+def equity_history() -> list[dict]:
+    """일별 총자산 + 벤치마크 곡선.
+
+    `record.compute_performance()` 가 기준선까지 병합해 `performance.json` 에
+    넣어둔 것을 그대로 읽는다. 여기서 다시 병합하지 않는다 —
+    두 번 구현하면 화면의 곡선과 지표가 다른 구간을 보게 된다(실제로 그랬다).
+    """
+    perf = _read_json(PERFORMANCE_PATH) or {}
+    return list(perf.get("curve") or [])
+
+
+def attribution(limit: int = 30) -> list[dict]:
+    """종목별 누적 손익 — 모델이 무엇을 사서 얼마 벌었나.
+
+    합산만 한다(계산이 아니라 집계다). 체결 기준이라 부분체결이 있어도
+    실제 사고판 것만 잡힌다.
+    """
+    agg: dict[str, dict] = {}
+    for f in _read_jsonl(FILLS_PATH):
+        a = agg.setdefault(f["code"], {
+            "code": f["code"], "name": f.get("name", ""), "days": 0,
+            "buy_qty": 0, "sell_qty": 0, "buy_amount": 0.0, "sell_amount": 0.0,
+            "pnl_amount": 0.0, "fee_tax": 0.0,
+        })
+        a["days"] += 1
+        a["name"] = f.get("name") or a["name"]
+        for k in ("buy_qty", "sell_qty"):
+            a[k] += int(f.get(k, 0) or 0)
+        for k in ("buy_amount", "sell_amount", "pnl_amount", "fee_tax"):
+            a[k] += float(f.get(k, 0.0) or 0.0)
+    return sorted(agg.values(), key=lambda a: -a["pnl_amount"])[:limit]
+
+
 def collect_all() -> dict:
     """대시보드 한 장에 필요한 전부."""
     return {
@@ -171,6 +229,9 @@ def collect_all() -> dict:
         "run": latest_run(),
         "history": run_history(),
         "state": _read_json(STATE_PATH),
+        "performance": performance(),
+        "equity": equity_history(),
+        "attribution": attribution(),
         "backtest": latest_backtests(),
         "training": latest_training(),
         "checkpoint": checkpoint_info(),

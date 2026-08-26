@@ -426,6 +426,138 @@ def _sparkline(history: list[dict]) -> str:
     )
 
 
+def _equity_chart(curve: list[dict]) -> str:
+    """계좌 곡선 + KOSPI 를 **누적수익률(%)로 정규화해** 겹쳐 그린다.
+
+    금액과 지수는 스케일이 달라 그대로 겹치면 비교가 안 된다.
+    각자 첫 값을 100 으로 놓으면 같은 축에서 읽힌다.
+    """
+    if len(curve) < 2:
+        return ""
+
+    def norm(key: str) -> list[float] | None:
+        vals = [(r["date"], r.get(key)) for r in curve]
+        have = [(dt, float(v)) for dt, v in vals if v not in (None, 0)]
+        if len(have) < 2 or have[0][1] == 0:
+            return None
+        base = have[0][1]
+        return [v / base - 1.0 for _, v in have]
+
+    eq = norm("equity")
+    bm = norm("kospi")
+    if not eq:
+        return ""
+
+    series = [s for s in (eq, bm) if s]
+    lo = min(min(s) for s in series)
+    hi = max(max(s) for s in series)
+    span = (hi - lo) or 0.01
+    pad = span * 0.12
+    lo, hi = lo - pad, hi + pad
+    span = hi - lo
+    w, h = 720, 180
+
+    def path(values, color, dash=""):
+        if len(values) < 2:
+            return ""
+        pts = " ".join(
+            f"{i / (len(values) - 1) * w:.1f},{h - (v - lo) / span * h:.1f}"
+            for i, v in enumerate(values)
+        )
+        da = f' stroke-dasharray="4 3"' if dash else ""
+        return (f'<polyline fill="none" stroke="{color}" stroke-width="2" '
+                f'points="{pts}"{da}/>')
+
+    zero = h - (0 - lo) / span * h
+    return (
+        f'<svg viewBox="0 0 {w} {h}" preserveAspectRatio="none" '
+        f'style="width:100%;height:180px">'
+        f'<line x1="0" y1="{zero:.1f}" x2="{w}" y2="{zero:.1f}" '
+        f'stroke="var(--line)" stroke-width="1"/>'
+        f'{path(bm, "var(--muted)", dash=True) if bm else ""}'
+        f'{path(eq, "var(--accent)")}</svg>'
+        f'<p class="note">파랑 계좌 · 회색점선 KOSPI — 각자 시작일을 0% 로 놓았다. '
+        f'가로 눈금은 거래일 순서다(달력 간격 아님)</p>'
+    )
+
+
+def _performance_section(d: dict) -> str:
+    perf = d.get("performance") or {}
+    curve = d.get("equity") or []
+    if not perf or not perf.get("n_days"):
+        return _section(
+            "누적 수익률", "아직 기록이 없다 — scripts/snapshot_account.py 가 하루 한 줄 남긴다",
+            '<div class="empty">기록 없음</div>',
+        )
+
+    tiles = [
+        _tile("누적 수익률",
+              f'<span class="{_cls(perf.get("total_return"))}">'
+              f'{_pct(perf.get("total_return"), 2)}</span>',
+              f'{_n(perf.get("start_equity"))} → {_n(perf.get("equity"))}원'),
+        _tile("관측", f'{perf.get("n_days", 0)}일',
+              f'{perf.get("start_date", "")} ~ {perf.get("end_date", "")}'),
+        _tile("실현손익",
+              f'<span class="{_cls(perf.get("realized_pnl"))}">'
+              f'{_n(perf.get("realized_pnl"))}</span>', "체결 기준 (수수료·세금 반영)"),
+        _tile("지불한 비용", _n(perf.get("fee_tax")), "수수료 + 거래세 누적"),
+    ]
+    if "excess_return" in perf:
+        tiles.append(_tile(
+            "KOSPI 대비",
+            f'<span class="{_cls(perf.get("excess_return"))}">'
+            f'{_pct(perf.get("excess_return"), 2)}</span>',
+            f'벤치마크 {_pct((perf.get("benchmark") or {}).get("total_return"), 2)}'))
+
+    st = perf.get("strategy") or {}
+    if perf.get("reliable") and st:
+        tiles += [
+            _tile("Sharpe", _n(st.get("sharpe"), 2), "실거래 — 백테스트 1.10"),
+            _tile("최대낙폭", _pct(st.get("max_drawdown"), 1), "실거래 — 백테스트 -13.5%"),
+        ]
+
+    warn = ""
+    if not perf.get("reliable"):
+        warn = (f'<p class="note" style="color:var(--warn)">⚠️ 관측 '
+                f'{perf.get("n_days", 0)}일 — {perf.get("min_days_for_metrics", 20)}일 '
+                f'미만이라 Sharpe·최대낙폭을 숫자로 인용하지 않는다. '
+                f'짧은 표본을 연율화한 지표는 해석이 아니라 착시다.</p>')
+    if not perf.get("baseline_seeded"):
+        warn += ('<p class="note" style="color:var(--warn)">⚠️ 기준선이 없어 첫날 '
+                 '진입 수수료가 수익률에서 빠져 있다</p>')
+
+    return _section(
+        "누적 수익률", "입출금이 없는 계좌라 총자산 변화가 곧 수익률이다. "
+                    "지표는 백테스트와 같은 함수(evaluation/metrics.py)로 계산한다.",
+        f'<div class="grid tiles">{"".join(tiles)}</div>{warn}'
+        f'{_equity_chart(curve)}',
+        sub=f"{perf.get('start_date','')} ~ {perf.get('end_date','')}",
+    )
+
+
+def _attribution_section(d: dict) -> str:
+    rows_in = d.get("attribution") or []
+    rows = []
+    for a in rows_in:
+        realized = a["sell_qty"] > 0
+        rows.append([
+            f'<span class="mono">{escape(a["code"])}</span> {escape(a["name"])}',
+            f'<span class="mono">{_n(a["buy_qty"])}</span>',
+            f'<span class="mono">{_n(a["buy_amount"])}</span>',
+            f'<span class="mono">{_n(a["sell_qty"])}</span>',
+            f'<span class="mono">{_n(a["sell_amount"])}</span>',
+            f'<span class="mono">{_n(a["fee_tax"])}</span>',
+            (f'<span class="mono {_cls(a["pnl_amount"])}">{_n(a["pnl_amount"])}</span>'
+             if realized else '<span class="muted">보유중</span>'),
+        ])
+    return _section(
+        "종목별 손익 귀속", "체결 기준 누적이라 부분체결이 있어도 실제 사고판 것만 잡힌다. "
+                       "매도가 없는 종목은 실현손익이 아직 없다(평가손익은 '현재 보유' 참고).",
+        _table(["종목", "매수수량", "매수금액", "매도수량", "매도금액", "비용", "실현손익"],
+               rows, empty="체결 기록 없음"),
+    )
+
+
 def _model_section(d: dict) -> str:
     tr = d.get("training")
     if not tr:
@@ -501,9 +633,11 @@ def render_html(d: dict[str, Any]) -> str:
     body = "".join([
         _header(d),
         _tiles(d),
+        _performance_section(d),
         _orders_section(d),
         _signals_section(d),
         _holdings_section(d),
+        _attribution_section(d),
         _backtest_section(d),
         _variants_section(d),
         _model_section(d),

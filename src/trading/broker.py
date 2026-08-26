@@ -217,6 +217,32 @@ class PaperBroker:
                         len(out), ", ".join(f"{c}({q}주)" for c, q in sorted(out.items())))
         return out
 
+    def fetch_trade_diary(self, base_dt: str) -> list[dict]:
+        """당일매매일지 — 종목별 실현손익. 주문이 아니라 **체결** 기준이다."""
+        body = {"base_dt": base_dt, "ottks_tp": "1", "ch_crd_tp": "0"}
+        data, _ = self.client.request(ep.TRADE_DIARY, body)
+        df = parse_records(data.get(ep.TRADE_DIARY.list_key) or [],
+                           ep.TRADE_DIARY.schema)
+        rows = []
+        for r in df.itertuples():
+            code = _normalize_code(r.code)
+            if not code:
+                continue
+            rows.append({
+                "code": code,
+                "name": str(r.name or ""),
+                "buy_qty": int(r.buy_qty or 0),
+                "buy_avg": float(r.buy_avg or 0.0),
+                "buy_amount": float(r.buy_amount or 0.0),
+                "sell_qty": int(r.sell_qty or 0),
+                "sell_avg": float(r.sell_avg or 0.0),
+                "sell_amount": float(r.sell_amount or 0.0),
+                "pnl_amount": float(r.pnl_amount or 0.0),
+                "fee_tax": float(r.fee_tax or 0.0),
+                "pnl_rate": float(r.pnl_rate or 0.0),
+            })
+        return rows
+
     def fetch_prices(self, codes: list[str]) -> dict[str, float]:
         """현재가. 종목당 1회 호출이라 유니버스 전체가 아니라 **거래 대상만** 넘길 것."""
         out: dict[str, float] = {}

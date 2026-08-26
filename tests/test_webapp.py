@@ -102,3 +102,60 @@ class TestReportSelection:
                          "feature_importance": {"a": 1.0}, "_smoke": False},
         })
         assert "다르다" in html
+
+
+class TestPerformanceSections:
+    """성과 섹션은 기록이 없거나 하루뿐일 때도 죽지 않아야 한다.
+
+    대시보드는 파이프라인의 곁가지라, 리포트 하나 비었다고 예외가 나면
+    정작 결과를 봐야 할 때 못 본다.
+    """
+
+    def test_renders_with_no_records(self):
+        html = render_html({"generated_at": "x"})
+        assert "누적 수익률" in html and "기록 없음" in html
+
+    def test_renders_with_single_day(self):
+        """점이 하나면 곡선을 그리지 않지만 타일은 나온다."""
+        html = render_html({
+            "generated_at": "x",
+            "performance": {
+                "n_days": 1, "start_date": "2026-08-26", "end_date": "2026-08-26",
+                "start_equity": 1e8, "equity": 1e8, "total_return": 0.0,
+                "reliable": False, "min_days_for_metrics": 20,
+                "baseline_seeded": True, "baseline_in_curve": False,
+                "realized_pnl": 0.0, "fee_tax": 0.0,
+            },
+            "equity": [{"date": "2026-08-26", "equity": 1e8, "kospi": None}],
+        })
+        assert "<svg" not in html            # 한 점으로는 곡선을 그리지 않는다
+        assert "해석이 아니라 착시" in html    # 짧은 표본 경고가 뜬다
+
+    def test_curve_survives_missing_benchmark(self):
+        """KOSPI 가 아직 안 채워진 날이 섞여도 계좌 곡선은 그린다."""
+        html = render_html({
+            "generated_at": "x",
+            "performance": {
+                "n_days": 2, "start_date": "2026-08-25", "end_date": "2026-08-26",
+                "start_equity": 1e8, "equity": 9.9e7, "total_return": -0.01,
+                "reliable": False, "min_days_for_metrics": 20,
+                "baseline_seeded": True, "baseline_in_curve": True,
+                "realized_pnl": -3118.0, "fee_tax": 317358.0,
+            },
+            "equity": [
+                {"date": "2026-08-25", "equity": 1e8, "kospi": 674274.0},
+                {"date": "2026-08-26", "equity": 9.9e7, "kospi": None},
+            ],
+        })
+        assert "<svg" in html and "polyline" in html
+
+    def test_attribution_marks_unsold_as_holding(self):
+        html = render_html({
+            "generated_at": "x",
+            "attribution": [{
+                "code": "005930", "name": "삼성전자", "days": 1,
+                "buy_qty": 10, "sell_qty": 0, "buy_amount": 2.6e6,
+                "sell_amount": 0.0, "pnl_amount": 0.0, "fee_tax": 9100.0,
+            }],
+        })
+        assert "보유중" in html and "삼성전자" in html

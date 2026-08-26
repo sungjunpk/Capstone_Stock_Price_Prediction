@@ -289,6 +289,34 @@ UNFILLED_ORDERS = TRSpec(  # VERIFIED 2026-08-26 (mock, 부분체결 3건 상태
          "상태 문자열이 아니라 oso_qty 로 판단할 것.",
 )
 
+# --- 당일매매일지: 종목별 실현손익 귀속의 원천 -------------------------------
+# 발표용 성과 기록이 여기서 나온다. 주문이 아니라 **체결** 기준이라
+# 부분체결이 있어도 실제 사고판 것만 남는다.
+TRADE_DIARY = TRSpec(  # VERIFIED 2026-08-26 (mock, 매수 10 + 매도 1 상태에서 확인)
+    name="trade_diary",
+    path="/api/dostk/acnt",
+    api_id="ka10170",
+    list_key="tdy_trde_diary",
+    schema={
+        "code": ("stk_cd", "str"),
+        "name": ("stk_nm", "str"),
+        "buy_qty": ("buy_qty", "abs_int"),
+        "buy_avg": ("buy_avg_pric", "abs_float"),
+        "buy_amount": ("buy_amt", "abs_float"),
+        "sell_qty": ("sell_qty", "abs_int"),
+        "sell_avg": ("sel_avg_pric", "abs_float"),
+        "sell_amount": ("sell_amt", "abs_float"),
+        "pnl_amount": ("pl_amt", "float"),        # 부호가 의미를 갖는다
+        "fee_tax": ("cmsn_alm_tax", "abs_float"),
+        "pnl_rate": ("prft_rt", "float"),
+    },
+    rate_limit_per_sec=1.0,
+    verified=True,
+    note="base_dt(YYYYMMDD) / ottks_tp '1'=당일매수에대한매도 / ch_crd_tp '0'=전체. "
+         "pl_amt 는 수수료·세금을 반영한 실현손익이다(매도가 없으면 0). "
+         "⚠️ 필드명이 sell_qty 인데 매도평균가는 sel_avg_pric 이다 — 철자가 다르다.",
+)
+
 # --- 주문: 여기부터는 계좌 상태를 바꾼다 ------------------------------------
 BUY_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 시장가 → ord_no=0123420)
     name="buy_order",
@@ -323,7 +351,7 @@ SELL_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 → ord_no=012599
 
 TRADING_SPECS: dict[str, TRSpec] = {
     spec.name: spec
-    for spec in (DEPOSIT, ACCOUNT_BALANCE, QUOTE, UNFILLED_ORDERS,
+    for spec in (DEPOSIT, ACCOUNT_BALANCE, QUOTE, UNFILLED_ORDERS, TRADE_DIARY,
                  BUY_ORDER, SELL_ORDER)
 }
 
