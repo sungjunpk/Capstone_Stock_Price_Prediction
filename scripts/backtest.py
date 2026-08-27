@@ -271,7 +271,11 @@ def main() -> int:
              len(preds), preds["code"].nunique(), preds["date"].min(), preds["date"].max())
 
     periods = float(cfg.get("backtest", {}).get("bars_per_year", 252))
-    bh = summarize(buy_and_hold(prices), periods_per_year=periods)
+    # ⚠️ 벤치마크도 **전략과 같은 구간**에서 재야 한다. run_backtest 는 예측이 시작되기
+    #    전 구간(lookback 대기)을 집계에서 빼므로, 여기서 안 맞추면 매수후보유만
+    #    더 긴 기간으로 재게 되어 비교가 우리 쪽으로 기운다.
+    bench_px = prices[prices["date"] >= preds["date"].min()]
+    bh = summarize(buy_and_hold(bench_px), periods_per_year=periods)
 
     if not args.compare:
         log.info("매매 규칙: mode=%s | exposure_scaling=%s",

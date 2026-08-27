@@ -83,6 +83,22 @@ def run_backtest(
     dates = list(px.index)
     preds_by_date = {d: g for d, g in predictions.groupby("date")}
 
+    # 예측이 시작되기 전 구간은 **수익률 집계에서 뺀다.**
+    # 모델은 lookback(120일)이 차야 첫 예측을 내는데, 가격은 그보다 앞에서 시작한다.
+    # 그 구간은 신호가 없어 강제로 현금인데, 연율화 분모에는 들어가서 지표를 깎았다
+    # (실측: 123일이 섞여 Sharpe 1.84→1.66, CAGR 24.0%→19.1%. 누적수익은 동일).
+    # 매수후보유 벤치마크는 그 기간에도 투자돼 있으므로 **전략만 손해 보는 비교**였다.
+    # dates 자체는 자르지 않는다 — signal_date = dates[i - lag] 가 첫 거래일에도
+    # 하루 전을 제대로 짚어야 하기 때문이다.
+    first_pred = predictions["date"].min() if len(predictions) else None
+    start = 1
+    if first_pred is not None:
+        start = max(1, next((i for i, d in enumerate(dates) if d >= first_pred),
+                            len(dates)))
+    if start > 1:
+        log.info("예측 시작 이전 %d일을 수익률 집계에서 제외 (%s 부터 집계)",
+                 start - 1, dates[start] if start < len(dates) else "-")
+
     # 기권 임계값을 예측 폭 분포에서 확정한다.
     # 절대값을 미리 추측하면 거의 항상 틀린다 — 초기 추측 0.05 로는 기권률 95.8%,
     # 거래 0건이 나왔다(5일 수익률의 자연 폭은 0.124).
@@ -123,7 +139,7 @@ def run_backtest(
 
     last_rebalance = -10**9
 
-    for i in range(1, len(dates)):
+    for i in range(start, len(dates)):
         today, prev = dates[i], dates[i - 1]
 
         # --- 1) 보유 포지션의 오늘 수익률 반영

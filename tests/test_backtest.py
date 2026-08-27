@@ -183,3 +183,63 @@ def test_bars_per_year_changes_annualisation(panel):
 
     ratio = intraday.metrics["sharpe"] / daily.metrics["sharpe"]
     assert ratio == pytest.approx(np.sqrt(7), rel=0.01)
+
+
+# ------------------------------------------------- 예측 시작 이전 구간 제외
+class TestWarmupExclusion:
+    """가격이 예측보다 먼저 시작하는 구간을 연율화 분모에서 뺀다.
+
+    모델은 lookback 이 차야 첫 예측을 낸다. 그 전 구간은 신호가 없어 강제로 현금인데,
+    집계에 들어가면 Sharpe·CAGR 만 깎인다 — 매수후보유는 그동안 투자돼 있으므로
+    전략만 불리한 비교가 된다.
+    """
+
+    @staticmethod
+    def _data(n_days: int, pred_from: int):
+        rng = np.random.default_rng(0)
+        dates = pd.bdate_range("2024-01-01", periods=n_days).date
+        codes = [f"{i:06d}" for i in range(30)]
+        px = pd.DataFrame(
+            {"date": np.repeat(dates, len(codes)),
+             "code": np.tile(codes, len(dates)),
+             "close": 100 * np.exp(np.cumsum(
+                 rng.normal(0, 0.01, len(dates) * len(codes))))}
+        )
+        pd_dates = dates[pred_from:]
+        preds = pd.DataFrame(
+            {"date": np.repeat(pd_dates, len(codes)),
+             "code": np.tile(codes, len(pd_dates))}
+        )
+        q = rng.normal(0.002, 0.01, len(preds))
+        preds["q10"], preds["q50"], preds["q90"] = q - 0.05, q, q + 0.05
+        return preds, px
+
+    def test_returns_start_at_the_first_prediction(self):
+        preds, px = self._data(200, 120)
+        res = run_backtest(preds, px, _cfg(0.01, 20))
+        assert min(res.returns.index) >= preds["date"].min()
+
+    def test_dead_warmup_does_not_shorten_the_series_it_only_trims_the_front(self):
+        """예측 구간이 같으면 앞에 가격을 더 붙여도 집계 길이가 변하면 안 된다."""
+        short = run_backtest(*self._data(200, 120), _cfg(0.01, 20))
+        # 같은 예측 구간(마지막 80일)이지만 가격이 40일 더 앞에서 시작한다
+        preds, px = self._data(240, 160)
+        long_ = run_backtest(preds, px, _cfg(0.01, 20))
+        assert len(short.returns) == len(long_.returns)
+
+    def test_no_predictions_fails_loudly(self):
+        """예측 0건은 조용히 0% 수익으로 넘어가면 안 된다 — 설정 사고이기 때문."""
+        _, px = self._data(60, 0)
+        empty = pd.DataFrame(columns=["date", "code", "q10", "q50", "q90"])
+        with pytest.raises(ValueError, match="관측된 폭"):
+            run_backtest(empty, px, _cfg(0.01, 20))
+
+
+def test_benchmark_window_matches_the_strategy_window():
+    """벤치마크가 전략보다 긴 구간에서 재지면 비교가 전략 쪽으로 기운다."""
+    from src.evaluation.backtest import buy_and_hold
+
+    preds, px = TestWarmupExclusion._data(200, 120)
+    res = run_backtest(preds, px, _cfg(0.01, 20))
+    bench = buy_and_hold(px[px["date"] >= preds["date"].min()])
+    assert len(bench) == len(res.returns)
