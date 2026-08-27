@@ -147,6 +147,8 @@ def main() -> int:
                     help="실제 모의투자 주문 전송 (기본은 계획만 출력)")
     ap.add_argument("--force-rebalance", action="store_true",
                     help="리밸런싱 주기를 무시하고 이번에 리밸런싱한다")
+    ap.add_argument("--liquidate", action="store_true",
+                    help="보유 전 종목을 매도한다 (매수 없음). 전략 교체 시 초기화용")
     ap.add_argument("--recent-days", type=int, default=90,
                     help="기권 임계값을 잡을 예측 폭 분포의 관측 구간(일)")
     ap.add_argument("--ignore-stale", action="store_true",
@@ -188,7 +190,8 @@ def main() -> int:
         #     현재가는 그 다음, 실제로 건드릴 종목만 조회한다(호출 수 절약).
         closes = latest_prices(bundle)
         draft = build_plan(recent, account, closes, cfg, state=state,
-                           today=today, rebalancing=rebalancing, unfilled=unfilled)
+                           today=today, rebalancing=rebalancing,
+                           liquidate_all=args.liquidate, unfilled=unfilled)
 
         touch = sorted({o.code for o in draft.orders} | set(account.holdings))
         quotes = broker.fetch_prices(touch) if touch else {}
@@ -197,7 +200,8 @@ def main() -> int:
         # --- 5) 최종 계획: 손절 판정과 주문 수량이 현재가 기준이 된다
         prices = {**closes, **quotes}
         plan = build_plan(recent, account, prices, cfg, state=state,
-                          today=today, rebalancing=rebalancing, unfilled=unfilled)
+                          today=today, rebalancing=rebalancing,
+                          liquidate_all=args.liquidate, unfilled=unfilled)
         plan.notes.extend(notes)
 
         _print_holdings(account)
@@ -205,6 +209,13 @@ def main() -> int:
 
         # --- 6) 전송
         results = execute_plan(broker, plan, dry_run=dry_run)
+
+        # 전량 청산 뒤에는 **대금이 언제 쓸 수 있게 되는지**가 다음 행동을 가른다.
+        # 추정하지 않고 바로 다시 조회해서 보여준다 (paper_trader 의 원칙과 같다).
+        if args.liquidate and not dry_run:
+            after = broker.fetch_deposit()
+            log.info("청산 후 주문가능금액: %s원 (청산 전 %s원)",
+                     f"{float(after.get('orderable', 0)):,.0f}", f"{account.orderable:,.0f}")
 
         sent = [r for r in results if r.ok and not r.dry_run]
         failed = [r for r in results if not r.ok]

@@ -165,6 +165,7 @@ def build_plan(
     state: TraderState,
     today: date | None = None,
     rebalancing: bool = True,
+    liquidate_all: bool = False,
     unfilled: dict[str, int] | None = None,
 ) -> TradingPlan:
     """예측 + 계좌 → 오늘의 주문 계획. **여기서 API 를 호출하지 않는다.**
@@ -208,7 +209,11 @@ def build_plan(
     positions = _to_positions(account, state, today)
 
     # 2) 판단 — 백테스트와 **같은 함수**. 보유분을 넘겨야 이력 버퍼가 산다
-    if rebalancing:
+    if liquidate_all:
+        # 전량 청산. 예측을 아예 보지 않는다 — 판단이 아니라 초기화다.
+        signals = []
+        notes.append("전량 청산 — 예측을 보지 않는다")
+    elif rebalancing:
         signals = generate_signals(preds, tcfg, max_width=max_width, held=held)
     else:
         signals = []
@@ -216,16 +221,17 @@ def build_plan(
 
     decision = apply_risk_overlay(
         signals, positions, prices, tcfg, allow_short=False,
+        # 전량 청산도 '신호 없는 보유분을 판다'와 같은 경로다 — 새 경로를 만들지 않는다.
         # 신호 없는 보유분을 청산하는 건 리밸런싱 때뿐이다.
         # 비리밸런싱 날에 True 로 두면 신호가 없다는 이유로 전량 청산이 나간다.
-        liquidate_unsignaled=rebalancing,
+        liquidate_unsignaled=rebalancing or liquidate_all,
     )
 
     # 3) 목표 비중 확정
     target: dict[str, float] = {s.code: s.target_weight for s in decision.signals}
     for code in decision.forced_exits:
         target[code] = 0.0
-    if rebalancing:
+    if rebalancing or liquidate_all:
         for code in held:
             target.setdefault(code, 0.0)   # 신호가 없으면 청산 — 백테스트와 같다
 

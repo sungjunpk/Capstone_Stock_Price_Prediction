@@ -101,3 +101,45 @@ class TestRerunSameDay:
 
         rows = record.read_jsonl(record.HOLDINGS_PATH)
         assert {r["date"] for r in rows} == {"2026-08-26", "2026-08-27"}
+
+
+# ------------------------------------------------- 전량 청산 (전략 교체용)
+def test_liquidate_all_sells_every_holding_and_buys_nothing():
+    """전량 청산은 예측을 보지 않고 보유분만 0으로 만든다."""
+    import pandas as pd
+
+    from src.trading.broker import SELL, AccountSnapshot, Holding
+    from src.trading.paper_trader import TraderState, build_plan
+
+    cfg = {
+        "features": {"return_horizon": 5},
+        "backtest": {"rebalance_days": 10},
+        "trading": {
+            "abstain": {"max_interval_width": 0.05},
+            "direction": {"mode": "cross_sectional", "top_n": 2, "exit_rank": 4,
+                          "min_candidates": 1, "long_threshold": 0.004,
+                          "short_threshold": -0.004},
+            "sizing": {"method": "rank_normalized", "exposure_scaling": False,
+                       "max_position_pct": 0.5, "min_trade_weight": 0.01},
+            "risk": {"stop_loss_pct": -0.05, "take_profit_pct": 0.10,
+                     "max_trades_per_day": 10, "max_gross_exposure": 1.0},
+            "costs": {"commission_bps": 1.5, "tax_bps": 18.0, "slippage_bps": 5.0},
+        },
+    }
+    d = date(2026, 8, 27)
+    preds = pd.DataFrame({"code": ["A", "B", "C"], "date": [d] * 3,
+                          "q10": [-0.01] * 3, "q50": [0.05, 0.04, 0.03],
+                          "q90": [0.02] * 3})
+    hold = {c: Holding(code=c, name=c, quantity=10, sellable=10,
+                       avg_price=50_000, current_price=50_000,
+                       eval_amount=500_000)
+            for c in ("A", "Z")}
+    account = AccountSnapshot(cash=0.0, deposit=0.0, holdings=hold,
+                              total_eval=1_000_000, estimated_assets=1_000_000)
+    prices = {"A": 50_000, "B": 50_000, "C": 50_000, "Z": 50_000}
+    plan = build_plan(preds, account, prices, cfg, state=TraderState(),
+                      today=d, liquidate_all=True)
+
+    # A 는 예측 1위지만 판다 — 예측을 보지 않는다는 뜻이다
+    assert {o.code for o in plan.orders} == {"A", "Z"}
+    assert all(o.side == SELL for o in plan.orders)
