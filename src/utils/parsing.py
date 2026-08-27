@@ -65,18 +65,41 @@ def to_date(value) -> date | None:
         return None
 
 
+def to_datetime(value) -> datetime | None:
+    """'20260827114500' → datetime. 분봉 TR의 체결시각(cntr_tm) 형식이다.
+
+    초 자리가 없는 '202608271145' 도 받는다 — 관측된 건 14자리뿐이지만
+    길이 하나 때문에 전체 수집이 죽는 걸 막는다.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    s = str(value).strip().replace("-", "").replace(":", "").replace(" ", "")
+    if s in _NULLISH:
+        return None
+    fmt = {14: "%Y%m%d%H%M%S", 12: "%Y%m%d%H%M"}.get(len(s))
+    if fmt is None or not s.isdigit():
+        return None
+    try:
+        return datetime.strptime(s, fmt)
+    except ValueError:
+        return None
+
+
 def parse_records(
     records: list[dict],
     schema: dict[str, tuple[str, str]],
 ) -> pd.DataFrame:
     """TR 응답 레코드 리스트를 스키마대로 DataFrame으로 변환.
 
-    schema: {출력컬럼명: (원본키, 타입)} — 타입은 'date' | 'int' | 'float'
-            | 'abs_int' | 'abs_float' | 'str'
+    schema: {출력컬럼명: (원본키, 타입)} — 타입은 'date' | 'datetime' | 'int'
+            | 'float' | 'abs_int' | 'abs_float' | 'str'
     응답에 없는 키는 None으로 채운다(TR별로 필드가 빠지는 경우가 흔하다).
     """
     casters = {
         "date": to_date,
+        "datetime": to_datetime,
         "int": to_int,
         "float": to_float,
         "abs_int": lambda v: to_int(v, abs_value=True),

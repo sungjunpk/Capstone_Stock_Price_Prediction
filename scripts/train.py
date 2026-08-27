@@ -4,6 +4,7 @@
 로컬:
     python scripts/train.py --smoke        # 6종목 2epoch, 배관 점검용
     python scripts/train.py                # 전체
+    python scripts/train.py --profile intraday   # 60분봉 타점 탐지 트랙
 
 클라우드 GPU (Colab/Kaggle):
     notebooks/train_colab.ipynb 참고. 같은 명령이 그대로 돈다.
@@ -30,10 +31,11 @@ def main() -> int:
     ap.add_argument("--epochs", type=int, help="config 의 epochs 를 덮어쓴다")
     ap.add_argument("--batch-size", type=int, help="config 의 batch_size 를 덮어쓴다")
     ap.add_argument("--lr", type=float)
+    ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: intraday)")
     args = ap.parse_args()
 
     setup_logging(run_name="train")
-    cfg = load_config().raw
+    cfg = load_config(profile=args.profile).raw
 
     if args.batch_size:
         cfg["training"]["batch_size"] = args.batch_size

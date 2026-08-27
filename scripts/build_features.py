@@ -5,7 +5,8 @@ look-ahead 방지: 라벨(forward return)은 마지막에 한 번만 붙이고,
 피처 계산 함수에는 절대 넘기지 않는다.
 
 사용:
-    python scripts/build_features.py
+    python scripts/build_features.py                  # 일봉 트랙
+    python scripts/build_features.py --profile intraday  # 60분봉 타점 탐지 트랙
 """
 
 from __future__ import annotations
@@ -27,9 +28,9 @@ from src.utils.logging import get_logger, setup_logging  # noqa: E402
 log = get_logger("build_features")
 
 
-def _save(df: pd.DataFrame, name: str) -> None:
+def _save(df: pd.DataFrame, name: str, suffix: str = "") -> None:
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    path = PROCESSED_DIR / f"{name}.parquet"
+    path = PROCESSED_DIR / f"{name}{suffix}.parquet"
     df.to_parquet(path, index=False)
     log.info("저장 %s — %d행 × %d컬럼", path.name, len(df), df.shape[1])
 
@@ -37,25 +38,29 @@ def _save(df: pd.DataFrame, name: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-macro", action="store_true")
+    ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: intraday)")
     args = ap.parse_args()
 
     setup_logging(run_name="build_features")
-    cfg = load_config()
+    cfg = load_config(profile=args.profile)
     spec = SplitSpec.from_config(cfg.raw)
+    suffix = cfg["data"].get("processed_suffix", "")
 
     codes = [u["code"] for u in cfg["data"]["universe"]]
-    log.info("대상 종목 %d개", len(codes))
+    log.info("대상 종목 %d개 | 봉 %s | 지평 %d | 산출물 접미사 %r",
+             len(codes), cfg["data"].get("chart_kind", "daily_chart"),
+             cfg["features"]["return_horizon"], suffix)
 
     panel = build_panel(cfg.raw)
-    _save(panel, "panel")
+    _save(panel, "panel", suffix)
     log.info("panel 기간 %s ~ %s", panel["date"].min(), panel["date"].max())
 
     static = build_static(cfg.raw, spec.train_end)
-    _save(static, "static")
+    _save(static, "static", suffix)
 
     if not args.skip_macro:
         macro = build_macro(cfg.raw)
-        _save(macro, "macro")
+        _save(macro, "macro", suffix)
         log.info("macro 기간 %s ~ %s, 피처 %d개",
                  macro["date"].min(), macro["date"].max(), macro.shape[1] - 1)
 

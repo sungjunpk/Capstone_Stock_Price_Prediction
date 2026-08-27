@@ -87,6 +87,18 @@ def last_date(path: Path, date_col: str = "date"):
     return pd.to_datetime(df[date_col]).max().date()
 
 
+def last_timestamp(path: Path, date_col: str = "datetime"):
+    """분봉 증분 수집 시작점. 저장된 마지막 **시각**(없으면 None).
+
+    `last_date` 와 달리 날짜로 자르지 않는다 — 분봉은 같은 날 안에서
+    이어받아야 하므로 시각을 잃으면 하루치를 통째로 다시 받게 된다.
+    """
+    df = read_parquet(path)
+    if df is None or df.empty or date_col not in df.columns:
+        return None
+    return pd.to_datetime(df[date_col]).max()
+
+
 def load_kind(kind: str, codes: list[str] | None = None) -> pd.DataFrame:
     """한 종류의 raw 데이터를 종목별로 모아 하나의 long-format DataFrame 으로."""
     base = RAW_DIR / kind

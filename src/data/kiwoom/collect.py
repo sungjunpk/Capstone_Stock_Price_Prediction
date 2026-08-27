@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 
@@ -39,9 +39,13 @@ def _collect_paged(
     spec: ep.TRSpec,
     body: dict,
     *,
-    stop_before: date | None = None,
+    stop_before=None,
+    date_col: str = "date",
 ) -> pd.DataFrame:
-    """연속조회를 돌며 파싱. stop_before 이전 날짜가 나오면 조기 종료(증분 수집)."""
+    """연속조회를 돌며 파싱. stop_before 이전 날짜가 나오면 조기 종료(증분 수집).
+
+    date_col: 조기 종료 판정에 쓸 컬럼. 분봉 TR 은 'datetime' 이다.
+    """
     frames: list[pd.DataFrame] = []
     for page in client.paginate(spec, body):
         recs = _records(page, spec)
@@ -50,8 +54,8 @@ def _collect_paged(
         df = parse_records(recs, spec.schema)
         frames.append(df)
 
-        if stop_before is not None and "date" in df.columns:
-            dates = df["date"].dropna()
+        if stop_before is not None and date_col in df.columns:
+            dates = df[date_col].dropna()
             if not dates.empty and dates.min() <= stop_before:
                 log.debug("[%s] 이미 보유한 구간 도달 — 조기 종료", spec.name)
                 break
@@ -172,6 +176,107 @@ def collect_index_daily(
     if end_date is not None:
         df = df[df["date"] <= end_date]
     return storage.upsert(df, path, key=["date"], sort_by=["date"])
+
+
+# ---------------------------------------------------------------- 분봉
+# 일봉과 다른 점 셋 (전부 여기서 흡수한다):
+#   1) 키가 date 가 아니라 datetime 이다
+#   2) 진행 중인 봉이 섞여 온다 — 일봉의 '장중 미완성 봉' 문제와 같은 것인데,
+#      분봉은 장중에 수집하는 게 정상이라 매번 발생한다
+#   3) 이력이 13개월 롤링이라 start_date 로 자를 게 거의 없다
+_MINUTE_OVERLAP = timedelta(days=1)
+
+
+def minute_kind(tic_scope: str, *, index: bool = False) -> str:
+    """분봉 저장 디렉터리 이름. 틱 범위가 다르면 다른 데이터다 — 섞지 않는다."""
+    return f"{'index_minute' if index else 'minute'}{tic_scope}"
+
+
+def drop_incomplete_bars(
+    df: pd.DataFrame, tic_scope: str, now: datetime | None = None
+) -> pd.DataFrame:
+    """아직 끝나지 않은 봉을 버린다.
+
+    11:45 에 수집하면 11:00 봉(11:00~12:00)이 진행 중인 채로 온다. 그걸 저장하면
+    미완성 종가가 봉의 종가 자리에 들어가 백테스트가 못 보는 정보를 보게 된다.
+    (`collect.py` 의 `--end-date` 경고와 같은 문제다)
+
+    봉 시작 + 틱범위 가 현재 시각을 넘으면 진행 중으로 본다. 15:00 봉은 실제로
+    15:30 에 끝나지만 16:00 까지 기다렸다 받는다 — 덜 받는 쪽이 안전하다.
+    """
+    if df.empty or "datetime" not in df.columns:
+        return df
+    cutoff = (now or datetime.now()) - timedelta(minutes=int(tic_scope))
+    return df[pd.to_datetime(df["datetime"]) <= cutoff]
+
+
+def collect_minute_chart(
+    client: KiwoomClient,
+    code: str,
+    *,
+    tic_scope: str = "60",
+    end_date: date | None = None,
+    full_refresh: bool = False,
+) -> pd.DataFrame:
+    """종목 분봉 증분 수집. 수정주가 기준.
+
+    이력이 13개월뿐이라 start_date 를 받지 않는다 — 받을 수 있는 건 다 받는다.
+    """
+    spec = ep.MINUTE_CHART
+    path = storage.raw_path(minute_kind(tic_scope), code)
+
+    stop_before = None
+    if not full_refresh:
+        have_until = storage.last_timestamp(path)
+        if have_until is not None:
+            stop_before = (have_until - _MINUTE_OVERLAP).to_pydatetime()
+
+    body = {
+        "stk_cd": code,
+        "tic_scope": tic_scope,
+        "upd_stkpc_tp": "1",   # 수정주가. 끄면 분할 구간이 망가진다(일봉과 동일)
+    }
+    if end_date is not None:
+        body["base_dt"] = end_date.strftime("%Y%m%d")
+
+    df = _collect_paged(client, spec, body, stop_before=stop_before,
+                        date_col="datetime")
+    if df.empty:
+        log.warning("[minute_chart] %s: 수집 결과 없음", code)
+        return df
+
+    df = df.dropna(subset=["datetime"])
+    df = drop_incomplete_bars(df, tic_scope)
+    return storage.upsert(df, path, key=["datetime"], sort_by=["datetime"])
+
+
+def collect_index_minute(
+    client: KiwoomClient,
+    index_code: str,
+    *,
+    tic_scope: str = "60",
+    full_refresh: bool = False,
+) -> pd.DataFrame:
+    """지수 분봉 — 크로스어텐션의 매크로 시퀀스."""
+    spec = ep.INDEX_MINUTE
+    path = storage.raw_path(minute_kind(tic_scope, index=True), index_code)
+
+    stop_before = None
+    if not full_refresh:
+        have_until = storage.last_timestamp(path)
+        if have_until is not None:
+            stop_before = (have_until - _MINUTE_OVERLAP).to_pydatetime()
+
+    body = {"inds_cd": index_code, "tic_scope": tic_scope}
+    df = _collect_paged(client, spec, body, stop_before=stop_before,
+                        date_col="datetime")
+    if df.empty:
+        log.warning("[index_minute] %s: 수집 결과 없음", index_code)
+        return df
+
+    df = df.dropna(subset=["datetime"])
+    df = drop_incomplete_bars(df, tic_scope)
+    return storage.upsert(df, path, key=["datetime"], sort_by=["datetime"])
 
 
 def is_trading_day(client: KiwoomClient, on: date) -> bool:

@@ -30,9 +30,23 @@ BASE_COLS = ("code", "date", "open", "high", "low", "close", "volume", "value")
 TARGET_COL = "target"
 
 
+XS_PREFIX = "xs_"
+
+
 def dynamic_feature_columns(panel: pd.DataFrame) -> list[str]:
-    """패널에서 모델 입력이 되는 동적 피처 컬럼만 고른다."""
-    return [c for c in panel.columns if c not in set(BASE_COLS) | {TARGET_COL}]
+    """패널에서 모델 입력이 되는 동적 피처 컬럼만 고른다.
+
+    횡단면 피처(`xs_`)는 **항상 맨 뒤로** 보낸다. 모델이 뒤에서 N개를 잘라
+    RevIN 을 건너뛰기 때문에, 순서가 곧 계약이다 (Phase1Config.n_passthrough).
+    """
+    cols = [c for c in panel.columns if c not in set(BASE_COLS) | {TARGET_COL}]
+    return ([c for c in cols if not c.startswith(XS_PREFIX)]
+            + [c for c in cols if c.startswith(XS_PREFIX)])
+
+
+def n_passthrough_columns(feature_cols: list[str]) -> int:
+    """RevIN 을 건너뛸 채널 수 = 뒤쪽 `xs_` 컬럼 개수."""
+    return sum(1 for c in feature_cols if c.startswith(XS_PREFIX))
 
 
 @dataclass(frozen=True)

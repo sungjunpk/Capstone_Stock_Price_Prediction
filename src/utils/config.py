@@ -97,9 +97,36 @@ def load_kiwoom_settings() -> KiwoomSettings:
 UNIVERSE_PATH = PROJECT_ROOT / "configs" / "universe.yaml"
 
 
-def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
+def _deep_merge(base: dict, over: dict) -> dict:
+    """over 를 base 위에 재귀 병합. 리스트는 통째로 교체한다."""
+    out = dict(base)
+    for k, v in over.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def load_config(
+    path: str | Path = DEFAULT_CONFIG_PATH, *, profile: str | None = None
+) -> Config:
+    """config.yaml 로드. profile 을 주면 `profiles.<이름>` 을 위에 덮어쓴다.
+
+    설정 파일을 갈라놓지 않는 이유: 값이 두 곳에 흩어지면 어느 쪽이 진짜인지
+    금방 모르게 된다. 프로파일은 **차이만** 적고 나머지는 base 를 그대로 쓴다.
+    """
     with open(path, encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
+
+    if profile:
+        profiles = raw.get("profiles") or {}
+        if profile not in profiles:
+            raise ValueError(
+                f"알 수 없는 프로파일: {profile} (있는 것: {sorted(profiles)})"
+            )
+        raw = _deep_merge(raw, profiles[profile] or {})
+        raw["active_profile"] = profile
 
     # 유니버스는 scripts/build_universe.py 가 생성하는 별도 파일이 정본이다.
     # 종목이 수백 개라 config.yaml 에 인라인으로 두면 읽기 힘들어서 분리했다.

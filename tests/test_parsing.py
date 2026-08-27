@@ -42,3 +42,28 @@ def test_parse_records_fills_missing_keys():
     assert list(df.columns) == ["date", "close", "foreign"]
     assert df.loc[0, "close"] == 70000.0
     assert pd.isna(df.loc[0, "foreign"])
+
+
+def test_to_datetime_parses_minute_bar_timestamp():
+    from datetime import datetime
+
+    from src.utils.parsing import to_datetime
+
+    # 분봉 TR(ka10080) 의 cntr_tm 은 'YYYYMMDDHHMMSS' 로 온다
+    assert to_datetime("20260827114500") == datetime(2026, 8, 27, 11, 45)
+    assert to_datetime("202608271145") == datetime(2026, 8, 27, 11, 45)
+    for bad in ("", "-", None, "2026082711450", "abcdefghijklmn"):
+        assert to_datetime(bad) is None
+
+
+def test_parse_records_datetime_type():
+    from src.data.kiwoom.endpoints import MINUTE_CHART
+
+    rows = [{"cntr_tm": "20260827110000", "open_pric": "+267500",
+             "high_pric": "+268000", "low_pric": "+267500",
+             "cur_prc": "+268000", "trde_qty": "2,561"}]
+    df = parse_records(rows, MINUTE_CHART.schema)
+    assert pd.Timestamp(df.loc[0, "datetime"]) == pd.Timestamp("2026-08-27 11:00")
+    # 가격에 붙은 등락 부호는 떨어져야 한다
+    assert df.loc[0, "close"] == 268000.0
+    assert df.loc[0, "volume"] == 2561

@@ -6,7 +6,7 @@ signal.py 가 낸 신호를 **주문 직전에** 걸러낸다.
 여기서 막는 것:
   - 개별 종목 비중 상한
   - 총 익스포저 상한
-  - 손절/익절 (보유 중인 포지션)
+  - 손절/익절/보유만료 (보유 중인 포지션)
   - 일일 최대 거래횟수 — 과적합 신호로 인한 과도거래 방지
 """
 
@@ -22,7 +22,7 @@ class Position:
     code: str
     weight: float          # 현재 총자산 대비 비중
     entry_price: float
-    days_held: int = 0
+    days_held: int = 0     # 리밸런싱 단위 경과 수. 분봉 트랙에서는 '봉' 이다
 
     def pnl_pct(self, current_price: float) -> float:
         if self.entry_price <= 0:
@@ -34,6 +34,7 @@ class Position:
 # (파싱은 메시지 문구를 바꾸는 순간 조용히 깨진다)
 STOP_LOSS = "손절"
 TAKE_PROFIT = "익절"
+MAX_HOLDING = "보유만료"
 TRADE_CAP = "거래한도"
 NO_SHORT = "공매도불가"
 
@@ -75,6 +76,9 @@ def apply_risk_overlay(
     max_trades = int(risk.get("max_trades_per_day", 10**9))
     stop_loss = float(risk.get("stop_loss_pct", -1.0))
     take_profit = float(risk.get("take_profit_pct", 10.0))
+    # 예측 지평이 지나면 그 예측은 만료다. 0/미설정이면 비활성(일봉 트랙의 기존 동작).
+    # 타점 탐지 트랙에서는 이게 없으면 손절/익절에 안 걸린 포지션이 영원히 남는다.
+    max_holding = int(risk.get("max_holding_bars", 0))
 
     blocked: dict[str, str] = {}
     reasons: dict[str, int] = {}
@@ -83,19 +87,20 @@ def apply_risk_overlay(
         blocked[code] = detail
         reasons[category] = reasons.get(category, 0) + 1
 
-    # --- 1) 손절/익절: 신호와 무관하게 먼저 강제 청산
+    # --- 1) 손절/익절/보유만료: 신호와 무관하게 먼저 강제 청산
     forced_exits = []
     for code, pos in positions.items():
         px = prices.get(code)
-        if px is None:
-            continue
-        pnl = pos.pnl_pct(px)
-        if pnl <= stop_loss:
+        pnl = pos.pnl_pct(px) if px is not None else None
+        if pnl is not None and pnl <= stop_loss:
             forced_exits.append(code)
             _block(code, STOP_LOSS, f"손절 {pnl:+.1%}")
-        elif pnl >= take_profit:
+        elif pnl is not None and pnl >= take_profit:
             forced_exits.append(code)
             _block(code, TAKE_PROFIT, f"익절 {pnl:+.1%}")
+        elif max_holding and pos.days_held >= max_holding:
+            forced_exits.append(code)
+            _block(code, MAX_HOLDING, f"보유 {pos.days_held} ≥ 만료 {max_holding}")
 
     # --- 2) 공매도 불가면 SELL 은 '보유 시 청산'으로만 해석
     kept: list[Signal] = []

@@ -25,8 +25,23 @@ from src.utils.logging import get_logger
 log = get_logger(__name__)
 
 # 매크로 시퀀스를 구성하는 자산들. 지수는 index_daily, ETF 는 daily_chart 에 있다.
+# 분봉 트랙은 config 프로파일이 이 값들을 덮어쓴다(profiles.intraday).
 _MACRO_INDEX_KIND = "index_daily"
 _MACRO_ETF_KIND = "daily_chart"
+_CHART_KIND = "daily_chart"
+
+
+def _load_bars(kind: str, codes: list[str] | None) -> pd.DataFrame:
+    """가격 봉을 읽고 **시간 컬럼 이름을 'date' 로 통일**한다.
+
+    분봉 raw 의 키는 'datetime' 이지만 여기서 이름을 맞춰두면 하류가
+    (dataset / split / backtest / inference) 봉 종류를 몰라도 된다 —
+    전부 'date 컬럼의 순서'만 쓰기 때문이다. 봉 단위를 아는 건 이 파일까지다.
+    """
+    df = storage.load_kind(kind, codes=codes)
+    if not df.empty and "date" not in df.columns and "datetime" in df.columns:
+        df = df.rename(columns={"datetime": "date"})
+    return df
 
 
 # --------------------------------------------------------------- panel
@@ -35,12 +50,19 @@ def build_panel(cfg: dict) -> pd.DataFrame:
     feat_cfg = cfg["features"]
     horizon = int(feat_cfg["return_horizon"])
     codes = [u["code"] for u in cfg["data"]["universe"]]
+    kind = cfg["data"].get("chart_kind", _CHART_KIND)
 
-    raw = storage.load_kind("daily_chart", codes=codes)
+    raw = _load_bars(kind, codes)
     if raw.empty:
-        raise RuntimeError("data/raw/daily_chart 가 비었다. scripts/collect.py 를 먼저 실행할 것.")
+        raise RuntimeError(f"data/raw/{kind} 가 비었다. 수집 스크립트를 먼저 실행할 것.")
 
-    flow = _load_flow(codes)
+    # 수급(ka10059)은 **일 단위**다. 봉 단위 패널에 날짜로 조인하면 조용히 어긋난다
+    # (키 타입이 date vs datetime 이라 매칭이 0건이 되거나 예외가 난다).
+    if kind == _CHART_KIND:
+        flow = _load_flow(codes)
+    else:
+        flow = None
+        log.info("%s 패널이라 수급 피처를 쓰지 않는다 — 수급은 일 단위 데이터다", kind)
 
     frames, halted_total = [], 0
     for code, part in raw.groupby("code", sort=True):
@@ -58,7 +80,71 @@ def build_panel(cfg: dict) -> pd.DataFrame:
 
     log.info("거래정지일 총 %d행 제거", halted_total)
     panel = pd.concat(frames, ignore_index=True).sort_values(["date", "code"])
+    panel = _add_cross_sectional(panel, feat_cfg)
+    panel = _apply_target_mode(panel, feat_cfg)
     return panel.reset_index(drop=True)
+
+
+def _add_cross_sectional(panel: pd.DataFrame, feat_cfg: dict) -> pd.DataFrame:
+    """같은 날 전 종목 대비 **상대 위치**를 피처로 추가한다.
+
+    왜 필요한가 — 기존 피처 17개는 전부 그 종목 혼자의 시계열에서 나온다.
+    게다가 RevIN 이 종목별 윈도우 안에서 다시 표준화하므로, 모델은 "이 종목의
+    모멘텀이 오늘 시장에서 상위인가"를 **구조적으로 알 수 없다.**
+    그런데 매매 규칙(cross_sectional)은 정확히 그 상대 순위로 종목을 고른다 —
+    모델이 전략에 필요한 정보를 못 보고 있었다.
+
+    실측 증상: in-sample 랭크 IC 조차 0.0406 (test 0.0241) 로 낮고,
+    십분위 스프레드가 t=1.10 으로 무의미했다. 과적합이 아니라 언더피팅이다.
+
+    ⚠️ look-ahead 아니다. t 시점 값들만 t 시점 안에서 비교한다.
+    ⚠️ 이름은 반드시 `xs_` 로 시작해야 한다 — 모델이 이 접두어로 RevIN 을 건너뛴다.
+    """
+    cols = list(feat_cfg.get("cross_sectional", []))
+    if not cols:
+        return panel
+
+    missing = [c for c in cols if c not in panel.columns]
+    if missing:
+        raise ValueError(f"횡단면 피처로 지정된 컬럼이 패널에 없다: {missing}")
+
+    g = panel.groupby("date")
+    for c in cols:
+        # 백분위 순위를 -0.5~+0.5 로. 순위라서 이상치에 둔감하고 날짜 간 스케일이 같다.
+        panel[f"xs_{c}"] = g[c].rank(pct=True) - 0.5
+    n_per_date = g.size()
+    log.info("횡단면 피처 %d개 추가 (%s) — 날짜당 종목 수 중앙값 %d",
+             len(cols), ", ".join(cols), int(n_per_date.median()))
+    return panel
+
+
+def _apply_target_mode(panel: pd.DataFrame, feat_cfg: dict) -> pd.DataFrame:
+    """타깃을 원시 수익률로 둘지, 시장 대비 초과수익으로 바꿀지.
+
+    `market_relative` 는 같은 날 전 종목의 평균 forward 수익률을 뺀다.
+
+    왜 이게 필요한가 — 원시 수익률은 **시장 공통 성분이 압도적**이라(한국 대형주는
+    지수와 상관이 0.7~0.9) 모델이 "시장이 오를까"를 맞히는 데 용량을 쓴다.
+    그런데 우리 매매 규칙은 cross_sectional 순위라 그 공통 성분은 어차피 상쇄된다 —
+    즉 학습이 매매에 안 쓰이는 것을 배우고 있었다.
+    실측 증상이 정확히 이 모양이었다: 랭크 IC 는 유의(t=3.89)한데 십분위
+    스프레드는 t=1.10 으로 무의미 — 순위는 맞히지만 상위가 실제로 더 오르지 않는다.
+
+    ⚠️ look-ahead 아니다. 빼는 값은 **같은 미래 창의 횡단면 평균**이라 라벨 정의의
+    일부다. 피처에는 들어가지 않고, 추론 시점에 알 필요도 없다.
+    """
+    mode = str(feat_cfg.get("target_mode", "raw"))
+    if mode == "raw":
+        return panel
+    if mode != "market_relative":
+        raise ValueError(f"알 수 없는 features.target_mode: {mode}")
+
+    mkt = panel.groupby("date")["target"].transform("mean")
+    before = panel["target"].std()
+    panel["target"] = panel["target"] - mkt
+    log.info("타깃을 시장 대비 초과수익으로 변환 — 표준편차 %.4f → %.4f (공통성분 %.0f%% 제거)",
+             before, panel["target"].std(), 100 * (1 - panel["target"].std() / before))
+    return panel
 
 
 def _load_flow(codes: list[str]) -> pd.DataFrame | None:
@@ -108,17 +194,19 @@ def _join_flow(feats: pd.DataFrame, flow_one: pd.DataFrame) -> pd.DataFrame:
 def build_macro(cfg: dict) -> pd.DataFrame:
     """날짜별 매크로 피처. 크로스어텐션의 Key/Value 시퀀스가 된다."""
     macro_cfg = cfg["data"]["macro"]
+    index_kind = cfg["data"].get("macro_index_kind", _MACRO_INDEX_KIND)
+    etf_kind = cfg["data"].get("macro_etf_kind", _MACRO_ETF_KIND)
     out: pd.DataFrame | None = None
 
     for idx in macro_cfg["indices"]:
-        df = storage.load_kind(_MACRO_INDEX_KIND, codes=[idx["code"]])
+        df = _load_bars(index_kind, [idx["code"]])
         if df.empty:
             log.warning("지수 %s(%s) 없음 — 건너뛴다", idx["name"], idx["code"])
             continue
         out = _merge_macro(out, _macro_features(df, prefix=idx["name"].lower()))
 
     for etf in macro_cfg.get("overseas_etf_fallback", []):
-        df = storage.load_kind(_MACRO_ETF_KIND, codes=[etf["code"]])
+        df = _load_bars(etf_kind, [etf["code"]])
         if df.empty:
             log.warning("ETF %s(%s) 없음 — 건너뛴다", etf["name"], etf["code"])
             continue

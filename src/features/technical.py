@@ -163,6 +163,17 @@ def add_technical_features(df: pd.DataFrame, cfg: dict | None = None) -> pd.Data
     out["ret_5d"] = log_return(close, 5)
     out["ret_20d"] = log_return(close, 20)
 
+    # 횡단면 주가예측의 표준 팩터 둘. 기존 지표는 전부 60일 이내라 이 축이 비어 있었다.
+    #   mom_12_1  12개월 모멘텀에서 최근 1개월을 뺀 값 (Jegadeesh & Titman 1993).
+    #             최근 1개월을 빼는 이유는 그 구간이 반대로 **반전**하기 때문이다.
+    #   rev_1m    그 최근 1개월 (단기 반전). 부호가 반대라 따로 준다.
+    out["mom_12_1"] = log_return(close, 252).shift(21)
+    out["rev_1m"] = log_return(close, 21)
+
+    # 거래대금 — 유동성 축. 절대값은 종목 규모에 좌우되므로 자기 60일 평균 대비 비율로 준다.
+    turnover = close * vol
+    out["turnover_z"] = (turnover / turnover.rolling(60, min_periods=20).mean()).clip(0, 10)
+
     macd_cfg = cfg.get("macd", {})
     bb_cfg = cfg.get("bollinger", {})
 

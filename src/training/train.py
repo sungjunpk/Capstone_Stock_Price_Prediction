@@ -27,6 +27,7 @@ from src.training.dataset import (
     StaticVocab,
     WindowDataset,
     dynamic_feature_columns,
+    n_passthrough_columns,
 )
 from src.training.losses import QuantileLoss, pinball_loss
 from src.training.split import SplitSpec, apply_normalizer, fit_normalizer, split_by_date
@@ -69,9 +70,12 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
     """panel/macro/static → train/val/test DataLoader 와 메타정보."""
     from src.data.storage import PROCESSED_DIR
 
-    panel = pd.read_parquet(PROCESSED_DIR / "panel.parquet")
-    macro = pd.read_parquet(PROCESSED_DIR / "macro.parquet")
-    static = pd.read_parquet(PROCESSED_DIR / "static.parquet")
+    # 프로파일마다 산출물이 다르다 (일봉: panel.parquet / 60분봉: panel_60m.parquet).
+    # 체크포인트 이름은 _config_hash 가 이미 갈라준다 — features 가 다르기 때문이다.
+    sfx = cfg["data"].get("processed_suffix", "")
+    panel = pd.read_parquet(PROCESSED_DIR / f"panel{sfx}.parquet")
+    macro = pd.read_parquet(PROCESSED_DIR / f"macro{sfx}.parquet")
+    static = pd.read_parquet(PROCESSED_DIR / f"static{sfx}.parquet")
 
     if smoke:
         codes = sorted(panel["code"].unique())[:6]
@@ -175,7 +179,8 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     log.info("샘플 수: %s", meta["sizes"])
 
     mcfg = Phase1Config.from_config(
-        cfg, n_dynamic=len(meta["feature_cols"]),
+        cfg, n_passthrough=n_passthrough_columns(meta["feature_cols"]),
+        n_dynamic=len(meta["feature_cols"]),
         n_macro=len(meta["macro_cols"]), static_vocab=meta["vocab_sizes"],
     )
     mcfg.init_quantiles = tuple(meta["baseline_quantiles"])
@@ -212,8 +217,12 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     cfg_hash = _config_hash(cfg)
     best, best_epoch, bad, step = float("inf"), -1, 0, 0
     CKPT_DIR.mkdir(parents=True, exist_ok=True)
+    # 트랙 태그를 이름에 넣는다. 해시만으로는 부족하다 — 학습 당시 설정과
+    # 지금 설정의 해시가 어긋나면(캐글에서 받은 체크포인트 등) 자동 선택이
+    # 다른 트랙 것을 집어간다. 그러면 **조용히 틀린 숫자**가 나온다.
+    tag = cfg["data"].get("processed_suffix", "")
     suffix = "_smoke" if smoke else ""
-    ckpt_path = CKPT_DIR / f"phase1_{cfg_hash}{suffix}.pt"
+    ckpt_path = CKPT_DIR / f"phase1_{cfg_hash}{tag}{suffix}.pt"
     history = []
 
     for epoch in range(epochs):

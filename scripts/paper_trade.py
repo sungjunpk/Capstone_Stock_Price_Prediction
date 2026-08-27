@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -51,7 +52,7 @@ _STALE_BUSINESS_DAYS = 3
 
 
 def find_checkpoint(explicit: str | None) -> Path:
-    """백테스트와 같은 규칙으로 고른다 — smoke 는 제외, 가장 최근 것."""
+    """백테스트와 같은 규칙으로 고른다 — 일봉 트랙 것 중 가장 최근 것."""
     if explicit:
         p = Path(explicit)
         if not p.is_absolute():
@@ -60,7 +61,11 @@ def find_checkpoint(explicit: str | None) -> Path:
             raise SystemExit(f"체크포인트가 없다: {p}")
         return p
 
-    cands = [p for p in CKPT_DIR.glob("phase1_*.pt") if "smoke" not in p.name]
+    # ⚠️ 여기는 **실주문 경로**다. 60분봉 트랙 체크포인트(`phase1_*_60m.pt`)가
+    #    섞여 들어오면 다른 트랙의 모델로 실제 주문이 나간다 — 에러가 아니라
+    #    그럴듯하게 틀린 주문이라 알아채기 어렵다. 이름 형식으로 일봉만 남긴다.
+    daily = re.compile(r"^phase1_[0-9a-f]{8}\.pt$")
+    cands = [p for p in CKPT_DIR.glob("phase1_*.pt") if daily.match(p.name)]
     if not cands:
         raise SystemExit(
             "체크포인트가 없다. scripts/train.py 로 학습하거나 캐글에서 받은 .pt 를\n"

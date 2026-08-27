@@ -150,3 +150,38 @@ def test_reason_counts_match_blocked_dict():
 
     d = apply_risk_overlay(sigs, positions, prices, cfg)
     assert sum(d.blocked_by_reason.values()) == len(d.blocked)
+
+
+class TestMaxHolding:
+    """지평 만료 청산 — 타점 탐지 트랙에서만 켠다."""
+
+    def _cfg(self, **risk):
+        return {
+            "sizing": {"max_position_pct": 0.1},
+            "risk": {"stop_loss_pct": -0.05, "take_profit_pct": 0.10, **risk},
+        }
+
+    def test_disabled_by_default_keeps_daily_track_behaviour(self):
+        pos = {"005930": Position("005930", 0.1, 100.0, days_held=999)}
+        out = apply_risk_overlay([], pos, {"005930": 100.0}, self._cfg())
+        assert out.forced_exits == []
+
+    def test_expired_position_is_liquidated(self):
+        pos = {"005930": Position("005930", 0.1, 100.0, days_held=7)}
+        out = apply_risk_overlay([], pos, {"005930": 100.0},
+                                 self._cfg(max_holding_bars=7))
+        assert out.forced_exits == ["005930"]
+        assert out.blocked_by_reason == {"보유만료": 1}
+
+    def test_stop_loss_wins_over_expiry_for_reason_label(self):
+        """같은 청산이라도 사유는 손익이 더 정보량이 많다."""
+        pos = {"005930": Position("005930", 0.1, 100.0, days_held=99)}
+        out = apply_risk_overlay([], pos, {"005930": 90.0},
+                                 self._cfg(max_holding_bars=7))
+        assert out.forced_exits == ["005930"]
+        assert "손절" in out.blocked_by_reason
+
+    def test_expiry_fires_even_without_a_price(self):
+        pos = {"005930": Position("005930", 0.1, 100.0, days_held=10)}
+        out = apply_risk_overlay([], pos, {}, self._cfg(max_holding_bars=7))
+        assert out.forced_exits == ["005930"]

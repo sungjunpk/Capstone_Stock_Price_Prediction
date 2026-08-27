@@ -123,3 +123,63 @@ def test_take_profit_removal_shows_up_in_reasons(panel):
     cfg["trading"]["risk"]["take_profit_pct"] = 99.0
     s = run_backtest(preds, prices, cfg).signal_stats
     assert s["blocked_by_reason"].get("익절", 0) == 0
+
+
+# ---------------------------------------------------------------- 타점 탐지 모드
+# 주기적 리밸런싱이 아니라 "조건이 맞을 때만 진입, 익절/손절/만료로만 청산".
+# 검증 대상은 수익이 아니라 **동작**이다 — 안 팔아야 할 때 안 파는가.
+
+def _event_cfg(*, hold_until_exit: bool, max_holding: int = 0) -> dict:
+    cfg = _cfg(BAND, 20)
+    cfg["trading"]["direction"]["mode"] = "absolute"
+    cfg["backtest"]["rebalance_days"] = 1        # 매 봉 탐지
+    cfg["backtest"]["hold_until_exit"] = hold_until_exit
+    if max_holding:
+        cfg["trading"]["risk"]["max_holding_bars"] = max_holding
+    return cfg
+
+
+def test_hold_until_exit_stops_churning_unsignaled_positions(panel):
+    """신호가 사라졌다고 파는 건 정보가 아니라 노이즈에 반응하는 것이다."""
+    preds, prices = panel
+    churn = run_backtest(preds, prices, _event_cfg(hold_until_exit=False)).signal_stats
+    hold = run_backtest(preds, prices, _event_cfg(hold_until_exit=True)).signal_stats
+
+    assert hold["avg_holding_days"] > churn["avg_holding_days"]
+    assert hold["annual_turnover"] < churn["annual_turnover"]
+    assert hold["hold_until_exit"] is True
+
+
+def test_expiry_bounds_holding_period(panel):
+    """만료가 없으면 손익절에 안 걸린 포지션이 영원히 남는다."""
+    preds, prices = panel
+    forever = run_backtest(preds, prices, _event_cfg(hold_until_exit=True)).signal_stats
+    capped = run_backtest(
+        preds, prices, _event_cfg(hold_until_exit=True, max_holding=7)
+    ).signal_stats
+
+    assert capped["avg_holding_days"] < forever["avg_holding_days"]
+    assert capped["blocked_by_reason"].get("보유만료", 0) > 0
+
+
+def test_entry_count_matches_trades(panel):
+    """진입 횟수가 이 트랙의 1차 판정 기준이라 집계가 정확해야 한다."""
+    preds, prices = panel
+    res = run_backtest(preds, prices, _event_cfg(hold_until_exit=True))
+    from_zero = ((res.trades["from"] <= 1e-6) & (res.trades["to"] > 1e-6)).sum()
+
+    assert res.signal_stats["n_entries"] == from_zero > 0
+    assert res.signal_stats["annual_entries"] > 0
+
+
+def test_bars_per_year_changes_annualisation(panel):
+    """60분봉 Sharpe 를 252로 연율화하면 sqrt(7) 배 어긋난다."""
+    preds, prices = panel
+    daily = run_backtest(preds, prices, _event_cfg(hold_until_exit=True))
+
+    cfg = _event_cfg(hold_until_exit=True)
+    cfg["backtest"]["bars_per_year"] = 252 * 7
+    intraday = run_backtest(preds, prices, cfg)
+
+    ratio = intraday.metrics["sharpe"] / daily.metrics["sharpe"]
+    assert ratio == pytest.approx(np.sqrt(7), rel=0.01)

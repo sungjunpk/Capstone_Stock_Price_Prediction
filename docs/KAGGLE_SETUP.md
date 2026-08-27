@@ -22,12 +22,27 @@ Kaggle은 **휴대폰 인증을 해야 GPU와 인터넷을 쓸 수 있다.** 이
 
 ### 1단계 — 로컬에서 데이터 묶음 만들기
 
+**어떤 트랙을 학습할지 먼저 정한다.** 프로파일마다 피처가 다르므로 묶음도 다르다.
+
 ```bash
 cd ~/Desktop/Capstone_Stock_Price_Prediction
-python scripts/package_data.py
+
+# (A) 기본 일봉 트랙 — 지금 운영 중인 모델
+python scripts/build_features.py
+python scripts/package_data.py                    # → outputs/train_bundle.zip
+
+# (B) 횡단면 피처 트랙 (2026-08-27 신설, 피처 28개)
+python scripts/build_features.py --profile xs
+python scripts/package_data.py --profile xs       # → outputs/train_bundle_xs.zip (45MB)
+
+# (C) 횡단면 + 시장대비 타깃
+python scripts/build_features.py --profile xs_mr
+python scripts/package_data.py --profile xs_mr    # → outputs/train_bundle_xsmr.zip
 ```
 
-`outputs/train_bundle.zip` (약 35MB)이 생긴다. 이 파일 하나만 올리면 된다.
+⚠️ **묶음 안의 파일명에 접미사가 그대로 남는다**(`panel_xs.parquet`). 캐글에서
+같은 `--profile` 로 돌려야 찾을 수 있고, 체크포인트도 같은 태그(`_xs`)로 저장돼
+일봉 운영 체크포인트와 섞이지 않는다.
 
 ### 2단계 — Kaggle에 데이터셋으로 올리기
 
@@ -58,10 +73,24 @@ python scripts/package_data.py
 
 ### 5단계 — 실행
 
-노트북 셀을 **위에서부터 순서대로** 실행한다 (`Shift + Enter`).
+⚠️ **먼저 `PROFILE` 셀을 1단계에서 고른 것과 맞춘다.** 노트북 위쪽에 있다.
+
+```python
+PROFILE = 'xs'      # 기본 트랙이면 ''  /  조합이면 'xs_mr'
+```
+
+⚠️ **노트북은 GitHub 에서 코드를 클론한다.** 로컬에서 코드를 고쳤으면
+**push 부터 해야 반영된다** — 안 하면 예전 코드로 학습된다.
+
+```bash
+git add -A && git commit -m "..." && git push
+```
+
+그다음 노트북 셀을 **위에서부터 순서대로** 실행한다 (`Shift + Enter`).
 
 1. GPU 확인 → `cuda: True` 가 나와야 한다
-2. 코드 클론
+2. `PROFILE` 설정
+3. 코드 클론
 3. 데이터 붙이기 → parquet 3개가 보이면 성공
 4. **배관 점검** (`--smoke`, 1~2분) ← 전체 학습 전에 반드시 먼저
 5. 전체 학습
@@ -74,9 +103,20 @@ python scripts/package_data.py
 받아서 로컬 저장소의 같은 경로에 푼다:
 
 ```
-outputs/checkpoints/phase1_best.pt      ← 학습된 모델
-outputs/reports/*.json                  ← 실험 리포트 (VSN 피처 중요도 포함)
+outputs/checkpoints/phase1_<해시>_xs.pt   ← 학습된 모델 (프로파일 태그가 붙는다)
+outputs/reports/*.json                    ← 실험 리포트 (VSN 피처 중요도 포함)
 ```
+
+가져온 뒤 로컬에서 **같은 프로파일로** 백테스트한다:
+
+```bash
+python scripts/backtest.py --profile xs
+```
+
+⚠️ `scripts/backtest.py` 는 프로파일 태그가 맞는 체크포인트만 고른다
+(`tests/test_checkpoint_selection.py`). 태그가 없는 `phase1_<해시>.pt` 는
+**일봉 운영용**이고 `scripts/paper_trade.py` 가 그것만 쓴다 — 실험 모델이
+실주문 경로로 새는 것을 막기 위해서다.
 
 ---
 

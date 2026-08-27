@@ -54,10 +54,15 @@ class Phase1Config:
     # 학습 데이터의 무조건부 분위수. 헤드 bias 를 여기서 출발시킨다.
     init_quantiles: tuple[float, ...] | None = None
     target_scale_channel: int = 0   # panel 의 첫 피처(ret_1d)를 변동성 기준으로 쓴다
+    # 뒤쪽 N개 채널은 RevIN 을 **건너뛴다**. 횡단면 순위 피처(`xs_`)가 여기 해당한다.
+    # RevIN 은 종목별 윈도우 안에서 표준화하므로 "오늘 시장에서 몇 등인가"를 지운다 —
+    # 정확히 매매 규칙이 쓰는 정보라서, 통과시키지 않으면 모델이 그걸 볼 수 없다.
+    n_passthrough: int = 0
 
     @classmethod
     def from_config(cls, cfg: dict, *, n_dynamic: int, n_macro: int,
-                    static_vocab: dict[str, int]) -> Phase1Config:
+                    static_vocab: dict[str, int],
+                    n_passthrough: int = 0) -> Phase1Config:
         m = cfg["model"]
         return cls(
             n_dynamic=n_dynamic, n_macro=n_macro, static_vocab=static_vocab,
@@ -77,6 +82,7 @@ class Phase1Config:
             revin_affine=bool(m["revin"]["affine"]),
             revin_eps=float(m["revin"]["eps"]),
             scale_target=bool(m["revin"].get("scale_target", False)),
+            n_passthrough=n_passthrough,
         )
 
 
@@ -95,7 +101,14 @@ class Phase1Model(nn.Module):
         self.n_patches = num_patches(cfg.lookback, cfg.patch_len, cfg.stride)
 
         # --- 종목 경로
-        self.revin_dyn = RevIN(cfg.n_dynamic, cfg.revin_eps, cfg.revin_affine)
+        # RevIN 은 앞쪽 채널에만 건다. 뒤쪽 n_passthrough 개는 그대로 흘린다.
+        self.n_revin = cfg.n_dynamic - cfg.n_passthrough
+        if self.n_revin < 1:
+            raise ValueError(
+                f"RevIN 채널이 없다 (n_dynamic={cfg.n_dynamic}, "
+                f"n_passthrough={cfg.n_passthrough})"
+            )
+        self.revin_dyn = RevIN(self.n_revin, cfg.revin_eps, cfg.revin_affine)
         self.patch_dyn = PatchEmbedding(
             cfg.patch_len, cfg.stride, cfg.d_model, cfg.lookback, cfg.dropout
         )
@@ -143,7 +156,12 @@ class Phase1Model(nn.Module):
         """dynamic (B,L,C) / macro (B,L,M) / static (B,n_static) int64"""
         # 종목 경로 — TFT 순서대로 **변수 선택을 인코더 앞에서** 한다.
         # 인코더 뒤에 두면 인코더가 채널 수(17)만큼 반복 실행돼 비용이 17배가 된다.
-        x = self.revin_dyn(dynamic)                      # (B,L,C)
+        if self.cfg.n_passthrough:
+            x = torch.cat(                               # (B,L,C)
+                [self.revin_dyn(dynamic[..., : self.n_revin]),
+                 dynamic[..., self.n_revin :]], dim=-1)
+        else:
+            x = self.revin_dyn(dynamic)                  # (B,L,C)
         x = self.patch_dyn(x)                            # (B,C,N,d)
 
         ctx, w_static = self.static_vsn(static)          # (B,d), (B,n_static)

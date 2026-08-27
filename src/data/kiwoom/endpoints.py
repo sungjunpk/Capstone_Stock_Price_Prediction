@@ -173,10 +173,62 @@ STOCK_LIST = TRSpec(  # VERIFIED 2026-08-24 (KOSPI mrkt_tp=0, 2477종목)
          "⚠️ upName(업종)이 여기 있다 — ka10001 에는 없으므로 업종은 이 TR 에서 받는다.",
 )
 
+# --- 60분봉: 타점 탐지 트랙의 입력 ------------------------------------------
+# ⚠️ 일봉과 결정적으로 다른 점: **이력이 13개월 롤링이다.**
+#    지금 안 받으면 오래된 구간부터 사라진다 — 일봉처럼 "나중에 다시 받으면 된다"가
+#    성립하지 않는다.
+MINUTE_CHART = TRSpec(  # VERIFIED 2026-08-27 (005930 mock, 60분 1,822행)
+    name="minute_chart",
+    path="/api/dostk/chart",
+    api_id="ka10080",
+    list_key="stk_min_pole_chart_qry",
+    schema={
+        "datetime": ("cntr_tm", "datetime"),
+        "open": ("open_pric", "abs_float"),
+        "high": ("high_pric", "abs_float"),
+        "low": ("low_pric", "abs_float"),
+        "close": ("cur_prc", "abs_float"),
+        "volume": ("trde_qty", "abs_int"),
+    },
+    rate_limit_per_sec=2.0,
+    verified=True,
+    note="tic_scope: '1'/'3'/'5'/'10'/'15'/'30'/'45'/'60'. upd_stkpc_tp='1' 필수. "
+         "응답은 최신→과거 내림차순, 페이지당 900건. cntr_tm 은 'YYYYMMDDHHMMSS'. "
+         "⚠️ 거래대금(trde_prica) 필드가 없다 — 일봉 스키마의 value 에 해당하는 게 없다. "
+         "⚠️ 이력은 약 13개월(실측 2026-08-27 기준 2025-08-01 까지). base_dt 를 그보다 "
+         "앞으로 주면 빈 응답이 온다. 5/30/60분봉도 바닥은 같아 틱을 키워도 안 깊어진다. "
+         "60분봉 = 하루 7개, 종목당 전체 이력이 3페이지면 끝난다. "
+         "⚠️ 봉 격자가 고정이 아니다 — 보통 09:00~15:00 이지만 수능일(2025-11-13)은 "
+         "10:00~16:00, 신년 첫 거래일(2026-01-02)은 10:00~15:00 으로 6봉이다. "
+         "시각을 하드코딩하지 말고 행 순서로 다룰 것. 시간외 단일가는 오지 않는다.",
+)
+
+# --- 지수 60분봉: 크로스어텐션의 Key/Value 쪽 ------------------------------
+INDEX_MINUTE = TRSpec(  # VERIFIED 2026-08-27 (KOSPI=001 mock, 60분 900행)
+    name="index_minute",
+    path="/api/dostk/chart",
+    api_id="ka20005",
+    list_key="inds_min_pole_qry",
+    schema={
+        "datetime": ("cntr_tm", "datetime"),
+        "open": ("open_pric", "abs_float"),
+        "high": ("high_pric", "abs_float"),
+        "low": ("low_pric", "abs_float"),
+        "close": ("cur_prc", "abs_float"),
+        "volume": ("trde_qty", "abs_int"),
+    },
+    rate_limit_per_sec=2.0,
+    verified=True,
+    note="요청 필드는 inds_cd + tic_scope (upd_stkpc_tp 없음). "
+         "INDEX_DAILY 와 마찬가지로 지수값이 100배로 온다(KOSPI 695040 = 6950.40). "
+         "이력 깊이는 MINUTE_CHART 와 같다.",
+)
+
 ALL_SPECS: dict[str, TRSpec] = {
     spec.name: spec
     # OVERSEAS_DAILY 는 의도적으로 제외 — 해외 일봉 TR 이 존재하지 않는다
-    for spec in (DAILY_CHART, STOCK_INFO, INVESTOR_FLOW, INDEX_DAILY, STOCK_LIST)
+    for spec in (DAILY_CHART, STOCK_INFO, INVESTOR_FLOW, INDEX_DAILY, STOCK_LIST,
+                 MINUTE_CHART, INDEX_MINUTE)
 }
 
 

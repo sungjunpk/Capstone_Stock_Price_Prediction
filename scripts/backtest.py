@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -29,6 +30,7 @@ import pandas as pd  # noqa: E402
 
 from src.evaluation.backtest import buy_and_hold, run_backtest  # noqa: E402
 from src.evaluation.metrics import summarize  # noqa: E402
+from src.training.train import _config_hash  # noqa: E402
 from src.models.inference import (  # noqa: E402
     load_features,
     load_model,
@@ -41,7 +43,7 @@ log = get_logger("backtest")
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
 
 
-def find_checkpoint(explicit: str | None) -> Path:
+def find_checkpoint(explicit: str | None, cfg: dict | None = None) -> Path:
     if explicit:
         p = Path(explicit)
         if not p.is_absolute():
@@ -50,12 +52,25 @@ def find_checkpoint(explicit: str | None) -> Path:
             raise SystemExit(f"체크포인트가 없다: {p}")
         return p
 
-    cands = [p for p in CKPT_DIR.glob("phase1_*.pt") if "smoke" not in p.name]
+    # 트랙이 둘(일봉/60분봉)이라 '최신'만으로 고르면 **다른 트랙 것을 집는다.**
+    # 그러면 에러가 아니라 그럴듯하게 틀린 숫자가 나온다 — 가장 나쁜 실패다.
+    # 학습이 이름에 트랙 태그를 붙이므로(train.py) 여기서 그 태그로 좁힌다.
+    tag = (cfg or {}).get("data", {}).get("processed_suffix", "")
+    pattern = re.compile(rf"^phase1_[0-9a-f]{{8}}{re.escape(tag)}\.pt$")
+    cands = [p for p in CKPT_DIR.glob("phase1_*.pt") if pattern.match(p.name)]
     if not cands:
         raise SystemExit(
-            "체크포인트가 없다. 학습을 먼저 하거나, 캐글에서 받은 .pt 를\n"
-            "  outputs/checkpoints/ 에 두고 --checkpoint 로 지정할 것."
+            f"이 트랙(태그 {tag!r})의 체크포인트가 없다. 학습을 먼저 하거나,\n"
+            "  캐글에서 받은 .pt 를 outputs/checkpoints/ 에 두고 --checkpoint 로 지정할 것."
         )
+
+    if cfg is not None:
+        exact = CKPT_DIR / f"phase1_{_config_hash(cfg)}{tag}.pt"
+        if exact.exists():
+            log.info("체크포인트 선택(설정 해시 일치): %s", exact.name)
+            return exact
+        log.warning("이 설정 해시로 학습된 체크포인트가 없다 — 같은 트랙의 최신 것을 쓴다")
+
     latest = max(cands, key=lambda p: p.stat().st_mtime)
     log.info("체크포인트 자동 선택: %s", latest.name)
     return latest
@@ -165,6 +180,11 @@ def _print_single(result, bh: dict, split: str) -> None:
     print(f"    실지불 거래비용 연 {s['annual_cost_pct']:.2%} "
           f"(누계 {s['total_cost_pct']:.2%})")
 
+    if s.get("hold_until_exit"):
+        print("\n  타점 탐지 — 드물게, 정확하게 들어갔는가")
+        print(f"    진입 횟수      {s['n_entries']:,}회 (연 {s['annual_entries']:.0f}회)")
+        print(f"    무포지션 비율  {s['flat_rate']:.1%}  (조건이 안 맞아 쉰 구간)")
+
 
 def _print_compare(runs: list[tuple[str, object]], bh: dict, split: str) -> None:
     """규칙 변형 나란히 비교. 격차 중 비용 몫과 종목선택 몫을 가르는 게 목적이다."""
@@ -232,10 +252,11 @@ def main() -> int:
                     help="scaled=생존 후보 수에 비례해 노출 조절, fixed=항상 상한까지")
     ap.add_argument("--compare", action="store_true",
                     help="규칙 변형을 한 번에 비교 (예측은 한 번만 계산한다)")
+    ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: intraday)")
     args = ap.parse_args()
 
     setup_logging(run_name="backtest")
-    cfg = load_config().raw
+    cfg = load_config(profile=args.profile).raw
 
     # 같은 체크포인트로 여러 매매 규칙을 비교할 수 있게 설정을 덮어쓴다.
     # 신호 코드는 하나뿐이고 분기는 설정값에만 있다 (CLAUDE.md 절대 규칙 7).
@@ -244,12 +265,13 @@ def main() -> int:
     if args.exposure:
         cfg["trading"]["sizing"]["exposure_scaling"] = args.exposure == "scaled"
 
-    ckpt_path = find_checkpoint(args.checkpoint)
+    ckpt_path = find_checkpoint(args.checkpoint, cfg)
     preds, prices = predict(ckpt_path, cfg, args.split)
     log.info("예측 %d건 | 종목 %d | %s ~ %s",
              len(preds), preds["code"].nunique(), preds["date"].min(), preds["date"].max())
 
-    bh = summarize(buy_and_hold(prices))
+    periods = float(cfg.get("backtest", {}).get("bars_per_year", 252))
+    bh = summarize(buy_and_hold(prices), periods_per_year=periods)
 
     if not args.compare:
         log.info("매매 규칙: mode=%s | exposure_scaling=%s",

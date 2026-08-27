@@ -29,6 +29,7 @@ from src.trading.risk import Position, apply_risk_overlay
 # should_trade / one_way_cost 는 모의투자도 그대로 쓴다 —
 # 백테스트에서 검증한 최소 거래폭 규칙이 실거래에서 달라지면 안 된다.
 from src.trading.signal import (
+    Action,
     QuantilePrediction,
     generate_signals,
     one_way_cost,
@@ -66,6 +67,12 @@ def run_backtest(
     bcfg = cfg.get("backtest", {})
     lag = int(bcfg.get("execution_lag_days", 1))
     rebalance_every = int(bcfg.get("rebalance_days", cfg["features"]["return_horizon"]))
+    # 연율화 계수. 일봉이면 252, 60분봉이면 봉/년(252 x 7)을 넣는다.
+    periods = float(bcfg.get("bars_per_year", TRADING_DAYS))
+    # 타점 탐지 모드: 신호가 없는 보유분을 청산하지 않는다.
+    #   기본(False) = 매 리밸런싱마다 포트폴리오를 갈아끼우는 일봉 트랙 동작
+    #   True        = 진입은 조건이 맞을 때만, 청산은 익절/손절/보유만료로만
+    hold_until_exit = bool(bcfg.get("hold_until_exit", False))
     costs = tcfg.get("costs", {})
     min_trade = float(tcfg["sizing"].get("min_trade_weight", 0.0))
 
@@ -159,8 +166,18 @@ def run_backtest(
         for s in sigs:
             stats[s.action.value] = stats.get(s.action.value, 0) + 1
 
+        if hold_until_exit:
+            # 보유 중인 종목의 신규 매수 신호는 **행동이 아니다** — 이 모드는
+            # 보유분을 재조정하지 않기 때문이다(매 봉 재조정하면 타점과 무관한
+            # 잔챙이 거래가 쌓이고, 그 비용이 이 트랙에서 이기려는 대상이다).
+            # 오버레이에 넘기면 거래한도를 헛되이 잡아먹고, 총 익스포저 계산에서
+            # '유지될 보유분'이 아니라 '새 주문'으로 세어져 한도가 어긋난다.
+            sigs = [s for s in sigs
+                    if not (s.code in positions and s.action is Action.BUY)]
+
         decision = apply_risk_overlay(
-            sigs, positions, today_px, tcfg, allow_short=allow_short
+            sigs, positions, today_px, tcfg, allow_short=allow_short,
+            liquidate_unsignaled=not hold_until_exit,
         )
         stats["blocked"] += len(decision.blocked)
         for reason, cnt in decision.blocked_by_reason.items():
@@ -171,7 +188,8 @@ def run_backtest(
         for c in decision.forced_exits:
             target[c] = 0.0
         for c in positions:
-            target.setdefault(c, 0.0)     # 신호 없으면 청산
+            # 신호가 없을 때: 일봉 트랙은 청산, 타점 탐지 트랙은 유지
+            target.setdefault(c, positions[c].weight if hold_until_exit else 0.0)
 
         cost_today = 0.0
         turnover_today = 0.0
@@ -215,6 +233,7 @@ def run_backtest(
     returns = pd.Series(daily_returns, index=pd.Index(ret_index, name="date"))
 
     n = max(stats["decisions"], 1)
+    n_entries = sum(1 for t in trades if t["from"] <= 1e-6 < t["to"])
     signal_stats = {
         **stats,
         "abstain_rate": round(stats.get("abstain", 0) / n, 4),
@@ -236,12 +255,19 @@ def run_backtest(
         "avg_n_positions": round(_mean(n_pos_history), 2),
         "avg_turnover_per_rebalance": round(_mean(turnovers), 4),
         "annual_turnover": round(
-            _mean(turnovers) * TRADING_DAYS / max(rebalance_every, 1), 2
+            _mean(turnovers) * periods / max(rebalance_every, 1), 2
         ),
         "n_rebalances": len(turnovers),
         # --- 실제로 지불한 비용. 회전율 x 단가로 추정하지 않는다
         "total_cost_pct": round(total_cost, 5),
-        "annual_cost_pct": round(total_cost * TRADING_DAYS / max(len(returns), 1), 5),
+        "annual_cost_pct": round(total_cost * periods / max(len(returns), 1), 5),
+        # --- 타점 탐지 트랙의 1차 판정 기준: 얼마나 드물게, 얼마나 정확하게 들어갔나
+        "hold_until_exit": hold_until_exit,
+        "n_entries": n_entries,
+        "annual_entries": round(n_entries * periods / max(len(returns), 1), 1),
+        "flat_rate": round(
+            float(pd.Series(gross_history).le(1e-6).mean()) if gross_history else 0.0, 4
+        ),
         "avg_holding_days": round(_mean(holding_days), 1),
         "exit_rank": int(tcfg["direction"].get("exit_rank", 0)),
         "min_trade_weight": round(min_trade, 4),
@@ -281,7 +307,7 @@ def run_backtest(
         metrics=summarize(returns, {
             "n_trades": len(trades),
             "annual_turnover": signal_stats["annual_turnover"],
-        }),
+        }, periods_per_year=periods),
         trades=pd.DataFrame(trades),
         signal_stats=signal_stats,
         diagnostics=diagnostics,

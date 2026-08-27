@@ -96,9 +96,11 @@ def load_model(ckpt_path: str | Path, *, device: torch.device | None = None) -> 
 
 def load_features(cfg: dict, loaded: LoadedModel) -> FeatureBundle:
     """panel/macro/static 을 읽고 **train 구간 통계로만** 정규화한다."""
-    panel = pd.read_parquet(PROCESSED_DIR / "panel.parquet")
-    macro = pd.read_parquet(PROCESSED_DIR / "macro.parquet")
-    static = pd.read_parquet(PROCESSED_DIR / "static.parquet")
+    # 트랙마다 산출물이 다르다 (일봉: panel.parquet / 60분봉: panel_60m.parquet)
+    sfx = cfg["data"].get("processed_suffix", "")
+    panel = pd.read_parquet(PROCESSED_DIR / f"panel{sfx}.parquet")
+    macro = pd.read_parquet(PROCESSED_DIR / f"macro{sfx}.parquet")
+    static = pd.read_parquet(PROCESSED_DIR / f"static{sfx}.parquet")
 
     feature_cols = loaded.feature_cols
     missing = set(feature_cols) - set(panel.columns)

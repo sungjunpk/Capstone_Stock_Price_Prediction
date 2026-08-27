@@ -48,3 +48,18 @@ def test_load_kind_handles_existing_code_column(tmp_path, monkeypatch):
     assert list(out.columns)[0] == "code"
     assert out.loc[0, "code"] == "005930"
     assert out.loc[0, "per"] == 39.16
+
+
+def test_last_timestamp_keeps_time_of_day(tmp_path):
+    """분봉 증분은 시각까지 기억해야 한다 — 날짜로 자르면 하루치를 다시 받는다."""
+    import pandas as pd
+
+    from src.data import storage
+
+    path = tmp_path / "minute60" / "005930.parquet"
+    df = pd.DataFrame({"datetime": pd.to_datetime(
+        ["2026-08-27 09:00", "2026-08-27 13:00"]), "close": [1.0, 2.0]})
+    storage.upsert(df, path, key=["datetime"], sort_by=["datetime"])
+
+    assert storage.last_timestamp(path) == pd.Timestamp("2026-08-27 13:00")
+    assert storage.last_timestamp(tmp_path / "없음.parquet") is None

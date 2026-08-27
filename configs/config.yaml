@@ -46,6 +46,12 @@ split:
 # ------------------------------------------------------------ 피처
 features:
   return_horizon: 5        # 예측 대상: t+1 ~ t+5 누적 로그수익률
+  # raw | market_relative — 시장 공통성분을 뺄지. 근거는 build.py:_apply_target_mode
+  target_mode: raw
+  # 같은 날 전 종목 대비 백분위 순위를 피처로 추가할 목록. 빈 값이면 끈다.
+  # 이름은 xs_<원본> 이 되고, 모델은 이 채널만 RevIN 을 건너뛴다 —
+  # RevIN 이 종목별 창 안에서 표준화하면 "오늘 몇 등인가"가 지워지기 때문이다.
+  cross_sectional: []
   lookback: 120            # 입력 시퀀스 길이(영업일)
   technical:
     ma_windows: [5, 20, 60]
@@ -119,12 +125,20 @@ trading:
     #    매수 임계값 0.40% 가 예측 90분위(0.27%)보다 높아 2.1년간 체결 64건.
     #    순위 방식은 모든 종목에 공통으로 낀 편차가 상쇄되어 이 문제를 안 받는다.
     mode: cross_sectional      # absolute | cross_sectional
-    top_n: 10                  # 살 때: 기권 통과분 중 q50 상위 N개
+    # 살 때: 기권 통과분 중 q50 상위 N개.
+    # ⚠️ 10 → 20 (2026-08-27). Grinold 의 능동운용 기본법칙 IR = IC x sqrt(breadth) —
+    #    우리 IC 는 0.024 로 매우 낮다. 낮은 IC 를 만회하는 유일한 축이 breadth 다.
+    #    10종목은 IC 대비 과집중이라 종목 노이즈가 알파를 덮는다.
+    #    실측(144격자 x val/test x 비용2벌): top_n 10/20/30/40 의 평균 Sharpe 가
+    #    val -0.19/0.62/0.81/0.66, test 0.63/0.93/1.00/1.09 — 두 구간 모두 단조 개선.
+    #    20 과 30 이 사실상 동률이라 변경폭이 작은 20 을 택했다.
+    top_n: 20
     # 팔 때: 이 순위 밖으로 나갈 때만. top_n 과 같게 두면 버퍼 없음.
     # 11등이 된 종목을 파는 건 정보가 아니라 노이즈에 반응하는 것이다 —
     # 그 노이즈에 연 7%(회전율 46.9 x 편도 15.5bp)를 냈다.
     # 합성 검증: 신규 편입이 리밸런싱당 5.69 → 2.51개 (-56%).
-    exit_rank: 20
+    # NBIM no-trade band 관행대로 top_n 의 2배를 유지한다 (10→20 이므로 20→40).
+    exit_rank: 40
     min_candidates: 20         # 후보가 이보다 적으면 순위가 무의미 → 전원 관망
     long_threshold: 0.004      # mode=absolute 에서만 쓰인다
     short_threshold: -0.004    # mode=absolute 에서만 쓰인다
@@ -143,9 +157,10 @@ trading:
   risk:
     stop_loss_pct: -0.05
     take_profit_pct: 0.10
-    # 리밸런싱이 5일마다이므로 실질적으로 '리밸런싱당 한도'다.
+    # 리밸런싱 주기마다 도는 값이라 실질적으로 '리밸런싱당 한도'다.
     # 5 였을 때 10종목 포트폴리오가 절반에서 잘렸다(실측: 리스크 차단 57회).
-    max_trades_per_day: 20
+    # top_n 의 2배를 유지한다 — 한도가 포트폴리오를 자르면 안 된다.
+    max_trades_per_day: 40
     max_gross_exposure: 0.90
   costs:
     commission_bps: 1.5        # 편도 수수료 (모의투자 기준)
@@ -156,10 +171,106 @@ trading:
 backtest:
   initial_capital: 100000000   # 1억
   execution_lag_days: 1        # t 예측 → t+1 종가 체결. 0 이면 방금 본 가격에 거래하는 셈
-  rebalance_days: 5            # 예측 지평과 맞춘다. 더 자주 하면 같은 베팅이 중복으로 실린다
+  # ⚠️ 5 → 10 (2026-08-27). "지평과 맞춘다"는 비용이 0 일 때만 옳다.
+  # Garleanu-Pedersen(2013): 최적 거래속도는 지평이 아니라 **알파 감쇠 속도 대비 비용**이
+  # 정한다 — 목표를 향해 부분적으로만 이동하는 것이 최적이다.
+  # 실측 평균 Sharpe (모의계좌 비용): 5일 val 0.30/test 0.72, 10일 0.51/0.94, 20일 0.62/1.07.
+  # 연회전율은 30.8 → 17.7 로 절반. 20일은 표본이 얇아져 10일을 택했다.
+  rebalance_days: 10
   walk_forward:
     train_months: 36
     val_months: 6
     test_months: 6
     step_months: 6
   metrics: [sharpe, sortino, calmar, max_drawdown, hit_rate, turnover]
+
+# ------------------------------------------------- 프로파일 (base 와의 차이만)
+# `load_config(profile="intraday")` 가 이 블록을 위에 덮어쓴다.
+# 설정 파일을 갈라놓지 않는 이유: 값이 두 곳에 흩어지면 어느 쪽이 진짜인지 모르게 된다.
+profiles:
+
+  # 횡단면 피처 트랙. 진단 결과 모델이 **언더피팅**이었다 —
+  # in-sample 랭크 IC 조차 0.0406(test 0.0241), 십분위 스프레드 t=1.10.
+  # 원인은 입력에 '오늘 시장 대비 상대 위치'가 아예 없었다는 것. 근거는
+  # build.py:_add_cross_sectional 과 phase1.py:n_passthrough.
+  xs:
+    data:
+      processed_suffix: "_xs"
+    features:
+      cross_sectional:
+        - ret_5d          # 단기
+        - ret_20d
+        - mom_12_1        # 12-1 모멘텀 (Jegadeesh & Titman 1993)
+        - rev_1m          # 단기 반전
+        - rsi
+        - rvol_20         # 변동성 — 저변동 이상현상
+        - vol_ratio
+        - turnover_z      # 유동성
+
+  # 횡단면 피처 + 시장 대비 초과수익 타깃 (둘 다).
+  xs_mr:
+    data:
+      processed_suffix: "_xsmr"
+    features:
+      target_mode: market_relative
+      cross_sectional:
+        - ret_5d
+        - ret_20d
+        - mom_12_1
+        - rev_1m
+        - rsi
+        - rvol_20
+        - vol_ratio
+        - turnover_z
+
+  # 시장 대비 초과수익 타깃 트랙. 일봉과 모든 게 같고 **타깃 정의만** 다르다 —
+  # 대조군이 되려면 다른 건 전부 고정해야 한다.
+  mktrel:
+    data:
+      processed_suffix: "_mr"      # panel_mr.parquet / 체크포인트 phase1_xxxx_mr.pt
+    features:
+      target_mode: market_relative
+
+  # 60분봉 타점 탐지 트랙. 일봉 트랙은 이 블록을 읽지 않는다.
+  # 목표가 다르다 — 주기적 리밸런싱이 아니라 **조건이 맞는 타점에서만 진입**한다.
+  intraday:
+    data:
+      chart_kind: minute60             # data/raw/minute60/
+      macro_index_kind: index_minute60
+      macro_etf_kind: minute60         # ETF 도 일반 종목이라 같은 디렉터리에 쌓인다
+      processed_suffix: "_60m"         # data/processed/panel_60m.parquet
+    features:
+      return_horizon: 7                # 7봉 = 1거래일. 지평을 줄이면 비용이 알파를 삼킨다
+      lookback: 120                    # 120봉 ≈ 17거래일
+    split:
+      # ⚠️ 분봉 이력이 13개월(2025-08-01~)뿐이라 구간이 좁다.
+      #    train 8개월 / val 2개월 / test 3개월.
+      train_end: "2026-03-31"
+      val_end: "2026-05-31"
+      embargo_days: 1                  # 라벨이 7봉(1일)만 앞을 보므로 하루면 충분하다
+    trading:
+      # 순위(cross_sectional)가 아니라 **조건**이다. 못 닿으면 대기가 정답이다.
+      # 일봉에서 absolute 가 실패한 건 "포트폴리오를 늘 채워야 한다"는 전제 때문이었다.
+      direction:
+        mode: absolute
+        # 진입 임계값. generate_signal 이 왕복비용(0.0031)을 하한으로 강제하므로
+        # 이 값은 그 위에서만 의미가 있다. 4단계에서 q50 분포를 보고 조정한다.
+        long_threshold: 0.004
+      sizing:
+        # 노출은 목표치를 채우는 게 아니라 **조건 충족 종목 수**가 정한다.
+        exposure_scaling: false
+        # 보유분을 재조정하지 않으므로(hold_until_exit) 잔챙이 거래가 애초에 없다.
+        min_trade_weight: 0.0
+      risk:
+        # ⚠️ 아래 세 값이 "정확한 타점에 익절"의 조작적 정의다. 추측이 아니라
+        #    지평의 자연 폭에서 잡았다 — 60분봉 1거래일 변동성이 약 2% 다.
+        #    4단계에서 청산 사유 분포(익절/손절/만료)를 보고 조정한다.
+        take_profit_pct: 0.03
+        stop_loss_pct: -0.02
+        max_holding_bars: 7        # 예측 지평(7봉)이 지나면 그 예측은 만료다
+        max_trades_per_day: 5      # 여기서는 '한 봉당' 이다 — 한 번에 몰아 넣지 않는다
+    backtest:
+      rebalance_days: 1            # 매 봉 탐지. 진입은 조건이 맞을 때만 일어난다
+      execution_lag_days: 1        # t 봉 예측 → t+1 봉 종가 체결
+      bars_per_year: 1764          # 252 x 7봉. 연율화 계수를 틀리면 Sharpe 가 sqrt(7) 어긋난다
+      hold_until_exit: true        # 신호가 없다고 팔지 않는다 — 익절/손절/만료로만 청산
