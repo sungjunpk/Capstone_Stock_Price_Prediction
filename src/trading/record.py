@@ -34,6 +34,7 @@ log = get_logger(__name__)
 RECORD_DIR = PROJECT_ROOT / "outputs" / "paper_trading"
 EQUITY_PATH = RECORD_DIR / "equity.jsonl"
 FILLS_PATH = RECORD_DIR / "fills.jsonl"
+HOLDINGS_PATH = RECORD_DIR / "holdings.jsonl"
 PERFORMANCE_PATH = RECORD_DIR / "performance.json"
 BASELINE_PATH = RECORD_DIR / "baseline.json"
 
@@ -69,11 +70,16 @@ def upsert_jsonl(path: Path, new_rows: list[dict], *, key: tuple[str, ...]) -> i
     merged = {tuple(r[k] for k in key): r for r in read_jsonl(path)}
     merged.update({tuple(r[k] for k in key): r for r in new_rows})
     ordered = sorted(merged.values(), key=lambda r: tuple(str(r[k]) for k in key))
+    return _write_jsonl(path, ordered)
+
+
+def _write_jsonl(path: Path, rows: list[dict]) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in ordered),
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
         encoding="utf-8",
     )
-    return len(ordered)
+    return len(rows)
 
 
 # ---------------------------------------------------------------- 기록
@@ -104,6 +110,77 @@ def snapshot_row(account: AccountSnapshot, on: date) -> dict:
 
 def record_equity(account: AccountSnapshot, on: date) -> int:
     return upsert_jsonl(EQUITY_PATH, [snapshot_row(account, on)], key=("date",))
+
+
+# 현금도 한 행으로 남긴다. 종목 비중과 합이 1 이 되는지 파일 안에서 바로 검증되고,
+# 스택 영역 차트가 pivot 한 번으로 끝난다.
+CASH_CODE = "CASH"
+
+
+def holdings_rows(account: AccountSnapshot, on: date) -> list[dict]:
+    """종목별 보유 상태 — 하루 × 종목. **발표용 비중 시계열이 여기 쌓인다.**
+
+    비중은 **총자산(NAV) 기준**이다:  w_i = 평가금액 / 총자산.
+    현금 비중 c = 1 - Σw_i 를 CASH 행으로 같이 남기므로 Σw + c = 1 이 성립한다.
+    (Boyd et al., *Markowitz Portfolio Construction at Seventy*, 2024, §2.1 —
+     w 는 총자산 대비 비율, c 는 현금 비중, 제약이 1ᵀw + c = 1)
+
+    ⚠️ 현금은 **잔차(총자산 - 주식평가합)** 다. 주문가능금액이 아니다.
+       D+2 결제 때문에 둘이 다르다 — 실측 2026-08-27: 주문가능 9,672,457 vs
+       잔차 9,174,777. 주문가능금액을 쓰면 비중 합이 1 을 넘는다.
+       주문가능금액은 equity.jsonl 의 `orderable` 에 따로 있다.
+    """
+    eq = account.equity
+    if eq <= 0:
+        log.warning("총자산이 %s 다 — 비중을 계산할 수 없어 %s 기록을 건너뛴다", eq, on)
+        return []
+
+    rows = [
+        {
+            "date": on.isoformat(),
+            "code": h.code,
+            "name": h.name,
+            "quantity": h.quantity,
+            "avg_price": round(h.avg_price, 0),
+            "current_price": round(h.current_price, 0),
+            "eval_amount": round(h.eval_amount, 0),
+            "weight": round(h.eval_amount / eq, 6),
+            "pnl_rate": round(h.pnl_rate, 4),
+            "pnl_amount": round(h.pnl_amount, 0),
+        }
+        for h in sorted(account.holdings.values(), key=lambda h: -h.eval_amount)
+    ]
+    cash = eq - sum(h.eval_amount for h in account.holdings.values())
+    rows.append({
+        "date": on.isoformat(),
+        "code": CASH_CODE,
+        "name": "현금",
+        "quantity": None,
+        "avg_price": None,
+        "current_price": None,
+        "eval_amount": round(cash, 0),
+        "weight": round(cash / eq, 6),
+        "pnl_rate": 0.0,
+        "pnl_amount": 0.0,
+    })
+    return rows
+
+
+def record_holdings(account: AccountSnapshot, on: date) -> int:
+    """holdings.jsonl 에 그날 보유 상태를 남긴다.
+
+    같은 날 다시 돌리면 **그 날짜 행을 통째로 교체**한다.
+    (date, code) upsert 로는 안 된다 — 그 사이 매도된 종목의 행이 그대로 남아
+    비중 합이 1 을 넘어버린다.
+    """
+    rows = holdings_rows(account, on)
+    if not rows:
+        return 0
+    day = on.isoformat()
+    kept = [r for r in read_jsonl(HOLDINGS_PATH) if r.get("date") != day]
+    merged = sorted(kept + rows,
+                    key=lambda r: (str(r["date"]), -float(r.get("weight") or 0.0)))
+    return _write_jsonl(HOLDINGS_PATH, merged)
 
 
 def record_fills(rows: list[dict], on: date) -> int:

@@ -25,9 +25,11 @@ from src.trading.broker import PaperBroker  # noqa: E402
 from src.trading.record import (  # noqa: E402
     EQUITY_PATH,
     FILLS_PATH,
+    HOLDINGS_PATH,
     compute_performance,
     record_equity,
     record_fills,
+    record_holdings,
     save_baseline,
     save_performance,
 )
@@ -63,6 +65,7 @@ def main() -> int:
         diary = broker.fetch_trade_diary(on.strftime("%Y%m%d"))
 
     n_eq = record_equity(account, on)
+    n_hold = record_holdings(account, on)
     n_fill = record_fills(diary, on)
     perf = compute_performance()
     save_performance(perf)
@@ -86,9 +89,9 @@ def main() -> int:
         print(f"    Sharpe      {s['sharpe']:>15.2f}")
         print(f"    최대낙폭    {s['max_drawdown']:>15.2%}")
 
-    for p in (EQUITY_PATH, FILLS_PATH):
+    for p in (EQUITY_PATH, HOLDINGS_PATH, FILLS_PATH):
         print(f"\n저장: {p.relative_to(PROJECT_ROOT)}", end="")
-    print(f"  ({n_eq}일 / {n_fill}행)")
+    print(f"  ({n_eq}일 / 보유 {n_hold}행 / 체결 {n_fill}행)")
     return 0
 
 
