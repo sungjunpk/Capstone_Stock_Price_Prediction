@@ -128,13 +128,14 @@ data/processed/features.parquet        ← 지표·라벨까지 계산된 학습
 | 모델 | `revin` `patch_embed` `encoder` `cross_attention` `vsn` `quantile_head` `phase1` | ✅ 완료 + 테스트 (**0.33M** — 스윕으로 축소 확정) |
 | 학습 | `split` `losses` | ✅ 완료 + 테스트 |
 | 학습 | `dataset` `train` | ✅ 완료 — GPU 학습 실행, 기준선 대비 **+3.34%** |
-| 평가 | `metrics` `backtest` | ✅ 완료 + 테스트 — 랭크 IC 진단 포함 |
-| 매매 | `trading/signal` | ✅ 완료 + 테스트 17개 (횡단면 순위 모드) |
-| 매매 | `trading/risk` | ✅ 완료 + 테스트 9개 |
-| 매매 | `trading/broker` (키움 계좌·주문) | ✅ 완료 + 테스트 14개 — 총자산이 증권사 화면과 원 단위 일치 |
-| 매매 | `trading/paper_trader` | ✅ 완료 + 테스트 20개 — 낡은 패널이면 리밸런싱 차단 |
+| 평가 | `metrics` `backtest` | ✅ 완료 + 테스트 28개 — 랭크 IC 진단 포함 |
+| 매매 | `trading/signal` | ✅ 완료 + 테스트 25개 (횡단면 순위 모드) |
+| 매매 | `trading/risk` | ✅ 완료 + 테스트 17개 |
+| 매매 | `trading/broker` (키움 계좌·주문) | ✅ 완료 + 테스트 16개 — 총자산이 증권사 화면과 원 단위 일치 |
+| 매매 | `trading/paper_trader` | ✅ 완료 + 테스트 22개 — 낡은 패널이면 리밸런싱 차단 |
+| 매매 | `trading/record` (실거래 기록) | ✅ 완료 + 테스트 9개 — 비중 항등식 Σw+c=1 |
 | 추론 | `models/inference` (백테스트·모의투자 공용) | ✅ 완료 |
-| 화면 | `webapp` 대시보드 | ✅ 완료 + 테스트 9개 — 보유 현황을 계좌 기록에서 그린다 |
+| 화면 | `webapp` 대시보드 | ✅ 완료 + 테스트 14개 — 보유 현황을 계좌 기록에서 그린다 |
 | 분봉 | `minute_chart` `index_minute` TR + `collect_intraday` | ✅ 완료 + 테스트 8개 — 149건 실호출, 실패 0 |
 | 분봉 | `profiles.intraday` 설정 오버레이 | ✅ 완료 + 테스트 4개 |
 | 분봉 | 타점 탐지 모드 (`hold_until_exit`, `max_holding_bars`) | ✅ 완료 + 테스트 8개 |

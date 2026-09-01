@@ -183,7 +183,7 @@ def build_plan(
         백분위이기 때문이다 — 오늘 하루만 보면 '오늘이 평소보다 불확실한가'를
         판단할 수 없다(`src/models/inference.py: predict_recent`).
     rebalancing: False 면 신규 진입/비중 조정을 하지 않고 **강제 청산만** 본다.
-        리밸런싱 주기(기본 5일) 사이에도 손절이 동작하게 하기 위한 경로다.
+        리밸런싱 주기(`backtest.rebalance_days`) 사이에도 손절이 동작하게 하기 위한 경로다.
     rebalance_skip_reason: rebalancing=False 인 이유. 주기 때문인지 데이터가 낡아서인지
         기록만 보고 구분할 수 있어야 한다 — 실행 기록이 곧 발표 근거다.
     unfilled: 종목코드 → 미체결수량. 아직 체결을 기다리는 종목은 이번 회차에서
