@@ -7,6 +7,8 @@
     python scripts/collect.py --dry-run       # 호출 없이 계획만 출력
     python scripts/collect.py --end-date 2026-08-25   # 그날까지만
 
+종료코드: 0 = 전부 성공, 1 = 일부 종목 실패(10% 이내), 2 = 수집 실패.
+
 ⚠️ 장중에 --end-date 없이 돌리면 **오늘의 미완성 일봉**이 종가 자리에 들어간다.
    장 마감 전에 수집한다면 전 거래일을 --end-date 로 지정할 것.
 """
@@ -33,6 +35,10 @@ from src.utils.config import load_config  # noqa: E402
 from src.utils.logging import get_logger, setup_logging  # noqa: E402
 
 log = get_logger("collect")
+
+# 종료코드: 0 전부 성공 / 1 일부 실패(진행 가능) / 2 수집 실패(멈춰야 함)
+EXIT_PARTIAL = 1
+EXIT_FAILED = 2
 
 
 def main() -> int:
@@ -118,7 +124,13 @@ def main() -> int:
     log.info("완료: 성공 %d / 실패 %d", len(status) - len(failed), len(failed))
     for k, v in failed.items():
         log.error("  %s → %s", k, v)
-    return 1 if failed else 0
+    if not failed:
+        return 0
+    # 몇 종목이 깨진 것과 수집이 통째로 엎어진 것은 다르다. 호출자가 구분할 수 있게
+    # 종료코드를 나눈다 — 2026-08-28 에 149종목 중 2종목 실패로 피처 재생성이
+    # 통째로 스킵됐다. 증분 수집이라 소수 실패는 다음 실행이 알아서 메운다.
+    partial = len(failed) <= max(1, len(status) // 10)
+    return EXIT_PARTIAL if partial else EXIT_FAILED
 
 
 if __name__ == "__main__":

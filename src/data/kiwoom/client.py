@@ -34,13 +34,24 @@ _RATE_LIMIT_CODES = {"5", 5}
 _RATE_LIMIT_WORDS = ("초과", "제한", "잠시", "too many", "limit")
 
 
+# 서버가 토큰을 죽였다는 신호. 키움은 appkey 당 토큰을 하나만 살려두므로
+# 수집이 도는 중에 모의투자·스냅샷이 토큰을 새로 받으면 이쪽 토큰이 무효화된다.
+# 이때 클라이언트의 만료 시각은 아직 미래라 스스로는 눈치채지 못한다.
+_TOKEN_DEAD_HINTS = ("8005", "토큰이 유효하지 않")
+
+
 def _looks_rate_limited(code, msg: str) -> bool:
     return code in _RATE_LIMIT_CODES or any(w in msg.lower() for w in _RATE_LIMIT_WORDS)
+
+
+def _looks_token_dead(msg: str) -> bool:
+    return any(h in msg for h in _TOKEN_DEAD_HINTS)
 # 429 가 길게 이어지는 TR(ka10059 등)이 있어 4회로는 부족하다 — 실측 실패율 25%.
 # 지수백오프에 상한을 두고 횟수를 늘린다: 1,2,4,8,16,30,30,30 ≈ 2분까지 버틴다.
 _MAX_RETRIES = 8
 _MAX_BACKOFF = 30.0
 _TOKEN_MARGIN_SEC = 300  # 만료 5분 전 미리 갱신
+_MAX_TOKEN_REISSUES = 2  # 재발급해도 계속 8005 면 자격증명 문제다 — 물고 늘어지지 않는다
 
 
 class KiwoomAPIError(RuntimeError):
@@ -110,6 +121,12 @@ class KiwoomClient:
         self._token_expires_at = time.time() + max(ttl - _TOKEN_MARGIN_SEC, 60.0)
         log.info("키움 토큰 발급 완료 (env=%s, ttl≈%.0fs)", self.settings.env, ttl)
 
+    def _discard_token(self) -> None:
+        """다음 _auth_header 호출이 새로 받도록 지금 토큰을 버린다."""
+        with self._token_lock:
+            self._token = None
+            self._token_expires_at = 0.0
+
     def _auth_header(self) -> str:
         with self._token_lock:
             if self._token is None or time.time() >= self._token_expires_at:
@@ -138,6 +155,7 @@ class KiwoomClient:
             headers["next-key"] = next_key
 
         last_err: Exception | None = None
+        token_reissues = 0
         for attempt in range(_MAX_RETRIES):
             self.limiter.acquire(spec.api_id)
             try:
@@ -182,6 +200,16 @@ class KiwoomClient:
             rc = data.get("return_code")
             if rc not in (None, 0, "0"):
                 msg = str(data.get("return_msg") or "")
+                # 토큰이 죽었으면 다시 받고 **이 요청을 다시 보낸다**. 예전엔 갱신이
+                # 다음 종목 차례에나 일어나서, 만료 1회당 종목 1개가 조용히 유실됐다.
+                if _looks_token_dead(msg) and token_reissues < _MAX_TOKEN_REISSUES:
+                    token_reissues += 1
+                    log.warning("[%s] 토큰 무효(%s) — 재발급 후 재시도 (%d/%d)",
+                                spec.name, msg, token_reissues, _MAX_TOKEN_REISSUES)
+                    self._discard_token()
+                    headers["authorization"] = self._auth_header()
+                    last_err = KiwoomAPIError(f"{spec.name}: return_code={rc}", body=data)
+                    continue
                 # 제한 초과가 200 으로 오는 경우가 있다(ka10099 에서 관측) — 속도를 낮추고 재시도
                 if _looks_rate_limited(rc, msg) and attempt < _MAX_RETRIES - 1:
                     new_rate = self.limiter.penalize(spec.api_id)
