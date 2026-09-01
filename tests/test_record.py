@@ -41,6 +41,9 @@ def make_account(holdings: dict[str, float], *, equity: float,
 def tmp_records(tmp_path, monkeypatch):
     """실제 기록 파일을 건드리지 않는다."""
     monkeypatch.setattr(record, "HOLDINGS_PATH", tmp_path / "holdings.jsonl")
+    monkeypatch.setattr(record, "EQUITY_PATH", tmp_path / "equity.jsonl")
+    monkeypatch.setattr(record, "FILLS_PATH", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(record, "BASELINE_PATH", tmp_path / "baseline.json")
 
 
 class TestWeightConvention:
@@ -52,15 +55,20 @@ class TestWeightConvention:
 
         assert sum(r["weight"] for r in rows) == pytest.approx(1.0, abs=1e-6)
 
-    def test_cash_is_residual_not_orderable(self):
-        """현금은 총자산 - 주식평가합. 주문가능금액을 쓰면 합이 1 을 넘는다."""
+    def test_cash_is_residual_of_total_assets(self):
+        """현금은 총자산 - 주식평가합.
+
+        총자산이 `주문가능 + 주식평가합` 으로 바뀐 뒤(2026-08-31, 증권사 화면
+        일치) 잔차와 주문가능금액은 정의상 같은 값이다. 예전엔 총자산을
+        키움 추정예탁자산에서 받아 둘이 달랐다.
+        """
         acct = make_account({"A": 90_494_910.0},
                             equity=99_669_687.0, orderable=9_672_457.0)
         rows = record.holdings_rows(acct, TODAY)
         cash = next(r for r in rows if r["code"] == record.CASH_CODE)
 
-        assert cash["eval_amount"] == pytest.approx(99_669_687.0 - 90_494_910.0)
-        assert cash["eval_amount"] != pytest.approx(9_672_457.0)
+        assert cash["eval_amount"] == pytest.approx(9_672_457.0)
+        assert cash["eval_amount"] == pytest.approx(acct.equity - 90_494_910.0)
         assert sum(r["weight"] for r in rows) == pytest.approx(1.0, abs=1e-6)
 
     def test_weight_is_share_of_total_assets(self):
@@ -143,3 +151,37 @@ def test_liquidate_all_sells_every_holding_and_buys_nothing():
     # A 는 예측 1위지만 판다 — 예측을 보지 않는다는 뜻이다
     assert {o.code for o in plan.orders} == {"A", "Z"}
     assert all(o.side == SELL for o in plan.orders)
+
+
+# ------------------------------------------------- 일간 수익률
+class TestDailyReturn:
+    """누적 수익률만으로는 '오늘 어땠나'를 못 본다.
+
+    곡선의 마지막 구간이 곧 일간 수익률이다. 대시보드가 curve 를 보고
+    자기 식으로 차분을 구하지 않도록 여기서 계산해 내보낸다.
+    """
+
+    def write_equity(self, rows: list[dict]) -> None:
+        record.upsert_jsonl(record.EQUITY_PATH, rows, key=("date",))
+
+    def test_daily_return_is_last_days_change(self):
+        self.write_equity([
+            {"date": "2026-08-25", "equity": 100_000_000.0},
+            {"date": "2026-08-26", "equity": 99_000_000.0},
+            {"date": "2026-08-27", "equity": 99_990_000.0},
+        ])
+        perf = record.compute_performance()
+
+        # 99,990,000 / 99,000,000 - 1 = +0.01
+        assert perf["daily_return"] == pytest.approx(0.01)
+        assert perf["daily_date"] == "2026-08-27"
+
+    def test_daily_return_absent_on_first_day(self):
+        """하루치뿐이면 전일이 없다 — 0.0 이 아니라 키가 없어야 한다.
+
+        0.0 을 내보내면 화면에 '오늘 0.00%' 로 떠서, 보합과 구분되지 않는다.
+        """
+        self.write_equity([{"date": "2026-08-25", "equity": 100_000_000.0}])
+        perf = record.compute_performance()
+
+        assert "daily_return" not in perf

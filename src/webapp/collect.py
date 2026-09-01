@@ -22,6 +22,7 @@ PANEL_PATH = PROJECT_ROOT / "data" / "processed" / "panel.parquet"
 _PT = PROJECT_ROOT / "outputs" / "paper_trading"
 EQUITY_PATH = _PT / "equity.jsonl"
 FILLS_PATH = _PT / "fills.jsonl"
+HOLDINGS_PATH = _PT / "holdings.jsonl"
 PERFORMANCE_PATH = _PT / "performance.json"
 
 
@@ -190,7 +191,7 @@ def performance() -> dict | None:
 
 
 def equity_history() -> list[dict]:
-    """일별 총자산 + 벤치마크 곡선.
+    """일별 총자산 곡선.
 
     `record.compute_performance()` 가 기준선까지 병합해 `performance.json` 에
     넣어둔 것을 그대로 읽는다. 여기서 다시 병합하지 않는다 —
@@ -198,6 +199,22 @@ def equity_history() -> list[dict]:
     """
     perf = _read_json(PERFORMANCE_PATH) or {}
     return list(perf.get("curve") or [])
+
+
+def holdings() -> list[dict]:
+    """가장 최근 기록일의 보유 상태 (현금 행 포함).
+
+    실행 계획(`run.plan.signals`)이 아니라 **계좌 기록**을 본다. 계획은 그날
+    주문을 냈을 때만 남고 신호가 비면 통째로 사라지는데, 보유는 주문이 없어도
+    이어진다 — 실제로 2026-08-31 화면에서 9종목을 들고 있는데 보유 현황이
+    통째로 비어 있었다. `record.record_holdings()` 가 비중·손익을 이미
+    계산해 뒀으므로 여기서는 고르기만 한다.
+    """
+    rows = _read_jsonl(HOLDINGS_PATH)
+    if not rows:
+        return []
+    last = max(r["date"] for r in rows)
+    return [r for r in rows if r["date"] == last]
 
 
 def attribution(limit: int = 30) -> list[dict]:
@@ -229,6 +246,7 @@ def collect_all() -> dict:
         "run": latest_run(),
         "history": run_history(),
         "state": _read_json(STATE_PATH),
+        "holdings": holdings(),
         "performance": performance(),
         "equity": equity_history(),
         "attribution": attribution(),

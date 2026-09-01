@@ -136,7 +136,6 @@ class TestSnapshot:
             },
             "kt00018": {
                 "tot_evlt_amt": "000000082031660",
-                "prsm_dpst_aset_amt": "000000099290271",   # 키움이 준 진짜 총자산
                 "acnt_evlt_remn_indv_tot": [{
                     "stk_cd": "A032640", "stk_nm": "LG유플러스", "rmnd_qty": "673",
                     "trde_able_qty": "673", "pur_pric": "14899", "cur_prc": "14890",
@@ -145,20 +144,28 @@ class TestSnapshot:
             },
         })
         snap = PaperBroker(client).snapshot()
-        assert snap.equity == pytest.approx(99_290_271)
+        assert snap.equity == pytest.approx(7_046_297 + 82_031_660)
         assert snap.equity != snap.deposit + snap.total_eval   # 부풀지 않는다
-        # 비중도 실제 값이어야 한다 — 부푼 분모면 5.5% 로 축소돼 보인다
-        assert snap.weight_of("032640") == pytest.approx(0.1009, abs=1e-4)
 
-    def test_equity_falls_back_to_orderable_not_deposit(self):
-        """추정예탁자산이 안 오면 예수금이 아니라 주문가능금액으로 물러난다."""
+    def test_equity_ignores_kiwoom_estimated_assets(self):
+        """`prsm_dpst_aset_amt` 가 와도 쓰지 않는다 — 증권사 화면과 어긋난다.
+
+        2026-08-27 실측 회귀: 주문가능 16,063,315 + 주식평가 83,707,100 =
+        99,770,415(-0.23%) 가 키움 웹 화면과 맞는데, 이 필드는 99,310,070(-0.69%)
+        으로 왔다. 필드를 믿으면 대시보드가 증권사와 0.46%p 어긋난다.
+        """
         client = FakeClient(responses={
-            "kt00001": {"entr": "000000100000000", "ord_alow_amt": "000000007046297"},
-            "kt00018": {"tot_evlt_amt": "000000082031660",
-                        "acnt_evlt_remn_indv_tot": []},
+            "kt00001": {"entr": "000000016063315",
+                        "ord_alow_amt": "000000016063315"},
+            "kt00018": {
+                "tot_evlt_amt": "000000083707100",
+                "prsm_dpst_aset_amt": "000000099310070",   # 키움 값 — 무시한다
+                "acnt_evlt_remn_indv_tot": [],
+            },
         })
         snap = PaperBroker(client).snapshot()
-        assert snap.equity == pytest.approx(7_046_297 + 82_031_660)
+        assert snap.equity == pytest.approx(99_770_415)
+        assert snap.equity != snap.estimated_assets
 
     def test_empty_account_has_zero_weights(self):
         # 실제 kt00001 은 entr 와 ord_alow_amt 를 항상 같이 준다(2026-08-25 검증).

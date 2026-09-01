@@ -3,7 +3,7 @@
 `runs/*.json` 은 **실행할 때만** 남는다. 누적 수익률 곡선을 그리려면
 거래가 없는 날에도 총자산이 찍혀 있어야 하므로 별도 시계열이 필요하다.
 
-    outputs/paper_trading/equity.jsonl      하루 한 줄 — 총자산·현금·주식·벤치마크
+    outputs/paper_trading/equity.jsonl      하루 한 줄 — 총자산·현금·주식
     outputs/paper_trading/fills.jsonl       하루 × 종목 — 체결 기준 실현손익
     outputs/paper_trading/performance.json  위에서 계산한 지표 (최신 1개)
 
@@ -23,7 +23,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data import storage
 from src.evaluation import metrics
 from src.trading.broker import AccountSnapshot
 from src.utils.config import PROJECT_ROOT
@@ -37,9 +36,6 @@ FILLS_PATH = RECORD_DIR / "fills.jsonl"
 HOLDINGS_PATH = RECORD_DIR / "holdings.jsonl"
 PERFORMANCE_PATH = RECORD_DIR / "performance.json"
 BASELINE_PATH = RECORD_DIR / "baseline.json"
-
-# 벤치마크. 이미 매일 수집되는 파일이라 추가 API 호출이 없다.
-KOSPI_CODE = "001"
 
 # 이보다 짧으면 Sharpe·MDD 를 숫자로 인용하지 않는다.
 # 며칠짜리 표본으로 연율화한 지표는 해석이 아니라 착시다.
@@ -83,18 +79,6 @@ def _write_jsonl(path: Path, rows: list[dict]) -> int:
 
 
 # ---------------------------------------------------------------- 기록
-def kospi_close(on: date) -> float | None:
-    """벤치마크 종가. 없으면 None — 벤치마크 없다고 기록을 멈추지 않는다."""
-    df = storage.read_parquet(storage.raw_path("index_daily", KOSPI_CODE))
-    if df is None or df.empty or "close" not in df:
-        return None
-    d = pd.to_datetime(df["date"]).dt.date
-    hit = df[d == on]
-    if hit.empty:
-        return None
-    return float(hit["close"].iloc[-1])
-
-
 def snapshot_row(account: AccountSnapshot, on: date) -> dict:
     """하루치 계좌 상태 한 줄."""
     return {
@@ -104,7 +88,6 @@ def snapshot_row(account: AccountSnapshot, on: date) -> dict:
         "orderable": round(account.cash, 0),
         "stock_eval": round(account.total_eval, 0),
         "n_holdings": len(account.holdings),
-        "kospi": kospi_close(on),
     }
 
 
@@ -125,10 +108,10 @@ def holdings_rows(account: AccountSnapshot, on: date) -> list[dict]:
     (Boyd et al., *Markowitz Portfolio Construction at Seventy*, 2024, §2.1 —
      w 는 총자산 대비 비율, c 는 현금 비중, 제약이 1ᵀw + c = 1)
 
-    ⚠️ 현금은 **잔차(총자산 - 주식평가합)** 다. 주문가능금액이 아니다.
-       D+2 결제 때문에 둘이 다르다 — 실측 2026-08-27: 주문가능 9,672,457 vs
-       잔차 9,174,777. 주문가능금액을 쓰면 비중 합이 1 을 넘는다.
-       주문가능금액은 equity.jsonl 의 `orderable` 에 따로 있다.
+    현금은 **잔차(총자산 - 주식평가합)** 로 잡는다. 총자산이
+    `주문가능 + 주식평가합` 이라(2026-08-31 변경, `broker.AccountSnapshot.equity`)
+    잔차는 주문가능금액과 같은 값이 되지만, 잔차로 두면 총자산 정의가 또 바뀌어도
+    Σw + c = 1 이 저절로 성립한다.
     """
     eq = account.equity
     if eq <= 0:
@@ -210,8 +193,6 @@ def save_baseline(amount: float, on: date) -> Path:
     row = {
         "date": on.isoformat(),
         "equity": float(amount),
-        # 벤치마크도 같은 날부터 시작해야 초과수익 비교의 구간이 맞는다
-        "kospi": kospi_close(on),
     }
     BASELINE_PATH.write_text(json.dumps(row, ensure_ascii=False, indent=2),
                              encoding="utf-8")
@@ -238,17 +219,6 @@ def _returns(equity: list[dict]) -> pd.Series:
     return s.pct_change().dropna()
 
 
-def _benchmark_returns(equity: list[dict]) -> pd.Series:
-    have = [r for r in equity if r.get("kospi")]
-    if len(have) < 2:
-        return pd.Series(dtype=float)
-    s = pd.Series(
-        [float(r["kospi"]) for r in have],
-        index=pd.to_datetime([r["date"] for r in have]),
-    ).sort_index()
-    return s.pct_change().dropna()
-
-
 def compute_performance() -> dict:
     """equity.jsonl + fills.jsonl → 지표 묶음.
 
@@ -263,8 +233,8 @@ def compute_performance() -> dict:
 
     # 기준선이 있으면 맨 앞에 붙인다 — 첫 진입 비용을 수익률에 포함시키기 위해서다.
     #
-    # ⚠️ 기준선 날짜를 옮기지 않는다. 한 번 옮겨봤다가 벤치마크(KOSPI)는 옛 날짜의
-    #    값을 그대로 들고 가서 곡선이 어긋났다. 날짜는 데이터의 일부다.
+    # ⚠️ 기준선 날짜를 옮기지 않는다. 옮기면 곡선의 첫 구간이 실제로 흐른 기간과
+    #    어긋난다. 날짜는 데이터의 일부다.
     #    기준선은 **첫 스냅샷보다 이른 거래일**에 심어야 한다.
     base = read_baseline()
     start_from_baseline = bool(base) and base["date"] < equity[0]["date"]
@@ -279,7 +249,6 @@ def compute_performance() -> dict:
     start = float(base["equity"]) if base else float(equity[0]["equity"])
     last = float(equity[-1]["equity"])
     r = _returns(equity)
-    br = _benchmark_returns(equity)
 
     out: dict = {
         "start_date": equity[0]["date"],
@@ -294,19 +263,20 @@ def compute_performance() -> dict:
         "reliable": len(r) >= MIN_DAYS_FOR_METRICS,
         "min_days_for_metrics": MIN_DAYS_FOR_METRICS,
     }
+    # 마지막 구간이 곧 일간 수익률이다. 누적만으로는 '오늘 어땠나'가 안 보인다.
+    # 여기서 내보내야 대시보드가 curve 를 보고 차분을 다시 구하지 않는다.
+    if len(r) >= 1:
+        out["daily_return"] = round(float(r.iloc[-1]), 5)
+        out["daily_date"] = r.index[-1].date().isoformat()
+
     if len(r) >= 2:
         # 백테스트 리포트와 같은 키가 나오도록 같은 함수를 쓴다
         out["strategy"] = metrics.summarize(r)
-    if len(br) >= 2:
-        out["benchmark"] = metrics.summarize(br)
-        out["excess_return"] = round(
-            out["total_return"] - float(out["benchmark"]["total_return"]), 5
-        )
 
     # 병합된 곡선을 여기 담아 둔다. 대시보드가 기준선 병합을 다시 구현하면
     # 화면과 지표가 다른 구간을 보게 된다 — 계산은 한 곳에만 둔다.
     out["curve"] = [
-        {"date": e["date"], "equity": float(e["equity"]), "kospi": e.get("kospi")}
+        {"date": e["date"], "equity": float(e["equity"])}
         for e in equity
     ]
 

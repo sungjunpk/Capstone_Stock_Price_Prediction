@@ -126,13 +126,65 @@ class TestPerformanceSections:
                 "baseline_seeded": True, "baseline_in_curve": False,
                 "realized_pnl": 0.0, "fee_tax": 0.0,
             },
-            "equity": [{"date": "2026-08-26", "equity": 1e8, "kospi": None}],
+            "equity": [{"date": "2026-08-26", "equity": 1e8}],
         })
         assert "<svg" not in html            # 한 점으로는 곡선을 그리지 않는다
         assert "해석이 아니라 착시" in html    # 짧은 표본 경고가 뜬다
 
-    def test_curve_survives_missing_benchmark(self):
-        """KOSPI 가 아직 안 채워진 날이 섞여도 계좌 곡선은 그린다."""
+    def test_holdings_survive_an_empty_plan(self):
+        """실행 계획이 비어도 보유 현황은 나와야 한다.
+
+        2026-08-31 회귀: 마지막 실행에 신호가 없자 9종목을 들고 있는데도
+        보유 현황 섹션이 통째로 사라졌다. 보유는 계좌 기록에서 온다.
+        """
+        html = render_html({
+            "generated_at": "x",
+            "run": {"plan": {"signals": []}},
+            "holdings": [
+                {"date": "2026-08-28", "code": "024110", "name": "기업은행",
+                 "quantity": 496, "eval_amount": 10_341_600, "weight": 0.1027,
+                 "pnl_rate": 0.0321},
+                {"date": "2026-08-28", "code": "CASH", "name": "현금",
+                 "quantity": None, "eval_amount": 16_063_315, "weight": 0.1595,
+                 "pnl_rate": 0.0},
+            ],
+        })
+        assert "보유 현황" in html
+        assert "024110" in html and "기업은행" in html
+        assert "10.3%" in html and "3.21%" in html
+        assert "현금" in html          # 현금 행이 있어야 비중 합이 100% 로 읽힌다
+
+    def test_daily_return_tile_shows_when_recorded(self):
+        html = render_html({
+            "generated_at": "x",
+            "performance": {
+                "n_days": 3, "start_date": "2026-08-25", "end_date": "2026-08-27",
+                "start_equity": 1e8, "equity": 9.9e7, "total_return": -0.01,
+                "reliable": False, "min_days_for_metrics": 20,
+                "baseline_seeded": True, "baseline_in_curve": True,
+                "realized_pnl": 0.0, "fee_tax": 0.0,
+                "daily_return": 0.0198, "daily_date": "2026-08-27",
+            },
+        })
+        assert "일간 수익률" in html
+        assert "1.98%" in html and "2026-08-27 종가 기준" in html
+
+    def test_daily_return_tile_absent_on_first_day(self):
+        """전일이 없으면 타일을 띄우지 않는다 — 0.00% 는 보합과 구분되지 않는다."""
+        html = render_html({
+            "generated_at": "x",
+            "performance": {
+                "n_days": 1, "start_date": "2026-08-25", "end_date": "2026-08-25",
+                "start_equity": 1e8, "equity": 1e8, "total_return": 0.0,
+                "reliable": False, "min_days_for_metrics": 20,
+                "baseline_seeded": True, "baseline_in_curve": False,
+                "realized_pnl": 0.0, "fee_tax": 0.0,
+            },
+        })
+        assert "일간 수익률" not in html
+
+    def test_curve_is_drawn_from_two_points(self):
+        """점이 둘이면 곡선을 그린다."""
         html = render_html({
             "generated_at": "x",
             "performance": {
@@ -143,8 +195,8 @@ class TestPerformanceSections:
                 "realized_pnl": -3118.0, "fee_tax": 317358.0,
             },
             "equity": [
-                {"date": "2026-08-25", "equity": 1e8, "kospi": 674274.0},
-                {"date": "2026-08-26", "equity": 9.9e7, "kospi": None},
+                {"date": "2026-08-25", "equity": 1e8},
+                {"date": "2026-08-26", "equity": 9.9e7},
             ],
         })
         assert "<svg" in html and "polyline" in html

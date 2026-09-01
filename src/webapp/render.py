@@ -276,28 +276,36 @@ def _signals_section(d: dict) -> str:
 
 
 def _holdings_section(d: dict) -> str:
-    """보유 현황은 실행 기록의 신호에 붙은 current_weight 로 재구성한다."""
-    run = d.get("run")
-    state = d.get("state") or {}
-    if not run:
-        return ""
-    plan = run.get("plan", {})
-    held = [s for s in plan.get("signals", []) if s.get("held")]
+    """보유 현황은 계좌 기록(holdings.jsonl)의 가장 최근 날짜를 그린다."""
+    held = d.get("holdings") or []
     if not held:
         return ""
+    state = d.get("state") or {}
+    plan = (d.get("run") or {}).get("plan", {})
+    target = {s["code"]: s.get("target_weight") for s in plan.get("signals", [])}
+
     rows = []
-    for s in sorted(held, key=lambda x: -x["current_weight"]):
-        entry = (state.get("entry_dates") or {}).get(s["code"], "")
+    for h in held:
+        cash = h["code"] == "CASH"
+        entry = "" if cash else (state.get("entry_dates") or {}).get(h["code"], "")
+        tw = target.get(h["code"])
         rows.append([
-            f"<b>{escape(s['code'])}</b>",
-            f'<span class="mono">{_pct(s["current_weight"])}</span>',
-            f'<span class="mono">{_pct(s["target_weight"])}</span>',
-            f'<span class="mono">{_n(s.get("price"))}</span>',
+            f'<b>{escape(h["code"])}</b> <span class="muted">{escape(h["name"] or "")}</span>',
+            f'<span class="mono">{"—" if cash else _n(h["quantity"])}</span>',
+            f'<span class="mono">{_n(h["eval_amount"])}</span>',
+            f'<span class="mono">{_pct(h["weight"])}</span>',
+            f'<span class="mono">{"—" if tw is None else _pct(tw)}</span>',
+            f'<span class="mono {_cls(h["pnl_rate"])}">'
+            f'{"—" if cash else _pct(h["pnl_rate"], 2)}</span>',
             f'<span class="muted">{escape(str(entry))}</span>',
         ])
+    day = held[0]["date"]
     return _section(
-        "보유 현황", "진입일은 로컬 기록이고, 수량·매입가는 브로커가 정본이다.",
-        _table(["종목", "현재 비중", "목표 비중", "가격", "진입일"], rows),
+        "보유 현황",
+        "계좌 조회 결과 그대로다 — 비중은 총자산 대비이고 현금까지 더하면 100% 다. "
+        "목표 비중은 마지막 실행 계획이라 비어 있을 수 있다.",
+        _table(["종목", "수량", "평가금액", "비중", "목표 비중", "손익률", "진입일"], rows),
+        sub=str(day),
     )
 
 
@@ -427,10 +435,10 @@ def _sparkline(history: list[dict]) -> str:
 
 
 def _equity_chart(curve: list[dict]) -> str:
-    """계좌 곡선 + KOSPI 를 **누적수익률(%)로 정규화해** 겹쳐 그린다.
+    """계좌 곡선을 **누적수익률(%)로 정규화해** 그린다.
 
-    금액과 지수는 스케일이 달라 그대로 겹치면 비교가 안 된다.
-    각자 첫 값을 100 으로 놓으면 같은 축에서 읽힌다.
+    금액 그대로 그리면 눈금이 억 단위라 몇 % 움직였는지가 안 읽힌다.
+    첫 값을 0% 로 놓으면 수익률 축에서 바로 읽힌다.
     """
     if len(curve) < 2:
         return ""
@@ -444,29 +452,25 @@ def _equity_chart(curve: list[dict]) -> str:
         return [v / base - 1.0 for _, v in have]
 
     eq = norm("equity")
-    bm = norm("kospi")
     if not eq:
         return ""
 
-    series = [s for s in (eq, bm) if s]
-    lo = min(min(s) for s in series)
-    hi = max(max(s) for s in series)
+    lo, hi = min(eq), max(eq)
     span = (hi - lo) or 0.01
     pad = span * 0.12
     lo, hi = lo - pad, hi + pad
     span = hi - lo
     w, h = 720, 180
 
-    def path(values, color, dash=""):
+    def path(values, color):
         if len(values) < 2:
             return ""
         pts = " ".join(
             f"{i / (len(values) - 1) * w:.1f},{h - (v - lo) / span * h:.1f}"
             for i, v in enumerate(values)
         )
-        da = f' stroke-dasharray="4 3"' if dash else ""
         return (f'<polyline fill="none" stroke="{color}" stroke-width="2" '
-                f'points="{pts}"{da}/>')
+                f'points="{pts}"/>')
 
     zero = h - (0 - lo) / span * h
     return (
@@ -474,9 +478,8 @@ def _equity_chart(curve: list[dict]) -> str:
         f'style="width:100%;height:180px">'
         f'<line x1="0" y1="{zero:.1f}" x2="{w}" y2="{zero:.1f}" '
         f'stroke="var(--line)" stroke-width="1"/>'
-        f'{path(bm, "var(--muted)", dash=True) if bm else ""}'
         f'{path(eq, "var(--accent)")}</svg>'
-        f'<p class="note">파랑 계좌 · 회색점선 KOSPI — 각자 시작일을 0% 로 놓았다. '
+        f'<p class="note">계좌 누적수익률 — 시작일을 0% 로 놓았다. '
         f'가로 눈금은 거래일 순서다(달력 간격 아님)</p>'
     )
 
@@ -497,18 +500,19 @@ def _performance_section(d: dict) -> str:
               f'{_n(perf.get("start_equity"))} → {_n(perf.get("equity"))}원'),
         _tile("관측", f'{perf.get("n_days", 0)}일',
               f'{perf.get("start_date", "")} ~ {perf.get("end_date", "")}'),
+    ]
+    if "daily_return" in perf:
+        tiles.insert(1, _tile(
+            "일간 수익률",
+            f'<span class="{_cls(perf.get("daily_return"))}">'
+            f'{_pct(perf.get("daily_return"), 2)}</span>',
+            f'{perf.get("daily_date", "")} 종가 기준'))
+    tiles += [
         _tile("실현손익",
               f'<span class="{_cls(perf.get("realized_pnl"))}">'
               f'{_n(perf.get("realized_pnl"))}</span>', "체결 기준 (수수료·세금 반영)"),
         _tile("지불한 비용", _n(perf.get("fee_tax")), "수수료 + 거래세 누적"),
     ]
-    if "excess_return" in perf:
-        tiles.append(_tile(
-            "KOSPI 대비",
-            f'<span class="{_cls(perf.get("excess_return"))}">'
-            f'{_pct(perf.get("excess_return"), 2)}</span>',
-            f'벤치마크 {_pct((perf.get("benchmark") or {}).get("total_return"), 2)}'))
-
     st = perf.get("strategy") or {}
     if perf.get("reliable") and st:
         tiles += [
