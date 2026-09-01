@@ -7,6 +7,7 @@
   4) 손절 기준가가 **브로커 매입단가**인가 (로컬 상태가 아니라)
   5) 매수가 주문가능금액을 못 넘는가
   6) 미체결이 남은 종목에 주문을 얹지 않는가 (중복 매수 방지)
+  7) 패널이 낡았을 때 신규 진입만 막고 손절/익절은 살려두는가
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from src.trading.broker import BUY, SELL, AccountSnapshot, Holding, OrderResult
 from src.trading.paper_trader import (
     TraderState,
     build_plan,
+    data_fresh_for_rebalance,
     execute_plan,
     is_rebalance_day,
 )
@@ -210,6 +212,50 @@ class TestRebalanceCadence:
     def test_is_rebalance_day(self, last, expected):
         state = TraderState(last_rebalance=last)
         assert is_rebalance_day(state, TODAY, 5) is expected
+
+
+class TestStaleData:
+    """낡은 패널로 새 베팅을 걸지 않는다. 손절/익절은 현재가라 그대로 간다."""
+
+    def test_previous_session_is_fresh(self):
+        """설계상 정상 — 8/31 장중 판단은 8/28 종가를 본다."""
+        assert data_fresh_for_rebalance(date(2026, 8, 28), date(2026, 8, 31)) is True
+
+    def test_missed_session_is_stale(self):
+        """실제로 일어난 일 — 8/28 수집이 끊겨 8/31 매매가 8/27 예측을 봤다."""
+        assert data_fresh_for_rebalance(date(2026, 8, 27), date(2026, 8, 31)) is False
+
+    def test_same_day_panel_is_fresh(self):
+        """장 마감 후 수집하고 손으로 돌리는 경우."""
+        assert data_fresh_for_rebalance(date(2026, 8, 31), date(2026, 8, 31)) is True
+
+    def test_blocked_rebalance_still_stops_out(self):
+        """리밸런싱이 막혀도 손절은 나간다 — 막는 것은 신규 진입 하나뿐이다."""
+        cfg = make_cfg()
+        loser = Holding("BAD", "손실", quantity=10, sellable=10, avg_price=10_000,
+                        current_price=9_000, eval_amount=90_000)
+        preds = make_preds([("BAD", -0.01, 0.05, 0.06)])
+        plan = build_plan(preds, account(0, [loser]), {"BAD": 9_000},
+                          cfg, state=TraderState(), today=TODAY, rebalancing=False,
+                          rebalance_skip_reason="패널이 낡았다")
+
+        assert plan.forced_exits == ["BAD"]
+        assert [o.side for o in plan.orders] == [SELL]
+
+    def test_skip_reason_lands_in_the_record(self):
+        """기록만 보고 '주기 때문'과 '데이터가 낡아서'를 구분할 수 있어야 한다."""
+        cfg = make_cfg()
+        preds = make_preds([("AAA", -0.01, 0.02, 0.03)])
+
+        cadence = build_plan(preds, account(1_000_000), {"AAA": 10_000},
+                             cfg, state=TraderState(), today=TODAY, rebalancing=False)
+        stale = build_plan(preds, account(1_000_000), {"AAA": 10_000},
+                           cfg, state=TraderState(), today=TODAY, rebalancing=False,
+                           rebalance_skip_reason="패널이 2026-08-27 에 멈춰 있다")
+
+        assert any("주기가 아니다" in n for n in cadence.notes)
+        assert any("2026-08-27" in n for n in stale.notes)
+        assert stale.orders == []
 
 
 class TestState:

@@ -45,6 +45,10 @@ from src.utils.logging import get_logger
 
 log = get_logger(__name__)
 
+# 패널이 오늘 직전 영업일까지 있으면 정상(수집이 장 마감 뒤라 하루 시차는 설계다).
+# 그보다 밀리면 리밸런싱을 건너뛴다 — `data_fresh_for_rebalance`.
+MAX_LAG_FOR_REBALANCE = 1
+
 STATE_DIR = PROJECT_ROOT / "outputs" / "paper_trading"
 STATE_PATH = STATE_DIR / "state.json"
 RUNS_DIR = STATE_DIR / "runs"
@@ -165,6 +169,7 @@ def build_plan(
     state: TraderState,
     today: date | None = None,
     rebalancing: bool = True,
+    rebalance_skip_reason: str = "리밸런싱 주기가 아니다",
     liquidate_all: bool = False,
     unfilled: dict[str, int] | None = None,
 ) -> TradingPlan:
@@ -179,6 +184,8 @@ def build_plan(
         판단할 수 없다(`src/models/inference.py: predict_recent`).
     rebalancing: False 면 신규 진입/비중 조정을 하지 않고 **강제 청산만** 본다.
         리밸런싱 주기(기본 5일) 사이에도 손절이 동작하게 하기 위한 경로다.
+    rebalance_skip_reason: rebalancing=False 인 이유. 주기 때문인지 데이터가 낡아서인지
+        기록만 보고 구분할 수 있어야 한다 — 실행 기록이 곧 발표 근거다.
     unfilled: 종목코드 → 미체결수량. 아직 체결을 기다리는 종목은 이번 회차에서
         건드리지 않는다. 판단이 아니라 **체결 제약**이다 — 남은 주문을 모르고
         다시 주문하면 부족분을 또 사서 목표비중을 넘긴다.
@@ -217,7 +224,7 @@ def build_plan(
         signals = generate_signals(preds, tcfg, max_width=max_width, held=held)
     else:
         signals = []
-        notes.append("리밸런싱 주기가 아니다 — 손절/익절만 본다")
+        notes.append(f"{rebalance_skip_reason} — 손절/익절만 본다")
 
     decision = apply_risk_overlay(
         signals, positions, prices, tcfg, allow_short=False,
@@ -398,6 +405,28 @@ def is_rebalance_day(state: TraderState, today: date, rebalance_days: int) -> bo
         np.datetime64(state.last_rebalance, "D"), np.datetime64(today, "D")
     ))
     return gap >= int(rebalance_days)
+
+
+def data_fresh_for_rebalance(last_data_date: date, today: date) -> bool:
+    """낡은 예측으로 **새 베팅**을 걸지 않기 위한 문턱.
+
+    판단은 전일 종가 기준이라(수집이 장 마감 뒤라서) 패널 마지막 거래일이
+    오늘 직전 영업일인 것이 정상이다. 그보다 밀렸다면 세션을 통째로 놓친 것이다 —
+    실제로 2026-08-28 수집이 종목 2개 토큰 만료로 중단되면서 `build_features` 가
+    안 돌았고, 8/31 매매가 8/27 예측을 봤다.
+
+    ⚠️ 손절/익절은 이 문턱과 무관하다. 그쪽은 **현재가**로 판정하므로 패널이 낡아도
+       옳다. 여기서 막는 것은 신규 진입·비중 조정 하나뿐이다.
+
+    영업일 계산은 주말만 안다(공휴일 테이블을 만들지 않는다 — README 참조).
+    공휴일 다음 거래일에는 멀쩡한데도 낡았다고 볼 수 있지만, 그때 치르는 값은
+    리밸런싱이 하루 밀리는 것뿐이다 — `is_rebalance_day` 는 주기를 넘기면 계속
+    True 라 회차를 건너뛰지 않는다.
+    """
+    gap = int(np.busday_count(
+        np.datetime64(last_data_date, "D"), np.datetime64(today, "D")
+    ))
+    return gap <= MAX_LAG_FOR_REBALANCE
 
 
 def save_run(plan: TradingPlan, results: list[OrderResult], *, dry_run: bool) -> Path:

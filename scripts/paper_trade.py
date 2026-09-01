@@ -13,6 +13,9 @@
 
 리밸런싱 주기(기본 5일)가 아니면 신규 진입을 하지 않고 손절/익절만 본다.
 주기를 무시하고 강제로 리밸런싱하려면 `--force-rebalance`.
+
+**패널이 전 거래일보다 낡았으면 리밸런싱을 건너뛴다**(손절/익절은 그대로).
+낡은 예측으로 새 베팅을 거는 것만 막는다 — 강행하려면 `--ignore-stale`.
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ from src.trading.broker import BUY, PaperBroker  # noqa: E402
 from src.trading.paper_trader import (  # noqa: E402
     TraderState,
     build_plan,
+    data_fresh_for_rebalance,
     execute_plan,
     is_rebalance_day,
     save_run,
@@ -152,7 +156,7 @@ def main() -> int:
     ap.add_argument("--recent-days", type=int, default=90,
                     help="기권 임계값을 잡을 예측 폭 분포의 관측 구간(일)")
     ap.add_argument("--ignore-stale", action="store_true",
-                    help="데이터가 오래돼도 진행한다 (권장하지 않음)")
+                    help="데이터가 오래돼도 진행한다 — 리밸런싱 차단까지 푼다 (권장하지 않음)")
     args = ap.parse_args()
 
     setup_logging(run_name="paper_trade")
@@ -185,12 +189,26 @@ def main() -> int:
             state, today, int(cfg["backtest"].get("rebalance_days", 5))
         )
 
+        # 낡은 패널이면 신규 진입만 막는다. `--force-rebalance` 로도 안 뚫린다 —
+        # 그 옵션은 '주기를 무시한다'는 뜻이지 '낡은 예측을 써도 좋다'가 아니다.
+        skip_reason = "리밸런싱 주기가 아니다"
+        if rebalancing and not args.ignore_stale and not data_fresh_for_rebalance(
+            bundle.last_date, today
+        ):
+            rebalancing = False
+            skip_reason = f"패널이 {bundle.last_date} 에 멈춰 있다(전 거래일보다 낡았다)"
+            log.warning(
+                "%s — 리밸런싱을 건너뛴다. 수집·피처를 갱신하고 다시 실행할 것 "
+                "(강행: --ignore-stale)", skip_reason,
+            )
+
         # --- 4) 1차 계획: 종가 기준으로 '무엇을 건드릴지'만 정한다.
         #     기권·순위·사이징은 가격과 무관하므로 이 단계에서 확정된다.
         #     현재가는 그 다음, 실제로 건드릴 종목만 조회한다(호출 수 절약).
         closes = latest_prices(bundle)
         draft = build_plan(recent, account, closes, cfg, state=state,
                            today=today, rebalancing=rebalancing,
+                           rebalance_skip_reason=skip_reason,
                            liquidate_all=args.liquidate, unfilled=unfilled)
 
         touch = sorted({o.code for o in draft.orders} | set(account.holdings))
@@ -201,6 +219,7 @@ def main() -> int:
         prices = {**closes, **quotes}
         plan = build_plan(recent, account, prices, cfg, state=state,
                           today=today, rebalancing=rebalancing,
+                          rebalance_skip_reason=skip_reason,
                           liquidate_all=args.liquidate, unfilled=unfilled)
         plan.notes.extend(notes)
 
