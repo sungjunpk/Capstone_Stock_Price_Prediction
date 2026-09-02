@@ -17,13 +17,22 @@ if printf '%s' "$cmd" | grep -Eq "(^|[;&| ])(export[[:space:]]+)?KIWOOM_ENV[[:sp
   emit deny "절대 규칙 1 위반 — KIWOOM_ENV=live. 이 프로젝트는 mock 만 쓴다."
 fi
 
-# --- 홈 디렉토리는 그 자체가 git 저장소다 (SSH 키가 커밋된 전례) ------------
-if printf '%s' "$cmd" | grep -q 'git add'; then
-  if [ "$PWD" = "$HOME" ] \
-     || printf '%s' "$cmd" | grep -Eq 'cd[[:space:]]+(~|\$HOME|/Users/mac)([[:space:]]|;|&|$)' \
-     || printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+-C[[:space:]]+(~|\$HOME|/Users/mac)([[:space:]]|$)'; then
-    emit deny "홈 디렉토리(/Users/mac)는 그 자체가 git 저장소다 — 여기서 git add 하면 SSH 키가 커밋된다. 프로젝트 폴더에서 실행할 것."
+# --- git 은 이 프로젝트 저장소 안에서만 -------------------------------------
+# 홈(/Users/mac)에도 **별개의** git 저장소가 있다 — sungjunhouse 연습용 28커밋.
+# 내용물은 859바이트인데 .git 이 15GB 다: 홈에서 git add 를 한 번 쓸어서
+# loose object 가 59,892개 쌓였다. 캡스톤 작업이 그쪽에 닿을 이유가 전혀 없다.
+PROJ="${CLAUDE_PROJECT_DIR:-/Users/mac/Desktop/Capstone_Stock_Price_Prediction}"
+if printf '%s' "$cmd" | grep -Eq '(^|[;&|[:space:]])git([[:space:]]|$)'; then
+  # 명령이 대놓고 홈을 가리키는 경우
+  if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+-C[[:space:]]+(~|\$HOME|/Users/mac)([[:space:]]|$)' \
+     || printf '%s' "$cmd" | grep -Eq 'cd[[:space:]]+(~|\$HOME|/Users/mac)([[:space:]]|;|&|$)'; then
+    emit deny "홈(/Users/mac)에는 캡스톤과 무관한 별개 git 저장소가 있다. git 은 프로젝트 저장소에서만 쓴다."
   fi
+  # 프로젝트 밖에서 도는 경우
+  case "$PWD" in
+    "$PROJ"|"$PROJ"/*) ;;
+    *) emit deny "여기는 프로젝트 저장소 밖이다 ($PWD). git 은 $PROJ 안에서만 쓴다." ;;
+  esac
 fi
 
 # --- 규칙 9: 주문은 사람이 확인한다 -----------------------------------------

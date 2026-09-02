@@ -138,7 +138,7 @@
 
 | 무엇 | 어디 | 하는 일 |
 |---|---|---|
-| 훅 | `.claude/hooks/guard_bash.sh` | `KIWOOM_ENV=live` **차단**(규칙 1) / 홈 디렉토리 `git add` 차단 / `paper_trade --execute` 확인(규칙 9) |
+| 훅 | `.claude/hooks/guard_bash.sh` | `KIWOOM_ENV=live` **차단**(규칙 1) / **이 저장소 밖 git 명령 차단** / `paper_trade --execute` 확인(규칙 9) |
 | 훅 | `.claude/hooks/guard_edit.sh` | `.env` 편집 차단(규칙 2) / `live` 대입 차단 / `config.py`·`signal.py`·`inference.py` 편집 시 확인(규칙 1·7) |
 | 훅 | `.claude/hooks/ruff_check.sh` | 파이썬 편집 직후 ruff. 막지 않고 결과만 돌려준다 |
 | 스킬 | `/brief` | 세션 시작 브리핑 — 패널 최신성·실거래 상태·다음 리밸런싱일 |
@@ -147,6 +147,11 @@
 
 훅을 새로 넣거나 고친 뒤에는 `/hooks` 를 한 번 열어야 적용된다(세션 시작 시점에
 `.claude/` 가 감시 대상으로 잡히기 때문).
+
+**저장소는 이것 하나다.** 예전엔 홈(`/Users/mac`)에도 별개 저장소가 있었다 — 팀
+GitHub 저장소(`ECOS_Analyzer`)를 홈에 잘못 클론한 것으로, `.git` 이 15GB 까지 부풀어
+있었다. 2026-09-02 에 `~/ECOS_Analyzer/` 로 옮기고 홈은 저장소에서 해제했다.
+훅이 프로젝트 밖 git 명령을 막으므로 다시 섞이지 않는다.
 
 ## 개발 환경
 
