@@ -30,6 +30,11 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# --- Claude Code ---
+# settings.json / hooks / skills / agents 는 팀 자산이라 커밋한다.
+# 개인 오버라이드만 뺀다.
+.claude/settings.local.json
+
 # --- macOS / editors ---
 .DS_Store
 .vscode/

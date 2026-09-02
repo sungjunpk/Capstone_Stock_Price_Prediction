@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(python scripts/peek.py:*)",
+      "Bash(python scripts/collect.py --dry-run:*)",
+      "Bash(python scripts/backtest.py:*)",
+      "Bash(python scripts/backtest_recent.py:*)",
+      "Bash(python scripts/gbdt_baseline.py:*)",
+      "Bash(python scripts/feature_diagnostics.py:*)",
+      "Bash(python scripts/coverage.py:*)",
+      "Bash(python scripts/capacity.py:*)",
+      "Bash(python scripts/verify_trading_trs.py)",
+      "Bash(python -m pytest:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff check:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(jq:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_bash.sh\"",
+            "timeout": 10,
+            "statusMessage": "절대 규칙 확인"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_edit.sh\"",
+            "timeout": 10,
+            "statusMessage": "절대 규칙 확인"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff_check.sh\"",
+            "timeout": 20,
+            "statusMessage": "ruff"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -132,6 +132,22 @@
 > Phase 1 구현에서 확정된 설계 변경 하나: **VSN 은 인코더 앞에 둔다**(TFT 원논문 순서).
 > 성능상 5배 차이가 나고 해석가능성은 유지된다. 근거는 `src/models/CLAUDE.md`.
 
+## Claude Code 세팅 (`.claude/`)
+
+규칙이 글로만 있으면 언젠가 지나친다. 아래는 그걸 **강제하는 장치**다.
+
+| 무엇 | 어디 | 하는 일 |
+|---|---|---|
+| 훅 | `.claude/hooks/guard_bash.sh` | `KIWOOM_ENV=live` **차단**(규칙 1) / 홈 디렉토리 `git add` 차단 / `paper_trade --execute` 확인(규칙 9) |
+| 훅 | `.claude/hooks/guard_edit.sh` | `.env` 편집 차단(규칙 2) / `live` 대입 차단 / `config.py`·`signal.py`·`inference.py` 편집 시 확인(규칙 1·7) |
+| 훅 | `.claude/hooks/ruff_check.sh` | 파이썬 편집 직후 ruff. 막지 않고 결과만 돌려준다 |
+| 스킬 | `/brief` | 세션 시작 브리핑 — 패널 최신성·실거래 상태·다음 리밸런싱일 |
+| 스킬 | `/lookahead` | 피처·분할·백테스트를 건드린 뒤 도는 look-ahead 감사(규칙 5·6) |
+| 에이전트 | `backtest-auditor` | 매매 코드 변경을 독립 감사 — look-ahead + 단일 구현(규칙 7) |
+
+훅을 새로 넣거나 고친 뒤에는 `/hooks` 를 한 번 열어야 적용된다(세션 시작 시점에
+`.claude/` 가 감시 대상으로 잡히기 때문).
+
 ## 개발 환경
 
 - 파이썬 3.11, 가상환경 `.venv/`, 의존성은 `requirements.txt` 단일 관리
