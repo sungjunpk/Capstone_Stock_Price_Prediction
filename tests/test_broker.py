@@ -190,3 +190,50 @@ class TestSnapshot:
 def test_holding_pnl_uses_entry_price():
     h = Holding("A", "", 1, 1, avg_price=10_000, current_price=9_000, eval_amount=9_000)
     assert h.avg_price == 10_000
+
+
+class TestTradeDiary:
+    """실현손익 귀속 — **조용히 0 이 되던 자리**를 지킨다.
+
+    ka10170 은 `ottks_tp` 를 '1'(당일매수에대한매도)로 부르면 같은 날 사서 같은 날
+    판 것만 `pl_amt` 를 채우고, 하루라도 들고 있다 판 종목은 0 을 준다. 행 개수도
+    필드도 정상이라 오류로 드러나지 않는다.
+
+    이 프로젝트는 리밸런싱 주기가 10거래일이라 매도가 거의 전부 오버나잇이다 —
+    '1' 이면 실현손익이 사실상 항상 0 이 된다(실측: 2026-08-26~09-02 사이 매도
+    3건 중 2건이 0 으로 기록됐다).
+    """
+
+    def _diary_client(self):
+        return FakeClient(responses={
+            ep.TRADE_DIARY.api_id: {
+                ep.TRADE_DIARY.list_key: [{
+                    "stk_cd": "A009540", "stk_nm": "HD한국조선해양",
+                    "buy_qty": "0", "buy_avg_pric": "0", "buy_amt": "0",
+                    "sell_qty": "20", "sel_avg_pric": "330500",
+                    "sell_amt": "6610000", "pl_amt": "-596348",
+                    "cmsn_alm_tax": "36348", "prft_rt": "-8.32",
+                }]
+            }
+        })
+
+    def test_asks_for_all_of_todays_sells(self):
+        """ottks_tp 가 '2' 가 아니면 오버나잇 매도 손익이 통째로 사라진다."""
+        client = self._diary_client()
+        PaperBroker(client).fetch_trade_diary("20260902")
+
+        api_id, body = next(c for c in client.calls if c[0] == ep.TRADE_DIARY.api_id)
+        assert body["ottks_tp"] == "2", (
+            "ottks_tp='1' 은 당일 왕복만 손익을 채운다 — 오버나잇 매도가 0 이 된다"
+        )
+        assert body["base_dt"] == "20260902"
+
+    def test_realized_pnl_survives_parsing(self):
+        """부호와 금액이 그대로 와야 한다. 접두어 'A' 도 벗겨야 한다."""
+        rows = PaperBroker(self._diary_client()).fetch_trade_diary("20260902")
+        assert len(rows) == 1
+        r = rows[0]
+        assert r["code"] == "009540"
+        assert r["sell_qty"] == 20
+        assert r["pnl_amount"] == pytest.approx(-596348.0)
+        assert r["fee_tax"] == pytest.approx(36348.0)

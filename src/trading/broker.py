@@ -223,8 +223,23 @@ class PaperBroker:
         return out
 
     def fetch_trade_diary(self, base_dt: str) -> list[dict]:
-        """당일매매일지 — 종목별 실현손익. 주문이 아니라 **체결** 기준이다."""
-        body = {"base_dt": base_dt, "ottks_tp": "1", "ch_crd_tp": "0"}
+        """당일매매일지 — 종목별 실현손익. 주문이 아니라 **체결** 기준이다.
+
+        ⚠️ `ottks_tp` 는 반드시 **"2"(당일매도전체)** 다. "1"(당일매수에대한매도)로
+        두면 **같은 날 사서 같은 날 판 것만** 손익이 붙고, 하루라도 들고 있다 판
+        종목은 `pl_amt` 가 조용히 0 으로 온다 — 오류가 아니라 0 이라 눈치채기 어렵다.
+
+        실측(2026-09-02, 같은 날짜에 값만 바꿔 비교):
+
+            8/26 삼성전자(당일 왕복)  tp=1 → -3,118      tp=2 → -3,118
+            8/27 기아(오버나잇)       tp=1 →      0 ❌   tp=2 → -423,864
+            9/2  009540(오버나잇)     tp=1 →      0 ❌   tp=2 → -596,348
+
+        tp=2 는 당일 왕복도 그대로 주므로 상위집합이다. 행 개수도 같다.
+        이 프로젝트는 리밸런싱 주기가 10거래일이라 **매도는 거의 전부 오버나잇**이다
+        — tp=1 이면 실현손익이 사실상 항상 0 이 된다.
+        """
+        body = {"base_dt": base_dt, "ottks_tp": "2", "ch_crd_tp": "0"}
         data, _ = self.client.request(ep.TRADE_DIARY, body)
         df = parse_records(data.get(ep.TRADE_DIARY.list_key) or [],
                            ep.TRADE_DIARY.schema)

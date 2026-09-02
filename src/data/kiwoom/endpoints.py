@@ -364,7 +364,11 @@ TRADE_DIARY = TRSpec(  # VERIFIED 2026-08-26 (mock, 매수 10 + 매도 1 상태�
     },
     rate_limit_per_sec=1.0,
     verified=True,
-    note="base_dt(YYYYMMDD) / ottks_tp '1'=당일매수에대한매도 / ch_crd_tp '0'=전체. "
+    note="base_dt(YYYYMMDD) / ch_crd_tp '0'=전체. "
+         "⚠️ ottks_tp 는 '2'(당일매도전체)를 써야 한다. '1'(당일매수에대한매도)은 "
+         "같은 날 사서 같은 날 판 것만 pl_amt 를 채우고, 오버나잇 매도는 0 으로 "
+         "온다(2026-09-02 실측: 기아 0 vs -423,864 / 009540 0 vs -596,348). "
+         "행 개수는 같아서 오류로 드러나지 않는다 — 조용히 틀리는 자리다. "
          "pl_amt 는 수수료·세금을 반영한 실현손익이다(매도가 없으면 0). "
          "⚠️ 필드명이 sell_qty 인데 매도평균가는 sel_avg_pric 이다 — 철자가 다르다.",
 )
