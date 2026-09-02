@@ -123,6 +123,7 @@
 | [`src/trading/CLAUDE.md`](src/trading/CLAUDE.md) | 매매 판단 5단계, 기권 로직, 모의투자 실행 |
 | [`src/webapp/CLAUDE.md`](src/webapp/CLAUDE.md) | 대시보드 — 읽기 전용 원칙 |
 | [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md) | 실제 API 응답 검증 결과와 함정 |
+| [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) | 한계 — KCMI 4대 모델리스크 대입, 실측 근거 |
 | [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md) | 클라우드 GPU 학습 절차 (수집은 로컬, 학습만 외부) |
 | [`README.md`](README.md) | 현재 진행 상태, 다음 할 일, 세션 시작 절차 |
 

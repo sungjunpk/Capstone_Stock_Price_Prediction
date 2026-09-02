@@ -213,6 +213,47 @@ def predict_recent(
     return out
 
 
+@torch.no_grad()
+def vsn_weights_split(
+    loaded: LoadedModel, bundle: FeatureBundle, cfg: dict, split: str,
+    *, batch_size: int = 1024,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """**해석가능성 진단 전용** — VSN 변수선택 가중치를 (code, date) 에 붙여 낸다.
+
+    매매 경로가 아니다. 매매에 쓰는 예측은 `predict_split` / `predict_recent`
+    하나뿐이라는 규칙(CLAUDE.md 7)은 그대로다 — 여기서는 분위를 내지 않는다.
+
+    반환: (dynamic, static)
+        dynamic: code, date, <피처별 가중치>   — 패치축(N)은 평균으로 접는다
+        static:  code, date, <static 변수별 가중치>
+    """
+    part = split_by_date(bundle.panel, bundle.spec)[split]
+    ds = _make_dataset(part, bundle, cfg, loaded, require_target=True)
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+
+    dyn_w, stat_w = [], []
+    for dyn, mac, stat, _ in loader:
+        out = loaded.model(
+            dyn.to(loaded.device), mac.to(loaded.device), stat.to(loaded.device)
+        )
+        # (B,N,C) → (B,C). 시점별 가중치의 평균이 그 윈도우의 채널 중요도다.
+        dyn_w.append(out.dynamic_weights.float().mean(dim=1).cpu())
+        stat_w.append(out.static_weights.float().cpu())
+
+    keys = ds.sample_keys()[["code", "date"]].reset_index(drop=True)
+    static_names = list(loaded.meta["vocab_sizes"])
+
+    dynamic = pd.concat(
+        [keys, pd.DataFrame(torch.cat(dyn_w).numpy(), columns=loaded.feature_cols)],
+        axis=1,
+    )
+    static = pd.concat(
+        [keys, pd.DataFrame(torch.cat(stat_w).numpy(), columns=static_names)],
+        axis=1,
+    )
+    return dynamic, static
+
+
 def latest_slice(preds: pd.DataFrame) -> pd.DataFrame:
     """가장 최근 날짜의 예측만. 오늘의 매매 판단 대상이다."""
     d = pd.to_datetime(preds["date"])
