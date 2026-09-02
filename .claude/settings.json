@@ -44,6 +44,12 @@
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_bash.sh\"",
             "timeout": 10,
             "statusMessage": "절대 규칙 확인"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/test_before_commit.sh\"",
+            "timeout": 180,
+            "statusMessage": "커밋 전 테스트"
           }
         ]
       },
@@ -68,6 +74,18 @@
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff_check.sh\"",
             "timeout": 20,
             "statusMessage": "ruff"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session_brief.sh\"",
+            "timeout": 30,
+            "statusMessage": "현황 확인"
           }
         ]
       }

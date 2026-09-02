@@ -31,8 +31,12 @@ fi
 case "$path" in
   */src/utils/config.py)
     emit ask "config.py 는 KIWOOM_ENV=live 를 막는 방어선이다 (규칙 1). 그 방어를 푸는 변경이 아닌지 확인할 것." ;;
-  */src/trading/signal.py|*/src/models/inference.py)
+  */src/trading/signal.py|*/src/models/inference.py|*/src/trading/risk.py)
     emit ask "규칙 7 — 백테스트와 모의투자가 공유하는 단일 구현이다. 여기 바꾸면 진행 중인 실거래 기록(8/26~)의 체제가 바뀐다." ;;
+  */configs/config.yaml)
+    # 임계값의 **단일 소스**다. top_n / exit_rank / abstain.percentile / stop_loss /
+    # max_gross_exposure 가 전부 여기 있고, 하나만 바꿔도 다음 리밸런싱의 주문이 달라진다.
+    emit ask "configs/config.yaml 은 매매 임계값의 단일 소스다. trading/backtest 섹션을 바꾸면 진행 중인 3개월 실거래 기록이 두 체제로 쪼개진다 — 바꿀 값이 주문에 영향을 주는지 먼저 확인할 것." ;;
 esac
 
 exit 0

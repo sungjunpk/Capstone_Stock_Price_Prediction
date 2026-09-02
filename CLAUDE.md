@@ -139,8 +139,10 @@
 | 무엇 | 어디 | 하는 일 |
 |---|---|---|
 | 훅 | `.claude/hooks/guard_bash.sh` | `KIWOOM_ENV=live` **차단**(규칙 1) / **이 저장소 밖 git 명령 차단** / `paper_trade --execute` 확인(규칙 9) |
-| 훅 | `.claude/hooks/guard_edit.sh` | `.env` 편집 차단(규칙 2) / `live` 대입 차단 / `config.py`·`signal.py`·`inference.py` 편집 시 확인(규칙 1·7) |
+| 훅 | `.claude/hooks/guard_edit.sh` | `.env` 편집 차단(규칙 2) / `live` 대입 차단 / `config.py`·`signal.py`·`risk.py`·`inference.py`·**`configs/config.yaml`** 편집 시 확인(규칙 1·7) |
 | 훅 | `.claude/hooks/ruff_check.sh` | 파이썬 편집 직후 ruff. 막지 않고 결과만 돌려준다 |
+| 훅 | `.claude/hooks/test_before_commit.sh` | `git commit` 전에 pytest. 깨졌으면 **커밋 거부** (`src`/`scripts`/`tests` 의 .py 가 staged 일 때만) |
+| 훅 | `.claude/hooks/session_brief.sh` | 세션 시작 시 패널 최신성·실거래 현황·리밸런싱 주기·수집 정상 여부를 한 줄로 |
 | 스킬 | `/brief` | 세션 시작 브리핑 — 패널 최신성·실거래 상태·다음 리밸런싱일 |
 | 스킬 | `/lookahead` | 피처·분할·백테스트를 건드린 뒤 도는 look-ahead 감사(규칙 5·6) |
 | 에이전트 | `backtest-auditor` | 매매 코드 변경을 독립 감사 — look-ahead + 단일 구현(규칙 7) |
