@@ -52,6 +52,11 @@ _MAX_RETRIES = 8
 _MAX_BACKOFF = 30.0
 _TOKEN_MARGIN_SEC = 300  # 만료 5분 전 미리 갱신
 _MAX_TOKEN_REISSUES = 2  # 재발급해도 계속 8005 면 자격증명 문제다 — 물고 늘어지지 않는다
+# 토큰 **발급** 엔드포인트(au10001)도 자체 유량 제한이 있다. 1초 안에 두 번 받으면
+# 429 가 온다 — 스냅샷과 수집이 연달아 도는 16:00 이 정확히 그 자리다(2026-09-01 실측).
+# 발급은 종목당 한 번이 아니라 프로세스당 한 번이라 길게 기다려도 손해가 없다.
+_TOKEN_RETRIES = 3
+_TOKEN_BACKOFF = (1.0, 2.0, 4.0)
 
 
 class KiwoomAPIError(RuntimeError):
@@ -90,13 +95,31 @@ class KiwoomClient:
 
     # ------------------------------------------------------------ 토큰
     def _fetch_token(self) -> None:
+        """토큰 발급. 429·5xx 는 재시도한다.
+
+        ⚠️ 재시도가 없으면 **발급에 실패한 그 순간의 종목 하나가 조용히 유실된다.**
+        `_auth_header()` 는 요청마다 불리므로 다음 종목은 새로 받아 정상 진행하고,
+        실패한 종목만 빠진 채 "성공 148 / 실패 1" 로 끝난다. 유니버스 첫 종목이
+        늘 그 자리에 오므로 **매번 같은 종목(005930)만** 당한다.
+        2026-09-01 실측: 16:00:06 스냅샷 발급 → 16:00:07 수집 발급이 429.
+        """
         url = f"{self.settings.base_url}{TOKEN_PATH}"
         payload = {  # VERIFIED — mock 200 OK
             "grant_type": "client_credentials",
             "appkey": self.settings.app_key,
             "secretkey": self.settings.app_secret,
         }
-        resp = self._session.post(url, json=payload, timeout=self.timeout)
+        resp = None
+        for attempt in range(_TOKEN_RETRIES):
+            resp = self._session.post(url, json=payload, timeout=self.timeout)
+            if resp.status_code == 200:
+                break
+            if resp.status_code not in _RETRY_STATUS or attempt == _TOKEN_RETRIES - 1:
+                break
+            wait = _TOKEN_BACKOFF[min(attempt, len(_TOKEN_BACKOFF) - 1)]
+            log.warning("토큰 발급 %d — %.1fs 후 재시도 (%d/%d)",
+                        resp.status_code, wait, attempt + 1, _TOKEN_RETRIES)
+            time.sleep(wait)
         if resp.status_code != 200:
             raise KiwoomAPIError(
                 f"토큰 발급 실패 ({resp.status_code}): {resp.text[:300]}",
