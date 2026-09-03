@@ -30,6 +30,10 @@ _MACRO_INDEX_KIND = "index_daily"
 _MACRO_ETF_KIND = "daily_chart"
 _CHART_KIND = "daily_chart"
 
+# 수급이 일봉보다 이만큼 넘게 뒤처지면 경고한다. 자동수집이 평일마다 도니 정상은 0 이고,
+# 연휴를 한 번 건너뛰어도 안 울리도록 여유를 뒀다.
+_FLOW_STALE_BDAYS = 3
+
 
 def _load_bars(kind: str, codes: list[str] | None) -> pd.DataFrame:
     """가격 봉을 읽고 **시간 컬럼 이름을 'date' 로 통일**한다.
@@ -59,7 +63,7 @@ def build_panel(cfg: dict) -> pd.DataFrame:
     # 수급(ka10059)은 **일 단위**다. 봉 단위 패널에 날짜로 조인하면 조용히 어긋난다
     # (키 타입이 date vs datetime 이라 매칭이 0건이 되거나 예외가 난다).
     if kind == _CHART_KIND:
-        flow = _load_flow(codes)
+        flow = _load_flow(codes, bars_last=raw["date"].max())
     else:
         flow = None
         log.info("%s 패널이라 수급 피처를 쓰지 않는다 — 수급은 일 단위 데이터다", kind)
@@ -147,11 +151,18 @@ def _apply_target_mode(panel: pd.DataFrame, feat_cfg: dict) -> pd.DataFrame:
     return panel
 
 
-def _load_flow(codes: list[str]) -> pd.DataFrame | None:
+def _load_flow(codes: list[str], *, bars_last=None) -> pd.DataFrame | None:
     """수급 데이터. **유니버스 전 종목이 갖춰졌을 때만** 사용한다.
 
     일부 종목에만 있으면 종목마다 피처 차원이 달라져 패널이 깨진다.
     부분 수집 상태에서는 아예 안 쓰는 편이 낫다 — 수집이 끝나면 자동으로 켜진다.
+
+    bars_last: 일봉의 마지막 날짜. 수급이 그보다 한참 뒤처졌는지 본다.
+        ⚠️ 종목 유무만 검사하면 **날짜가 멈춘 건 안 잡힌다.** 실제로 2026-08-25 에
+        멈춘 수급으로 9거래일을 돌았는데 경고가 한 줄도 안 나왔다
+        (자동수집이 `--tr chart` 만 돌고 있었다 — `scripts/daily_collect.sh`).
+        여기서 막지는 않는다. 과거는 멀쩡한 데이터라 학습에는 쓸 수 있고,
+        멈춘 걸 **보이게** 하는 것이 목적이다.
     """
     flow = storage.load_kind("investor_flow", codes=codes)
     if flow.empty:
@@ -168,7 +179,19 @@ def _load_flow(codes: list[str]) -> pd.DataFrame | None:
         )
         return None
 
-    log.info("수급 데이터 %d종목 사용", len(have))
+    if bars_last is not None:
+        flow_last = flow["date"].max()
+        lag = len(pd.bdate_range(flow_last, bars_last)) - 1
+        if lag > _FLOW_STALE_BDAYS:
+            log.warning(
+                "⚠️ 수급이 %s 에 멈춰 있다 — 일봉(%s)보다 %d거래일 뒤처졌다. "
+                "최근 구간의 수급 피처가 비어 학습가능 행이 줄어든다. "
+                "`scripts/collect.py --tr flow` 로 따라잡을 것.",
+                pd.Timestamp(flow_last).date(), pd.Timestamp(bars_last).date(), lag,
+            )
+
+    log.info("수급 데이터 %d종목 사용 (최종일 %s)",
+             len(have), pd.Timestamp(flow["date"].max()).date())
     return flow
 
 
