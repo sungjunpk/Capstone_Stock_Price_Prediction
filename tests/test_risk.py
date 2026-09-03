@@ -4,9 +4,15 @@
 막아야 할 때만 막는지를 양쪽에서 잡는다.
 """
 
+import pandas as pd
 import pytest
 
-from src.trading.risk import Position, apply_risk_overlay
+from src.trading.risk import (
+    Position,
+    apply_risk_overlay,
+    market_cvar,
+    portfolio_cvar,
+)
 from src.trading.signal import Action, Signal
 
 CFG = {
@@ -185,3 +191,145 @@ class TestMaxHolding:
         pos = {"005930": Position("005930", 0.1, 100.0, days_held=10)}
         out = apply_risk_overlay([], pos, {}, self._cfg(max_holding_bars=7))
         assert out.forced_exits == ["005930"]
+
+
+class TestPortfolioCVaR:
+    """꼬리손실 측정 — 이 값이 틀리면 6단계 축소가 통째로 틀린다."""
+
+    @staticmethod
+    def _returns(**series) -> pd.DataFrame:
+        return pd.DataFrame(series, index=pd.RangeIndex(len(next(iter(series.values())))))
+
+    @staticmethod
+    def _bad_then_flat(n_bad: int = 10, n_flat: int = 190) -> list[float]:
+        """최악 5% 가 정확히 -10% 인 200일. 손으로 계산되는 표본이다."""
+        return [-0.10] * n_bad + [0.01] * n_flat
+
+    def test_exact_value_on_a_hand_computable_series(self):
+        r = self._returns(A=self._bad_then_flat())
+        assert portfolio_cvar({"A": 1.0}, r) == pytest.approx(0.10)
+
+    def test_positively_homogeneous(self):
+        """CVaR(2w) == 2·CVaR(w). 닫힌 형태 축소(scale = 한도/CVaR)가 딛고 선 성질이다."""
+        r = self._returns(A=self._bad_then_flat())
+        assert portfolio_cvar({"A": 0.4}, r) == pytest.approx(
+            2 * portfolio_cvar({"A": 0.2}, r)
+        )
+
+    def test_correlated_book_is_riskier_than_diversified_one(self):
+        """이 게이트의 존재 이유 — 같은 개별 변동성이라도 같이 무너지면 꼬리가 두껍다."""
+        bad = self._bad_then_flat()
+        together = self._returns(A=bad, B=bad)                    # 완전 상관
+        apart = self._returns(A=bad, B=bad[10:20] + bad[:10] + bad[20:])  # 나쁜 날이 어긋난다
+        w = {"A": 0.5, "B": 0.5}
+        assert portfolio_cvar(w, together) == pytest.approx(0.10)
+        assert portfolio_cvar(w, apart) < portfolio_cvar(w, together)
+
+    def test_returns_none_when_history_is_too_short(self):
+        """꼬리를 못 재는데 한도를 걸면 표본 부족이 곧 축소가 된다 — 모르면 개입하지 않는다."""
+        r = self._returns(A=[0.01] * 50)
+        assert portfolio_cvar({"A": 1.0}, r) is None
+
+
+class TestCVaRGate:
+    """리스크 오버레이 6단계. **기본은 꺼져 있어야 한다.**"""
+
+    RETURNS = pd.DataFrame({"A": [-0.10] * 10 + [0.01] * 190})
+
+    def _cfg(self, **risk):
+        return {
+            "sizing": {"max_position_pct": 0.10},
+            "risk": {"max_gross_exposure": 1.00, "max_trades_per_day": 20,
+                     "stop_loss_pct": -0.05, "take_profit_pct": 0.10, **risk},
+        }
+
+    def _run(self, cfg, returns):
+        return apply_risk_overlay(
+            [Signal("A", Action.BUY, 0.10, 0.5, "")], {}, {"A": 100.0}, cfg,
+            returns=returns,
+        )
+
+    @pytest.mark.parametrize("cfg_kw,returns", [
+        ({}, RETURNS),                      # 한도가 없다 → 측정도 안 한다
+        ({"cvar_limit": 0.005}, None),      # 수익률이 없다 → 잴 수가 없다
+    ])
+    def test_inactive_paths_leave_orders_untouched(self, cfg_kw, returns):
+        """회귀 가드. A 단계에서 실거래 주문이 한 건도 바뀌면 안 된다."""
+        out = self._run(self._cfg(**cfg_kw), returns)
+        assert out.signals[0].target_weight == pytest.approx(0.10)
+        assert out.cvar is None and out.cvar_scale == 1.0
+        assert "CVaR한도" not in out.blocked_by_reason
+
+    def test_limit_scales_the_book_to_exactly_the_limit(self):
+        # 비중 0.10 x 꼬리 -0.10 → CVaR 0.010. 한도 0.005 면 절반으로 줄어야 한다.
+        out = self._run(self._cfg(cvar_limit=0.005), self.RETURNS)
+        assert out.cvar == pytest.approx(0.010)
+        assert out.cvar_scale == pytest.approx(0.5)
+        assert out.blocked_by_reason["CVaR한도"] == 1
+        after = {s.code: s.target_weight for s in out.signals}
+        assert portfolio_cvar(after, self.RETURNS) == pytest.approx(0.005)
+
+    def test_limit_above_the_book_does_nothing(self):
+        """0% 도 100% 도 아니어야 게이트다 — 넉넉한 한도에서는 안 물어야 한다."""
+        out = self._run(self._cfg(cvar_limit=0.05), self.RETURNS)
+        assert out.cvar == pytest.approx(0.010)
+        assert out.cvar_scale == 1.0
+        assert out.signals[0].target_weight == pytest.approx(0.10)
+
+
+class TestMarketCVaR:
+    """상대 한도의 기준자 — 전 종목 균등배분의 꼬리."""
+
+    def test_matches_equal_weight_portfolio_on_a_complete_matrix(self):
+        r = pd.DataFrame({"A": [-0.10] * 10 + [0.01] * 190,
+                          "B": [0.01] * 10 + [-0.10] * 10 + [0.01] * 180})
+        assert market_cvar(r) == pytest.approx(
+            portfolio_cvar({"A": 0.5, "B": 0.5}, r)
+        )
+
+    def test_survives_gaps_that_would_wipe_the_joint_sample(self):
+        """유니버스 전체에 dropna(how="any") 를 걸면 종목 하나가 비는 날마다
+        행이 통째로 날아간다. 146종목이면 남는 행이 거의 없다 — 그래서 날짜별 평균을 쓴다."""
+        r = pd.DataFrame({"A": [-0.10] * 10 + [0.01] * 190,
+                          "B": [float("nan")] * 190 + [0.01] * 10})
+        assert portfolio_cvar({"A": 0.5, "B": 0.5}, r) is None   # 완전한 행이 10개뿐
+        assert market_cvar(r) == pytest.approx(0.10)             # A 만으로도 잰다
+
+
+class TestRelativeCVaRLimit:
+    """시장 대비 상대 한도 — 절대 한도가 국면 간에 이식되지 않아 나온 재설계."""
+
+    # A 는 0~9일, B 는 10~19일에 -10%. 시장(균등배분)의 꼬리는 -4.5% 로 얇아진다.
+    RETURNS = pd.DataFrame({"A": [-0.10] * 10 + [0.01] * 190,
+                            "B": [0.01] * 10 + [-0.10] * 10 + [0.01] * 180})
+
+    def _run(self, **risk):
+        cfg = {"sizing": {"max_position_pct": 0.10},
+               "risk": {"max_gross_exposure": 1.00, "max_trades_per_day": 20,
+                        "stop_loss_pct": -0.05, "take_profit_pct": 0.10, **risk}}
+        return apply_risk_overlay(
+            [Signal("A", Action.BUY, 0.10, 0.5, "")], {}, {"A": 100.0}, cfg,
+            returns=self.RETURNS,
+        )
+
+    def test_limit_is_resolved_against_the_market_tail(self):
+        # 우리 책: 0.10 x A → 꼬리 0.010. 시장 균등배분 꼬리 0.045.
+        # k=0.1 이면 한도 0.0045 → 절반 아래로 줄어야 한다.
+        out = self._run(cvar_limit_ratio=0.1)
+        assert out.cvar_market == pytest.approx(0.045)
+        assert out.cvar == pytest.approx(0.010)
+        assert out.cvar_scale == pytest.approx(0.45)
+        after = {s.code: s.target_weight for s in out.signals}
+        assert portfolio_cvar(after, self.RETURNS) == pytest.approx(0.1 * 0.045)
+
+    def test_generous_ratio_does_not_bind(self):
+        out = self._run(cvar_limit_ratio=1.0)
+        assert out.cvar_scale == 1.0
+        assert out.signals[0].target_weight == pytest.approx(0.10)
+
+    def test_zero_limit_is_the_strictest_not_the_gate_being_off(self):
+        """0.0 은 falsy다. truthy 로 검사하면 '가장 엄격한 한도'가 '꺼짐'으로 뒤집힌다."""
+        out = self._run(cvar_limit=0.0)
+        assert out.cvar_scale == 0.0
+        assert out.signals[0].target_weight == 0.0
+        assert out.blocked_by_reason["CVaR한도"] == 1

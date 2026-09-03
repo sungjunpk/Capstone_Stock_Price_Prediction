@@ -243,3 +243,42 @@ def test_benchmark_window_matches_the_strategy_window():
     res = run_backtest(preds, px, _cfg(0.01, 20))
     bench = buy_and_hold(px[px["date"] >= preds["date"].min()])
     assert len(bench) == len(res.returns)
+
+
+# ---------------------------------------------------------------- look-ahead
+#
+# CVaR 게이트(리스크 오버레이 6단계)는 **과거 수익률 행렬**을 받는다. 그걸 자르는 건
+# 호출자 책임이라(`rets.loc[:signal_date]`) 조용히 틀릴 수 있는 자리다.
+# look-ahead 는 에러가 아니라 '좋아진 지표'로 나타나므로 절차로 잡는다.
+
+def _cvar_cfg() -> dict:
+    """게이트를 켠 설정. 기권은 **절대 임계값**으로 둔다 —
+    백분위는 표본 전체 분포에 의존해서, 뒤를 잘라내면 게이트와 무관하게 선택이 바뀐다."""
+    cfg = _cfg(0.0, 20)
+    # 합성 패널의 폭 분포는 0.15~0.27 이라 기본 절대값 0.05 로는 전원 기권이 된다.
+    # 0.19 는 이 패널의 30분위 — 다른 테스트의 `percentile: 30` 과 같은 자리다.
+    cfg["trading"]["abstain"] = {"max_interval_width": 0.19}
+    cfg["trading"]["risk"].update(cvar_limit=0.004, cvar_alpha=0.05,
+                                  cvar_lookback=60, cvar_min_obs=20)
+    return cfg
+
+
+def test_cvar_gate_does_not_look_ahead(panel):
+    """뒤쪽을 잘라내고 돌린 결과가 전체로 돌린 결과의 앞부분과 **완전히 같아야** 한다.
+
+    다르면 게이트가 결정 시점 이후의 가격을 봤다는 뜻이다.
+    """
+    preds, prices = panel
+    cfg = _cvar_cfg()
+    cut = prices["date"].quantile(0.7)
+
+    full = run_backtest(preds, prices, cfg)
+    # 게이트가 실제로 물어야 이 테스트가 무언가를 증명한다
+    assert full.signal_stats["cvar_bind_rate"] > 0
+
+    trunc = run_backtest(preds[preds["date"] <= cut],
+                         prices[prices["date"] <= cut], cfg)
+    pd.testing.assert_frame_equal(
+        full.trades[full.trades["date"] <= cut].reset_index(drop=True),
+        trunc.trades.reset_index(drop=True),
+    )

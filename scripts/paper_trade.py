@@ -206,10 +206,16 @@ def main() -> int:
         #     기권·순위·사이징은 가격과 무관하므로 이 단계에서 확정된다.
         #     현재가는 그 다음, 실제로 건드릴 종목만 조회한다(호출 수 절약).
         closes = latest_prices(bundle)
+        # CVaR 한도(리스크 오버레이 6단계)용 수익률 행렬. 패널은 이미 과거만 담고 있다.
+        # `risk.cvar_limit` 이 null 인 동안은 **측정만 되고 주문은 바뀌지 않는다.**
+        rets = (bundle.raw_panel
+                .pivot_table(index="date", columns="code", values="close")
+                .sort_index().pct_change())
         draft = build_plan(recent, account, closes, cfg, state=state,
                            today=today, rebalancing=rebalancing,
                            rebalance_skip_reason=skip_reason,
-                           liquidate_all=args.liquidate, unfilled=unfilled)
+                           liquidate_all=args.liquidate, unfilled=unfilled,
+                           returns=rets)
 
         touch = sorted({o.code for o in draft.orders} | set(account.holdings))
         quotes = broker.fetch_prices(touch) if touch else {}
@@ -220,7 +226,8 @@ def main() -> int:
         plan = build_plan(recent, account, prices, cfg, state=state,
                           today=today, rebalancing=rebalancing,
                           rebalance_skip_reason=skip_reason,
-                          liquidate_all=args.liquidate, unfilled=unfilled)
+                          liquidate_all=args.liquidate, unfilled=unfilled,
+                          returns=rets)
         plan.notes.extend(notes)
 
         _print_holdings(account)

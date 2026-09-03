@@ -172,6 +172,7 @@ def build_plan(
     rebalance_skip_reason: str = "리밸런싱 주기가 아니다",
     liquidate_all: bool = False,
     unfilled: dict[str, int] | None = None,
+    returns: pd.DataFrame | None = None,
 ) -> TradingPlan:
     """예측 + 계좌 → 오늘의 주문 계획. **여기서 API 를 호출하지 않는다.**
 
@@ -189,6 +190,8 @@ def build_plan(
     unfilled: 종목코드 → 미체결수량. 아직 체결을 기다리는 종목은 이번 회차에서
         건드리지 않는다. 판단이 아니라 **체결 제약**이다 — 남은 주문을 모르고
         다시 주문하면 부족분을 또 사서 목표비중을 넘긴다.
+    returns: 종목별 일별 수익률. 리스크 오버레이의 CVaR 한도(6단계)에만 쓴다.
+        `risk.cvar_limit` 이 null 인 동안은 **측정만 하고 주문은 바뀌지 않는다.**
     """
     tcfg = cfg["trading"]
     today = today or date.today()
@@ -232,6 +235,7 @@ def build_plan(
         # 신호 없는 보유분을 청산하는 건 리밸런싱 때뿐이다.
         # 비리밸런싱 날에 True 로 두면 신호가 없다는 이유로 전량 청산이 나간다.
         liquidate_unsignaled=rebalancing or liquidate_all,
+        returns=returns,
     )
 
     # 3) 목표 비중 확정
@@ -349,6 +353,9 @@ def _signal_stats(signals: list[Signal], decision, max_width: float, n_preds: in
         "abstain_threshold": round(float(max_width), 5),
         "target_gross": round(sum(s.target_weight for s in decision.signals), 4),
         "blocked": len(decision.blocked),
+        # 한도가 꺼져 있어도 기록은 남긴다 — B 단계 전에 실제 수준을 알아야 한다
+        "cvar": round(decision.cvar, 5) if decision.cvar is not None else None,
+        "cvar_scale": round(decision.cvar_scale, 4),
     }
 
 

@@ -84,6 +84,8 @@ def run_backtest(
         .sort_index()
     )
     dates = list(px.index)
+    # CVaR 한도(리스크 오버레이 6단계)용 수익률 행렬. 루프 안에서 **결정 시점까지** 자른다.
+    rets = px.pct_change()
     preds_by_date = {d: g for d, g in predictions.groupby("date")}
 
     # 예측이 시작되기 전 구간은 **수익률 집계에서 뺀다.**
@@ -135,6 +137,9 @@ def run_backtest(
     holding_days: list[int] = []         # 청산 시점의 보유일수 — 버퍼가 먹혔는지 본다
     total_cost = 0.0                     # 실제 지불한 거래비용 누계 (추정 아님)
     blocked_reasons: dict[str, int] = {}
+    cvar_history: list[float] = []       # 축소 전 목표 포트폴리오의 꼬리손실
+    cvar_ratios: list[float] = []        # 그 꼬리 ÷ 같은 시점 시장 균등배분의 꼬리
+    cvar_binds = 0                       # 한도가 실제로 문 횟수
     daily_returns: list[float] = []
     ret_index: list = []
     trades: list[dict] = []
@@ -197,7 +202,16 @@ def run_backtest(
         decision = apply_risk_overlay(
             sigs, positions, today_px, tcfg, allow_short=allow_short,
             liquidate_unsignaled=not hold_until_exit,
+            # look-ahead 방지: signal_date 는 실행일(today)보다 lag 일 앞이다.
+            # 그날 종가까지가 결정 시점에 알려진 전부다.
+            returns=rets.loc[:signal_date],
         )
+        if decision.cvar is not None:
+            cvar_history.append(decision.cvar)
+            if decision.cvar_market:
+                cvar_ratios.append(decision.cvar / decision.cvar_market)
+            if decision.cvar_scale < 1.0:
+                cvar_binds += 1
         stats["blocked"] += len(decision.blocked)
         for reason, cnt in decision.blocked_by_reason.items():
             blocked_reasons[reason] = blocked_reasons.get(reason, 0) + cnt
@@ -290,6 +304,15 @@ def run_backtest(
         "avg_holding_days": round(_mean(holding_days), 1),
         "exit_rank": int(tcfg["direction"].get("exit_rank", 0)),
         "min_trade_weight": round(min_trade, 4),
+        # --- CVaR 한도. 바인딩률이 0% 나 100% 면 게이트가 아니라 상수다
+        "cvar_limit": tcfg.get("risk", {}).get("cvar_limit"),
+        "cvar_limit_ratio": tcfg.get("risk", {}).get("cvar_limit_ratio"),
+        # lookback(250일)이 차기 전에는 측정 자체가 안 된다(None). 몇 번 쟀는지 같이 남겨야
+        # avg_cvar / bind_rate 가 '구간 전체' 기준이 아니라는 걸 리포트만 보고 알 수 있다.
+        "cvar_n": len(cvar_history),
+        "avg_cvar": round(_mean(cvar_history), 5),
+        "avg_cvar_ratio": round(_mean(cvar_ratios), 4),
+        "cvar_bind_rate": round(cvar_binds / len(cvar_history), 4) if cvar_history else 0.0,
         "blocked_by_reason": dict(sorted(blocked_reasons.items())),
     }
 
