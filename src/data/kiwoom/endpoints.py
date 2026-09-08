@@ -173,6 +173,26 @@ STOCK_LIST = TRSpec(  # VERIFIED 2026-08-24 (KOSPI mrkt_tp=0, 2477종목)
          "⚠️ upName(업종)이 여기 있다 — ka10001 에는 없으므로 업종은 이 TR 에서 받는다.",
 )
 
+# --- 지수 구성종목: 유니버스 정본 --------------------------------------------
+# 유니버스를 "시총 상위 N개"로 직접 뽑으면 기준이 우리 손에 있어 자의적이다.
+# 코스피200 은 거래소가 유동성·업종대표성으로 관리하는 **외부 기준**이라
+# 리포트에서 방어하기 쉽다. 정기변경(6·12월)은 이 TR 을 다시 돌려 반영한다.
+SECTOR_STOCKS = TRSpec(  # VERIFIED 2026-09-08 (inds_cd=201 mock, 201종목)
+    name="sector_stocks",
+    path="/api/dostk/sect",
+    api_id="ka20002",
+    list_key="inds_stkpc",
+    schema={
+        "code": ("stk_cd", "str"),
+        "name": ("stk_nm", "str"),
+    },
+    verified=True,
+    note="inds_cd: '201'=코스피200, '001'=코스피종합, '101'=코스닥종합. "
+         "stex_tp='1'(KRX) 필수 — 빠지면 return_code=2 [1511]. "
+         "⚠️ 페이지당 100건이라 **연속조회 필수**(cont-yn/next-key). 한 번만 부르면 100개만 온다. "
+         "시세 필드(cur_prc 등)도 오지만 조회시점 스냅샷이라 쓰지 않는다 — 코드/이름만 쓴다.",
+)
+
 # --- 60분봉: 타점 탐지 트랙의 입력 ------------------------------------------
 # ⚠️ 일봉과 결정적으로 다른 점: **이력이 13개월 롤링이다.**
 #    지금 안 받으면 오래된 구간부터 사라진다 — 일봉처럼 "나중에 다시 받으면 된다"가
@@ -228,7 +248,7 @@ ALL_SPECS: dict[str, TRSpec] = {
     spec.name: spec
     # OVERSEAS_DAILY 는 의도적으로 제외 — 해외 일봉 TR 이 존재하지 않는다
     for spec in (DAILY_CHART, STOCK_INFO, INVESTOR_FLOW, INDEX_DAILY, STOCK_LIST,
-                 MINUTE_CHART, INDEX_MINUTE)
+                 SECTOR_STOCKS, MINUTE_CHART, INDEX_MINUTE)
 }
 
 

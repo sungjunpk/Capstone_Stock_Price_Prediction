@@ -118,8 +118,18 @@ def collect_investor_flow(
     """외국인/기관/개인 순매수 증분 수집."""
     spec = ep.INVESTOR_FLOW
     path = storage.raw_path(spec.name, code)
+
+    # 조기 종료 기준 — 일봉(collect_daily_chart)과 같은 규칙이다.
+    # ⚠️ 예전엔 최초 수집 때 이게 None 이라 **상장일까지 전부 받고 나서** 아래에서
+    #    start_date 로 잘라냈다. 1950~70년대 상장 종목(대상 1956, CJ대한통운 1956,
+    #    DL 1976)은 그러다 max_pages(100) 상한에 걸렸다 — 필요한 건 2015년 이후
+    #    2,868행(29페이지)뿐인데 100페이지를 받았다. 종목당 150초가 그 값이다.
+    stop_before = start_date
     have_until = storage.last_date(path)
-    stop_before = have_until - timedelta(days=_OVERLAP_DAYS) if have_until else None
+    if have_until is not None:
+        stop_before = max(
+            filter(None, [start_date, have_until - timedelta(days=_OVERLAP_DAYS)])
+        )
 
     body = {  # UNVERIFIED
         "stk_cd": code,
