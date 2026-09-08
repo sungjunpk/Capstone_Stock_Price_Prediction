@@ -76,8 +76,13 @@ python scripts/package_data.py --profile xs_mr    # → outputs/train_bundle_xsm
 ⚠️ **먼저 `PROFILE` 셀을 1단계에서 고른 것과 맞춘다.** 노트북 위쪽에 있다.
 
 ```python
-PROFILE = 'xs'      # 기본 트랙이면 ''  /  조합이면 'xs_mr'
+PROFILE = ''        # 실거래에 쓸 모델은 반드시 이것. 실험 트랙이면 'xs' / 'xs_mr'
 ```
+
+⚠️ **실거래 모델을 만드는 거라면 `''` 여야 한다.** `'xs'` 로 돌리면 체크포인트에
+`_xs` 태그가 붙는데 `scripts/paper_trade.py` 는 무태그(`phase1_XXXXXXXX.pt`)만
+집어간다 — 학습은 성공했는데 실거래에는 아무것도 안 바뀐다. 게다가 xs 트랙은
+val IC 가 `+0.0228 → -0.0087` 로 **악화된** 실험이다(README 스윕 표).
 
 ⚠️ **노트북은 GitHub 에서 코드를 클론한다.** 로컬에서 코드를 고쳤으면
 **push 부터 해야 반영된다** — 안 하면 예전 코드로 학습된다.
@@ -103,14 +108,14 @@ git add -A && git commit -m "..." && git push
 받아서 로컬 저장소의 같은 경로에 푼다:
 
 ```
-outputs/checkpoints/phase1_<해시>_xs.pt   ← 학습된 모델 (프로파일 태그가 붙는다)
+outputs/checkpoints/phase1_<해시>.pt      ← 학습된 모델 (PROFILE='' 이면 무태그)
 outputs/reports/*.json                    ← 실험 리포트 (VSN 피처 중요도 포함)
 ```
 
-가져온 뒤 로컬에서 **같은 프로파일로** 백테스트한다:
+가져온 뒤 로컬에서 백테스트한다 (실험 트랙이면 `--profile <이름>` 을 붙인다):
 
 ```bash
-python scripts/backtest.py --profile xs
+python scripts/backtest.py
 ```
 
 ⚠️ `scripts/backtest.py` 는 프로파일 태그가 맞는 체크포인트만 고른다
@@ -145,6 +150,8 @@ python scripts/package_data.py
 | `CUDA out of memory` | `--batch-size` 를 512 → 256 → 128 로 낮춘다 |
 | 세션이 갑자기 끊김 | 무료 GPU는 세션 12시간 / 주당 30시간. 잔여량은 우측 상단에 표시 |
 | 다운로드한 체크포인트가 로컬에서 안 열림 | `torch.load(..., map_location='cpu')` — GPU에서 저장돼서 그렇다 |
+| `체크포인트가 학습된 범주 구성과 현재 데이터가 다르다` | 유니버스가 바뀐 뒤 **옛 체크포인트**로 추론했다. 현재 유니버스로 재학습해야 한다 — 이 문서 절차 그대로 |
+| 학습은 됐는데 `paper_trade.py` 가 옛 모델을 쓴다 | `PROFILE` 이 `''` 이 아니었다. 태그 붙은 체크포인트는 실주문 경로가 안 받는다 |
 
 ## 노트북은 하나만 쓴다
 

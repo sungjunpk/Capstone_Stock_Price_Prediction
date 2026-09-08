@@ -91,3 +91,63 @@ def test_static_vocab_reserves_zero_for_unknown(data):
     vocab = StaticVocab.build(static)
     assert 0 not in vocab.sector.values()      # 0은 미등록용
     assert vocab.sizes["sector"] == len(vocab.sector) + 1
+
+
+# --- 유니버스가 바뀌어도 학습 때 인덱스를 그대로 쓴다 (2026-09-08) -------------
+#
+# 146 → 201종목으로 넓혔을 때 실제로 깨진 자리다. static.parquet 에서 코드북을
+# 매번 다시 만들면 새 범주가 알파벳 순으로 끼어들어 기존 범주의 인덱스가 밀린다.
+# 학습된 임베딩을 엉뚱한 칸에서 읽게 되는데, MPS 는 범위를 넘어도 예외를 안 낸다.
+
+
+def _static(rows):
+    return pd.DataFrame(
+        [{"code": c, "sector": s, "size_class": z, "market_cap_bucket": b}
+         for c, s, z, b in rows]
+    )
+
+
+def test_rebuilding_vocab_shifts_indices():
+    """왜 코드북을 저장해야 하는지 — 재구축하면 인덱스가 실제로 밀린다."""
+    before = StaticVocab.build(_static([("A", "금융", "대형주", 1)]))
+    after = StaticVocab.build(
+        _static([("A", "금융", "대형주", 1), ("B", "건설", "중형주", 2)])
+    )
+    # '건설' 이 앞으로 끼어들어 '금융' 이 밀린다
+    assert before.sector["금융"] != after.sector["금융"]
+    # 표 크기도 커진다 — 학습 당시 임베딩 표를 넘는 인덱스가 생긴다
+    assert after.sizes["size_class"] > before.sizes["size_class"]
+
+
+def test_saved_vocab_survives_universe_change():
+    """저장된 코드북을 쓰면 기존 범주 인덱스가 그대로다."""
+    trained = StaticVocab.build(_static([("A", "금융", "대형주", 1)]))
+    meta = {"vocab": {"sector": trained.sector, "size_class": trained.size_class,
+                      "market_cap_bucket": {str(k): v
+                                            for k, v in trained.market_cap_bucket.items()}}}
+    restored = StaticVocab.from_meta(meta)
+
+    assert restored.sector["금융"] == trained.sector["금융"]
+    assert restored.size_class["대형주"] == trained.size_class["대형주"]
+    # 정수 키가 문자열로 굳지 않는다
+    assert restored.market_cap_bucket == trained.market_cap_bucket
+    assert restored.sizes == trained.sizes
+
+
+def test_unknown_category_falls_back_to_zero():
+    """유니버스에 새로 들어온 범주는 미등록(0번) 슬롯으로 떨어진다 — 범위 밖이 아니다."""
+    trained = StaticVocab.build(_static([("A", "금융", "대형주", 1)]))
+    # 학습 때 없던 '섬유/의류' 와 '소형주' 를 가진 종목
+    wider = _static([("A", "금융", "대형주", 1), ("B", "섬유/의류", "소형주", 2)])
+
+    idx = WindowDataset._encode_static(wider, trained)
+    assert idx["A"].tolist() == [trained.sector["금융"],
+                                 trained.size_class["대형주"],
+                                 trained.market_cap_bucket[1]]
+    # 미등록은 전부 0 — 임베딩 표 크기를 넘지 않는다
+    assert idx["B"].tolist() == [0, 0, 0]
+    assert all(v < trained.sizes["sector"] for v in idx["B"])
+
+
+def test_old_checkpoint_without_codebook_returns_none():
+    assert StaticVocab.from_meta({"vocab_sizes": {"sector": 3}}) is None

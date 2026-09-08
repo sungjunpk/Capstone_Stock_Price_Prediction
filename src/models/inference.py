@@ -130,6 +130,37 @@ def load_features(cfg: dict, loaded: LoadedModel) -> FeatureBundle:
     )
 
 
+def _vocab_for(loaded: LoadedModel, bundle: FeatureBundle) -> StaticVocab:
+    """추론에 쓸 범주 코드북. **학습 당시 것을 쓴다.**
+
+    현재 static.parquet 으로 다시 만들면 유니버스가 바뀌었을 때 같은 범주가
+    다른 인덱스를 받는다. 2026-09-08 에 146→201종목으로 넓히면서 실제로 그랬다:
+    '소형주'가 새로 생겨 중형주 인덱스가 임베딩 표 크기를 넘었는데,
+    **MPS 는 예외 없이 0 벡터를 돌려줬다**(CPU 는 IndexError). 100종목이 조용히
+    '규모 정보 없음'으로 예측됐다. 학습 때 코드북을 쓰면 새 범주는 0번(미등록)
+    슬롯으로 안전하게 떨어진다.
+    """
+    vocab = StaticVocab.from_meta(loaded.meta)
+    if vocab is not None:
+        return vocab
+
+    # 코드북 이전에 만들어진 체크포인트. 크기라도 맞는지 본다.
+    now, was = bundle.vocab.sizes, loaded.meta["vocab_sizes"]
+    if now != was:
+        raise RuntimeError(
+            f"체크포인트({loaded.path.name})가 학습된 범주 구성과 현재 데이터가 다르다.\n"
+            f"  학습 당시: {was}\n  현재:      {now}\n"
+            "임베딩 인덱스가 밀려 조용히 틀린 예측이 나온다(MPS 는 에러도 안 낸다).\n"
+            "→ 현재 유니버스로 재학습할 것. scripts/train.py"
+        )
+    log.warning(
+        "⚠️ %s 에 범주 코드북이 없다(옛 형식). 크기(%s)는 맞지만 **내용이 같은지는 "
+        "확인할 수 없다** — 유니버스가 바뀐 적이 있으면 인덱스가 밀렸을 수 있다. "
+        "재학습하면 코드북이 함께 저장된다.", loaded.path.name, was,
+    )
+    return bundle.vocab
+
+
 def _make_dataset(
     part: pd.DataFrame, bundle: FeatureBundle, cfg: dict, loaded: LoadedModel,
     *, require_target: bool,
@@ -138,7 +169,7 @@ def _make_dataset(
         part, bundle.macro, bundle.static,
         lookback=int(cfg["features"]["lookback"]),
         feature_cols=loaded.feature_cols,
-        vocab=bundle.vocab,
+        vocab=_vocab_for(loaded, bundle),
         require_target=require_target,
     )
 

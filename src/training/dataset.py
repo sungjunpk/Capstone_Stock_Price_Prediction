@@ -68,6 +68,25 @@ class StaticVocab:
         }
 
     @classmethod
+    def from_meta(cls, meta: dict) -> StaticVocab | None:
+        """체크포인트에 저장된 코드북을 되살린다. 없으면 None(옛 체크포인트).
+
+        **추론은 이걸 먼저 써야 한다.** 현재 static 으로 다시 만들면 유니버스가
+        바뀌었을 때 같은 범주가 다른 인덱스를 받는다 — 학습된 임베딩을 엉뚱한
+        칸에서 읽게 되고, 그건 에러가 아니라 조용히 틀린 예측이다.
+        """
+        v = meta.get("vocab")
+        if not v:
+            return None
+        return cls(
+            sector=dict(v["sector"]),
+            size_class=dict(v["size_class"]),
+            # train.py 가 저장할 때 정수 키를 str 로 바꿔둔다(리포트 JSON 과 형식을
+            # 맞추기 위해서다). 여기서 되돌려야 static 의 Int64 값으로 조회된다.
+            market_cap_bucket={int(k): i for k, i in v["market_cap_bucket"].items()},
+        )
+
+    @classmethod
     def build(cls, static: pd.DataFrame) -> StaticVocab:
         def codebook(values) -> dict:
             uniq = sorted({v for v in values if pd.notna(v)}, key=str)

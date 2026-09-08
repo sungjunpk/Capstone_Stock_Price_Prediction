@@ -42,10 +42,17 @@ REPORT_DIR = PROJECT_ROOT / "outputs" / "reports"
 
 
 def _config_hash(cfg: dict) -> str:
-    """모델/학습/피처 설정의 짧은 해시. 체크포인트·리포트 이름에 쓴다."""
+    """모델/학습/피처/유니버스 설정의 짧은 해시. 체크포인트·리포트 이름에 쓴다.
+
+    ⚠️ **유니버스도 넣는다.** 예전엔 model/training/features 만 봤는데, 그러면
+    같은 하이퍼파라미터로 다른 종목 구성을 학습했을 때 파일명이 같아져
+    이전 체크포인트와 리포트를 덮어쓴다(CLAUDE.md 규칙 8 위반).
+    코스피200 은 정기변경(6·12월)이 있어 이 상황이 반기마다 온다.
+    """
+    payload = {k: cfg[k] for k in ("model", "training", "features")}
+    payload["universe"] = sorted(str(u["code"]) for u in cfg["data"]["universe"])
     return hashlib.sha256(
-        json.dumps({k: cfg[k] for k in ("model", "training", "features")},
-                   sort_keys=True, default=str).encode()
+        json.dumps(payload, sort_keys=True, default=str).encode()
     ).hexdigest()[:8]
 
 
@@ -128,6 +135,18 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
         "feature_cols": feature_cols, "macro_cols": macro_cols,
         "vocab_sizes": vocab.sizes, "sizes": sizes, "split": str(spec),
         "baseline_quantiles": [float(v) for v in base_q],
+        # ⚠️ **코드북 자체**를 남긴다. 크기만 남기면 추론이 그때그때 static.parquet 에서
+        #    다시 만드는데, 유니버스가 바뀌면 같은 범주가 다른 인덱스를 받는다.
+        #    2026-09-08 에 146→201종목으로 넓히면서 실제로 그랬다:
+        #    size_class 에 '소형주'가 생겨 중형주 인덱스가 표 크기를 넘었고,
+        #    MPS 는 예외 없이 0 벡터를 돌려줘 **조용히 틀렸다**(CPU 는 IndexError).
+        "vocab": {"sector": vocab.sector, "size_class": vocab.size_class,
+                  "market_cap_bucket": {str(k): v
+                                        for k, v in vocab.market_cap_bucket.items()}},
+        # 이 체크포인트가 무엇으로 학습됐는지. 나중에 되짚을 유일한 단서다.
+        "universe": {"n_stocks": int(static["code"].nunique()),
+                     **{k: v for k, v in (cfg["data"].get("universe_meta") or {})
+                        .get("criteria", {}).items()}},
     }
     return loaders, meta
 
@@ -275,6 +294,7 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "config_hash": cfg_hash, "device": str(device), "smoke": smoke,
         "n_params": n_params, "sizes": meta["sizes"],
+        "universe": meta["universe"],
         "best_val_loss": best, "best_epoch": best_epoch,
         "baseline_val_loss": baseline_loss,
         "improvement_vs_baseline_pct": round(100 * (baseline_loss - best) / baseline_loss, 3),
