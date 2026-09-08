@@ -318,9 +318,21 @@ def build_static(cfg: dict, train_end, panel: pd.DataFrame) -> pd.DataFrame:
         cols = [c for c in ("code", "market_cap", "per", "pbr", "roe") if c in info.columns]
         out = out.merge(info[cols].drop_duplicates("code"), on="code", how="left")
 
+    # 기본은 train_end. "snapshot" 은 **고치기 전 동작을 되살리는 귀속 실험 전용**이다
+    # (profiles.mcap_snapshot). 실거래 트랙에서 쓰지 말 것 — look-ahead 다.
+    basis = cfg["features"].get("market_cap_basis", "train_end")
+    if basis not in ("train_end", "snapshot"):
+        raise ValueError(f"market_cap_basis 는 train_end|snapshot 이다: {basis!r}")
+
     if "market_cap" in out.columns and out["market_cap"].notna().any():
-        cap = _market_cap_at(info, panel, train_end)
-        out["market_cap_train_end"] = out["code"].map(cap)
+        if basis == "snapshot":
+            log.warning("⚠️ market_cap_basis=snapshot — 조회시점 시총으로 구간을 자른다. "
+                        "look-ahead 다. 귀속 실험 전용이고 실거래에 쓰면 안 된다.")
+            out["market_cap_train_end"] = out["market_cap"]
+        else:
+            out["market_cap_train_end"] = out["code"].map(
+                _market_cap_at(info, panel, train_end)
+            )
         out["market_cap_bucket"] = pd.qcut(
             out["market_cap_train_end"].rank(method="first"), 5,
             labels=False, duplicates="drop",
@@ -331,8 +343,10 @@ def build_static(cfg: dict, train_end, panel: pd.DataFrame) -> pd.DataFrame:
 
     out["sector"] = out["sector"].fillna("미분류")
     unknown = int(out["market_cap_bucket"].isna().sum())
-    log.info("static: %d종목, 섹터 %d종, 시총구간 %s (train_end=%s 시점 시총 기준"
-             "%s)", len(out), out["sector"].nunique(),
-             out["market_cap_bucket"].nunique(), train_end,
-             f", 그때 미상장 {unknown}종목은 미등록" if unknown else "")
+    how = (f"train_end={train_end} 시점 시총 기준"
+           + (f", 그때 미상장 {unknown}종목은 미등록" if unknown else "")
+           if basis == "train_end" else "⚠️ 조회시점 시총 기준(look-ahead, 귀속 실험용)")
+    log.info("static: %d종목, 섹터 %d종, 시총구간 %s (%s)",
+             len(out), out["sector"].nunique(),
+             out["market_cap_bucket"].nunique(), how)
     return out.reset_index(drop=True)
