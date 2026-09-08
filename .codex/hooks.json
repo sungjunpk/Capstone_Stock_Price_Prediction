@@ -1,0 +1,59 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/mac/Desktop/Capstone_Stock_Price_Prediction/.codex/hooks/guard_bash.sh'",
+            "timeout": 10,
+            "statusMessage": "절대 규칙 확인"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/mac/Desktop/Capstone_Stock_Price_Prediction/.codex/hooks/test_before_commit.sh'",
+            "timeout": 180,
+            "statusMessage": "커밋 전 테스트"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/mac/Desktop/Capstone_Stock_Price_Prediction/.codex/hooks/guard_edit.sh'",
+            "timeout": 10,
+            "statusMessage": "절대 규칙 확인"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/mac/Desktop/Capstone_Stock_Price_Prediction/.codex/hooks/ruff_check.sh'",
+            "timeout": 20,
+            "statusMessage": "ruff"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/mac/Desktop/Capstone_Stock_Price_Prediction/.codex/hooks/session_brief.sh'",
+            "timeout": 30,
+            "statusMessage": "현황 확인"
+          }
+        ]
+      }
+    ]
+  }
+}

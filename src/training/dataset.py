@@ -54,7 +54,6 @@ class StaticVocab:
     """범주형 static covariate 의 코드북. **train 기준으로 한 번 만들어 공유한다.**"""
 
     sector: dict[str, int]
-    size_class: dict[str, int]
     market_cap_bucket: dict[int, int]
 
     @property
@@ -62,7 +61,6 @@ class StaticVocab:
         # +1 은 미등록/결측용 0번 슬롯
         return {
             "sector": len(self.sector) + 1,
-            "size_class": len(self.size_class) + 1,
             "market_cap_bucket": len(self.market_cap_bucket) + 1,
             "day_of_week": 6,  # 월~금 + 결측
         }
@@ -80,7 +78,6 @@ class StaticVocab:
             return None
         return cls(
             sector=dict(v["sector"]),
-            size_class=dict(v["size_class"]),
             # train.py 가 저장할 때 정수 키를 str 로 바꿔둔다(리포트 JSON 과 형식을
             # 맞추기 위해서다). 여기서 되돌려야 static 의 Int64 값으로 조회된다.
             market_cap_bucket={int(k): i for k, i in v["market_cap_bucket"].items()},
@@ -94,7 +91,6 @@ class StaticVocab:
 
         return cls(
             sector=codebook(static["sector"]),
-            size_class=codebook(static.get("size_class", pd.Series(dtype=object))),
             market_cap_bucket=codebook(static.get("market_cap_bucket", pd.Series(dtype=object))),
         )
 
@@ -176,7 +172,7 @@ class WindowDataset(Dataset):
                 np.array([self._macro_row.get(d.date(), -1) for d in dates], dtype=np.int64)
             )
             self._dow.append(dates.dt.dayofweek.to_numpy(dtype=np.int64))
-            self._static.append(self._static_by_code.get(code, np.zeros(3, dtype=np.int64)))
+            self._static.append(self._static_by_code.get(code, np.zeros(2, dtype=np.int64)))
 
             # end 는 윈도우의 마지막 행(포함). 그 행의 target 을 맞춘다.
             index.extend((si, end) for end in range(self.lookback - 1, len(usable)))
@@ -198,7 +194,6 @@ class WindowDataset(Dataset):
             out[r.code] = np.array(
                 [
                     vocab.sector.get(getattr(r, "sector", None), 0),
-                    vocab.size_class.get(getattr(r, "size_class", None), 0),
                     vocab.market_cap_bucket.get(getattr(r, "market_cap_bucket", None), 0),
                 ],
                 dtype=np.int64,

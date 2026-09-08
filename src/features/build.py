@@ -273,16 +273,44 @@ def _merge_macro(base, new, how: str = "outer"):
     return new if base is None else base.merge(new, on="date", how=how)
 
 
+def _market_cap_at(info: pd.DataFrame, panel: pd.DataFrame, train_end) -> pd.Series:
+    """train_end 시점의 시가총액. 코드 → 시총.
+
+    `stock_info` 는 **조회시점 스냅샷 1행**이라 과거 시총이 없다. 그래서 수정주가
+    비율로 되돌린다 — `시총(train_end) = 시총(현재) x 종가(train_end) / 종가(최근)`.
+    수정주가는 액면분할·병합을 이미 반영하므로, 주식수가 그 사이 크게 변하지
+    않았다는 가정 아래 성립하는 근사다.
+
+    ⚠️ **이 근사가 필요한 이유가 look-ahead 다.** 현재 시총으로 구간을 자르면
+    2015년 행이 "이 종목이 나중에 커진다"를 안다. 실측(2026-09-08): 가격비가
+    0.03~4.91 로 벌어져 순위가 실제로 바뀐다 — 무해한 차이가 아니다.
+
+    train_end 이전 가격이 없는 종목(그때 미상장)은 NA 로 남긴다. 그 시점에
+    존재하지 않았으므로 '규모 미상'이 정직한 값이고, 코드북에서 0번(미등록)이 된다.
+    """
+    px = panel[["code", "date", "close"]].dropna(subset=["close"])
+    upto = px[pd.to_datetime(px["date"]).dt.date <= train_end]
+    at = upto.sort_values("date").groupby("code")["close"].last()
+    latest = px.sort_values("date").groupby("code")["close"].last()
+
+    cap_now = info.set_index("code")["market_cap"]
+    return cap_now * (at / latest)
+
+
 # --------------------------------------------------------------- static
-def build_static(cfg: dict, train_end) -> pd.DataFrame:
+def build_static(cfg: dict, train_end, panel: pd.DataFrame) -> pd.DataFrame:
     """종목별 고정 특성. TFT 변수선택망의 static 입력.
 
     시가총액 분위는 **train 구간 기준**으로 자른다 — 전체 기간으로 자르면
-    미래 정보가 범주 경계에 새어든다.
+    미래 정보가 범주 경계에 새어든다. 정규화 통계를 train 에서만 뽑는 것과 같은 규칙이다.
+
+    ⚠️ `size_class`(대형주/중형주/소형주)는 **static covariate 에서 뺐다**(2026-09-08).
+    출처가 ka10099 의 **현재** 분류뿐이라 과거 시점 값을 구할 방법이 없어 그대로
+    쓰면 look-ahead 였고, 애초에 `market_cap_bucket` 이 같은 정보를 더 세밀하게 담는다.
+    참고용으로 `configs/universe.yaml` 에는 남아 있다.
     """
     uni = pd.DataFrame(cfg["data"]["universe"])
-    uni = uni.rename(columns={"size": "size_class"})
-    keep = [c for c in ("code", "name", "sector", "size_class", "market") if c in uni.columns]
+    keep = [c for c in ("code", "name", "sector", "market") if c in uni.columns]
     out = uni[keep].copy()
 
     info = storage.load_kind("stock_info", codes=out["code"].tolist())
@@ -291,14 +319,20 @@ def build_static(cfg: dict, train_end) -> pd.DataFrame:
         out = out.merge(info[cols].drop_duplicates("code"), on="code", how="left")
 
     if "market_cap" in out.columns and out["market_cap"].notna().any():
+        cap = _market_cap_at(info, panel, train_end)
+        out["market_cap_train_end"] = out["code"].map(cap)
         out["market_cap_bucket"] = pd.qcut(
-            out["market_cap"].rank(method="first"), 5, labels=False, duplicates="drop"
+            out["market_cap_train_end"].rank(method="first"), 5,
+            labels=False, duplicates="drop",
         ).astype("Int64")
     else:
+        out["market_cap_train_end"] = pd.NA
         out["market_cap_bucket"] = pd.NA
 
     out["sector"] = out["sector"].fillna("미분류")
-    log.info("static: %d종목, 섹터 %d종, 시총구간 %s (train_end=%s 기준)",
-             len(out), out["sector"].nunique(),
-             out["market_cap_bucket"].nunique(), train_end)
+    unknown = int(out["market_cap_bucket"].isna().sum())
+    log.info("static: %d종목, 섹터 %d종, 시총구간 %s (train_end=%s 시점 시총 기준"
+             "%s)", len(out), out["sector"].nunique(),
+             out["market_cap_bucket"].nunique(), train_end,
+             f", 그때 미상장 {unknown}종목은 미등록" if unknown else "")
     return out.reset_index(drop=True)

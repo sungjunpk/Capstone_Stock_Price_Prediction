@@ -11,7 +11,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env   # 키움 모의투자 APP_KEY / APP_SECRET 채우기
-pytest -q              # 231 tests
+pytest -q              # 235 tests
 ```
 
 ## 파이프라인

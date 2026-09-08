@@ -140,7 +140,7 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
         #    2026-09-08 에 146→201종목으로 넓히면서 실제로 그랬다:
         #    size_class 에 '소형주'가 생겨 중형주 인덱스가 표 크기를 넘었고,
         #    MPS 는 예외 없이 0 벡터를 돌려줘 **조용히 틀렸다**(CPU 는 IndexError).
-        "vocab": {"sector": vocab.sector, "size_class": vocab.size_class,
+        "vocab": {"sector": vocab.sector,
                   "market_cap_bucket": {str(k): v
                                         for k, v in vocab.market_cap_bucket.items()}},
         # 이 체크포인트가 무엇으로 학습됐는지. 나중에 되짚을 유일한 단서다.

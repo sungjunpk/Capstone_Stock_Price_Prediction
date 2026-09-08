@@ -55,7 +55,7 @@ def main() -> int:
     _save(panel, "panel", suffix)
     log.info("panel 기간 %s ~ %s", panel["date"].min(), panel["date"].max())
 
-    static = build_static(cfg.raw, spec.train_end)
+    static = build_static(cfg.raw, spec.train_end, panel)
     _save(static, "static", suffix)
 
     if not args.skip_macro:
