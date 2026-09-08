@@ -300,3 +300,89 @@ def test_buffer_reduces_turnover():
 
     no_buffer = {**XS_CFG, "direction": {**XS_CFG["direction"], "top_n": 5, "exit_rank": 5}}
     assert rotations(BUF_CFG) < rotations(no_buffer)
+
+
+# --------------------------------------------------------- 시총가중 · 기권 기준
+# 목표가 "코스피200 초과수익"이 되면서 들어온 두 축이다 (2026-09-08).
+# 지수가 시총가중이라 동일·확신도 가중으로는 구조적으로 못 이긴다 — 그런데 비중
+# 계산이 조용히 틀려도 성과가 조금 나빠질 뿐 에러가 안 난다. 그래서 테스트로 못박는다.
+
+XS_CAP = {
+    "abstain": {"percentile": 50},
+    "direction": {"mode": "cross_sectional", "top_n": 3, "exit_rank": 3,
+                  "min_candidates": 0, "long_threshold": 0.004,
+                  "short_threshold": -0.004},
+    "sizing": {"method": "cap_weighted", "cap_alpha": 1.0, "conf_beta": 0.0,
+               "max_position_pct": 1.0, "exposure_scaling": False},
+    "risk": {"max_gross_exposure": 0.90},
+    "costs": {"commission_bps": 1.5, "tax_bps": 18.0, "slippage_bps": 5.0},
+}
+
+
+def _capped(code: str, q50: float, mcap: float, vol: float | None = None):
+    return QuantilePrediction(code, q50 - 0.01, q50, q50 + 0.01, mcap=mcap, vol=vol)
+
+
+def test_cap_weighted_gives_bigger_weight_to_bigger_cap():
+    preds = [_capped("A", 0.03, 900.0), _capped("B", 0.02, 300.0),
+             _capped("C", 0.01, 100.0)]
+    w = {s.code: s.target_weight for s in generate_signals(preds, XS_CAP, max_width=0.05)}
+    assert w["A"] > w["B"] > w["C"] > 0
+    # 몫이 시총 비율(9:3:1)을 그대로 따라야 한다
+    assert w["A"] / w["C"] == pytest.approx(9.0, rel=1e-6)
+
+
+def test_cap_alpha_zero_falls_back_to_confidence_weighting():
+    cfg = {**XS_CAP, "sizing": {**XS_CAP["sizing"], "cap_alpha": 0.0, "conf_beta": 1.0}}
+    preds = [_capped("A", 0.03, 900.0), _capped("B", 0.02, 300.0),
+             _capped("C", 0.01, 100.0)]
+    w = {s.code: s.target_weight for s in generate_signals(preds, cfg, max_width=0.05)}
+    assert w["A"] == pytest.approx(w["C"])      # 폭이 같으니 확신도도 같다
+
+
+def test_missing_cap_uses_median_not_zero():
+    """시총 미상 종목이 비중 0 이 되거나 독차지하면 안 된다 — 척도가 섞이는 사고다."""
+    preds = [_capped("A", 0.03, 100.0), _capped("B", 0.02, None),
+             _capped("C", 0.01, 100.0)]
+    w = {s.code: s.target_weight for s in generate_signals(preds, XS_CAP, max_width=0.05)}
+    assert w["B"] > 0
+    assert w["B"] == pytest.approx(w["A"])      # 중앙값(=100)으로 채운다
+
+
+def test_width_over_vol_lets_high_vol_names_survive():
+    """절대 폭 기준이면 고변동 종목이 항상 배제된다 — 그게 지수 승자를 걸러냈다."""
+    wide_but_volatile = QuantilePrediction("HI", -0.05, 0.02, 0.05, mcap=100.0, vol=0.05)
+    narrow_calm = QuantilePrediction("LO", 0.005, 0.01, 0.025, mcap=100.0, vol=0.005)
+
+    by_width = {"abstain": {"basis": "width"}}
+    by_vol = {"abstain": {"basis": "width_over_vol"}}
+    from src.trading.signal import abstain_score
+
+    assert abstain_score(wide_but_volatile, "width") > abstain_score(narrow_calm, "width")
+    # 변동성으로 나누면 순서가 뒤집힌다 — 고변동주가 자기 기준에서는 좁다
+    assert (abstain_score(wide_but_volatile, "width_over_vol")
+            < abstain_score(narrow_calm, "width_over_vol"))
+    assert by_width and by_vol      # 설정 키 이름이 바뀌면 위 basis 문자열도 바뀌어야 한다
+
+
+def test_unknown_abstain_basis_is_rejected():
+    from src.trading.signal import abstain_basis
+
+    with pytest.raises(ValueError):
+        abstain_basis({"basis": "제멋대로"})
+
+
+def test_prediction_from_row_carries_context_and_survives_nan():
+    """백테스트와 모의투자가 이 함수 하나로 예측을 만든다 (절대 규칙 7)."""
+    import pandas as pd
+
+    from src.trading.signal import prediction_from_row
+
+    df = pd.DataFrame([
+        {"code": "A", "q10": 0.0, "q50": 0.01, "q90": 0.02, "mcap": 500.0, "rvol_20": 0.03},
+        {"code": "B", "q10": 0.0, "q50": 0.01, "q90": 0.02, "mcap": float("nan"),
+         "rvol_20": float("nan")},
+    ])
+    a, b = (prediction_from_row(r) for r in df.itertuples())
+    assert (a.mcap, a.vol) == (500.0, 0.03)
+    assert b.mcap is None and b.vol is None     # NaN 은 '모름'이지 0 이 아니다

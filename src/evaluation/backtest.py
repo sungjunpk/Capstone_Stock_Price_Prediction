@@ -33,9 +33,11 @@ from src.trading.risk import Position, apply_risk_overlay
 # 백테스트에서 검증한 최소 거래폭 규칙이 실거래에서 달라지면 안 된다.
 from src.trading.signal import (
     Action,
-    QuantilePrediction,
+    abstain_basis,
+    abstain_scores,
     generate_signals,
     one_way_cost,
+    prediction_from_row,
     resolve_abstain_threshold,
     round_trip_cost,
     should_trade,
@@ -107,11 +109,12 @@ def run_backtest(
     # 기권 임계값을 예측 폭 분포에서 확정한다.
     # 절대값을 미리 추측하면 거의 항상 틀린다 — 초기 추측 0.05 로는 기권률 95.8%,
     # 거래 0건이 나왔다(5일 수익률의 자연 폭은 0.124).
-    widths = (predictions["q90"] - predictions["q10"]).to_numpy()
+    widths = abstain_scores(predictions, tcfg["abstain"])
     max_width = resolve_abstain_threshold(widths, tcfg["abstain"])
     log.info(
-        "기권 임계값 %.4f | 예측 폭 분포 p10=%.4f p50=%.4f p90=%.4f",
-        max_width, *[float(pd.Series(widths).quantile(q)) for q in (0.1, 0.5, 0.9)],
+        "기권 임계값 %.4f (%s) | 불확실도 분포 p10=%.4f p50=%.4f p90=%.4f",
+        max_width, abstain_basis(tcfg["abstain"]),
+        *[float(pd.Series(widths).quantile(q)) for q in (0.1, 0.5, 0.9)],
     )
 
     # 거래가 안 나올 때 원인을 바로 알 수 있게 q50 분포도 남긴다.
@@ -177,7 +180,7 @@ def run_backtest(
             if r.code not in today_px:
                 continue
             try:
-                preds.append(QuantilePrediction(r.code, float(r.q10), float(r.q50), float(r.q90)))
+                preds.append(prediction_from_row(r))
             except ValueError as exc:      # 분위 교차 — 구조상 나오면 안 된다
                 log.warning("분위 교차 무시: %s", exc)
         if not preds:

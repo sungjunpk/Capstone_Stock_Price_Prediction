@@ -46,8 +46,11 @@ split:
 # ------------------------------------------------------------ 피처
 features:
   return_horizon: 5        # 예측 대상: t+1 ~ t+5 누적 로그수익률
-  # raw | market_relative — 시장 공통성분을 뺄지. 근거는 build.py:_apply_target_mode
+  # raw | market_relative | index_relative — 무엇을 빼서 '초과수익'으로 만들지.
+  # market_relative = 유니버스 동일가중 평균, index_relative = 벤치마크 지수.
+  # 근거는 build.py:_apply_target_mode
   target_mode: raw
+  benchmark_index: "201"   # index_relative 에서 뺄 지수 (코스피200)
   # 같은 날 전 종목 대비 백분위 순위를 피처로 추가할 목록. 빈 값이면 끈다.
   # 이름은 xs_<원본> 이 되고, 모델은 이 채널만 RevIN 을 건너뛴다 —
   # RevIN 이 종목별 창 안에서 표준화하면 "오늘 몇 등인가"가 지워지기 때문이다.
@@ -123,6 +126,12 @@ trading:
     #    대가는 Sharpe 1.84→1.64, MDD -7.3→-10.8%. 아래 두 값과 한 묶음이다.
     percentile: 50
     max_interval_width: 0.05   # percentile 이 없을 때만 쓰이는 절대값
+    # 무엇을 '불확실'로 재는가. width = 절대 폭(q90-q10), width_over_vol = 폭/실현변동성.
+    # ⚠️ 절대 폭은 고변동 종목을 항상 배제한다. 실측(2026-09-08 test 2년):
+    #    폭 기준 기권을 끄기만 해도 누적 +6.5% → +129.9% 였다 — 코스피200 을 끌어올린
+    #    종목들이 정확히 변동성 큰 대형주였고 기권이 그들을 구조적으로 걸러내고 있었다.
+    #    width_over_vol 은 '이 종목치고 예측이 넓은가'라서 그 편향을 받지 않는다.
+    basis: width               # width | width_over_vol
   direction:
     # ⚠️ absolute 는 예측 수준(level)이 국면과 어긋나면 그대로 무너진다.
     #    실측(2026-08-25 test): 모델 5일 중앙값 -0.15% vs 실제 평균 +0.80%,
@@ -150,7 +159,14 @@ trading:
     # inverse_width 는 conf x max_pos 라 기권 통과 종목들의 conf 가 0 근처에 몰려
     # 총 노출이 20%를 못 넘었다. rank_normalized 는 선택된 종목들 사이에서
     # 비중을 정규화해 목표 노출을 채운다 (상대적 확신도 순서는 그대로 보존).
-    method: rank_normalized    # rank_normalized | inverse_width | kelly
+    method: rank_normalized    # rank_normalized | inverse_width | kelly | cap_weighted
+    # cap_weighted 전용: 몫 = 시총^cap_alpha x 확신도^conf_beta.
+    # alpha=1,beta=0 이면 순수 시총가중, alpha=0,beta=1 이면 rank_normalized 와 같다.
+    # 왜 필요한가: 코스피200 은 시총가중 지수라 소수 대형주가 지수를 끈다. 실측
+    # (2026-09-08 test 2년) 유니버스 197종목 중 지수(+220.0%)를 이긴 건 21종목(10.7%)뿐,
+    # 중앙값 종목은 +49.9% 다. 같은 20종목도 동일가중 +100.1% vs 시총가중 +202.1%.
+    cap_alpha: 1.0
+    conf_beta: 0.0
     # ⚠️ true → false (2026-08-27). 켜져 있으면 생존 후보 수에 비례해 현금을 늘린다.
     #    그 자체는 기권 로직의 확장이지만, **시장 타이밍 능력이 검증된 적이 없다** —
     #    우리가 측정한 건 횡단면 IC(종목 간 순위)뿐이고 '언제 쉬어야 하는가'는 아니다.
@@ -200,6 +216,8 @@ trading:
 # ------------------------------------------------------------ 백테스트
 backtest:
   initial_capital: 100000000   # 1억
+  # 성과 판정의 기준. 목표가 '지수 초과수익'이라 지수는 참고가 아니라 판정 기준이다.
+  benchmark_index: "201"       # 코스피200 (data/raw/index_daily/201.parquet)
   execution_lag_days: 1        # t 예측 → t+1 종가 체결. 0 이면 방금 본 가격에 거래하는 셈
   # ⚠️ 5 → 10 (2026-08-27). "지평과 맞춘다"는 비용이 0 일 때만 옳다.
   # Garleanu-Pedersen(2013): 최적 거래속도는 지평이 아니라 **알파 감쇠 속도 대비 비용**이
@@ -277,6 +295,17 @@ profiles:
       processed_suffix: "_mr"      # panel_mr.parquet / 체크포인트 phase1_xxxx_mr.pt
     features:
       target_mode: market_relative
+
+  # 목표가 '코스피200 초과수익'이 되면서 만든 트랙 (2026-09-08).
+  # 타깃에서 지수 forward 수익률을 뺀다 — 그래야 q50 이 곧 '지수를 얼마나 이길까'가
+  # 되고, 종목 선택이 목표와 정렬된다. mktrel 이 빼는 유니버스 동일가중 평균은
+  # 시총가중 지수와 다른 물건이다(test 2년 +95.7% vs +220.0%).
+  # 체크포인트에 _idxrel 태그가 붙어 무태그만 받는 paper_trade.py 로는 샐 수 없다.
+  idxrel:
+    data:
+      processed_suffix: "_idxrel"
+    features:
+      target_mode: index_relative
 
   # 60분봉 타점 탐지 트랙. 일봉 트랙은 이 블록을 읽지 않는다.
   # 목표가 다르다 — 주기적 리밸런싱이 아니라 **조건이 맞는 타점에서만 진입**한다.

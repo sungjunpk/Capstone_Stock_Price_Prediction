@@ -111,7 +111,18 @@ def main() -> int:
                 status[code] = f"fail: {exc}"
 
         if not args.skip_index and with_chart:
-            for idx in cfg["data"]["macro"]["indices"]:
+            # 매크로 피처용 지수 + **벤치마크 지수**. 둘을 합치는 이유:
+            # 코스피200(201)은 성과 판정 기준이자 index_relative 타깃의 재료인데
+            # macro.indices 에는 없다. 거기 넣으면 모델 입력(크로스어텐션 K/V)이
+            # 늘어 기존 체크포인트가 깨지므로, **수집 목록만** 넓힌다.
+            # 실측(2026-09-08): 이게 없어서 201 이 8/27 에 멈춰 있었고 벤치마크가
+            # 마지막 8세션을 0% 로 깔고 있었다.
+            indices = list(cfg["data"]["macro"]["indices"])
+            bench = str(cfg["features"].get("benchmark_index", "")).strip()
+            if bench and bench not in {i["code"] for i in indices}:
+                indices.append({"code": bench, "name": f"벤치마크{bench}"})
+
+            for idx in indices:
                 try:
                     collect_index_daily(client, idx["code"], start_date=start_date,
                                         end_date=end_date)

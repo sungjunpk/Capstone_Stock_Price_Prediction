@@ -29,8 +29,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd  # noqa: E402
 import yaml  # noqa: E402
 
-from src.data.storage import RAW_DIR  # noqa: E402
 from src.evaluation.backtest import buy_and_hold, run_backtest  # noqa: E402
+from src.evaluation.benchmark import INDEXES, index_returns  # noqa: E402
 from src.evaluation.metrics import equity_curve, summarize  # noqa: E402
 from src.models.inference import load_features, load_model, predict_split  # noqa: E402
 from src.utils.config import PROJECT_ROOT, load_config  # noqa: E402
@@ -39,24 +39,6 @@ from src.utils.logging import get_logger, setup_logging  # noqa: E402
 log = get_logger("backtest_recent")
 REPORTS_DIR = PROJECT_ROOT / "outputs" / "reports"
 CKPT_DIR = PROJECT_ROOT / "outputs" / "checkpoints"
-
-INDEXES = {"201": "코스피200", "001": "코스피"}
-
-
-def index_returns(code: str, dates: pd.Index) -> pd.Series | None:
-    """지수 일봉 → 전략과 같은 날짜축의 일간수익률."""
-    path = RAW_DIR / "index_daily" / f"{code}.parquet"
-    if not path.exists():
-        log.warning("지수 %s 없음 — 건너뛴다", code)
-        return None
-    df = pd.read_parquet(path)
-    s = (
-        df.assign(date=pd.to_datetime(df["date"]).dt.date)
-        .set_index("date")["close"]
-        .sort_index()
-    )
-    s = s.reindex(dates).ffill()
-    return s.pct_change(fill_method=None).fillna(0.0)
 
 
 def monthly_table(series: dict[str, pd.Series]) -> list[dict]:

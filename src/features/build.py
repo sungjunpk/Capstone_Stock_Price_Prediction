@@ -140,15 +140,51 @@ def _apply_target_mode(panel: pd.DataFrame, feat_cfg: dict) -> pd.DataFrame:
     mode = str(feat_cfg.get("target_mode", "raw"))
     if mode == "raw":
         return panel
-    if mode != "market_relative":
+    if mode not in ("market_relative", "index_relative"):
         raise ValueError(f"알 수 없는 features.target_mode: {mode}")
 
-    mkt = panel.groupby("date")["target"].transform("mean")
     before = panel["target"].std()
-    panel["target"] = panel["target"] - mkt
-    log.info("타깃을 시장 대비 초과수익으로 변환 — 표준편차 %.4f → %.4f (공통성분 %.0f%% 제거)",
-             before, panel["target"].std(), 100 * (1 - panel["target"].std() / before))
+    if mode == "market_relative":
+        ref = panel.groupby("date")["target"].transform("mean")
+        what = "유니버스 평균"
+    else:
+        ref = _index_forward_return(panel, feat_cfg)
+        what = f"지수 {feat_cfg.get('benchmark_index', '201')}"
+
+    panel["target"] = panel["target"] - ref
+    log.info("타깃을 %s 대비 초과수익으로 변환 — 표준편차 %.4f → %.4f (공통성분 %.0f%% 제거)",
+             what, before, panel["target"].std(),
+             100 * (1 - panel["target"].std() / before))
     return panel
+
+
+def _index_forward_return(panel: pd.DataFrame, feat_cfg: dict) -> pd.Series:
+    """벤치마크 지수의 t+1~t+h 누적 로그수익률을 패널 날짜축에 맞춰 돌려준다.
+
+    **왜 유니버스 평균이 아니라 지수인가.** 목표가 "코스피200 초과수익"이면 타깃도
+    그래야 q50 이 곧 "이 종목이 지수를 얼마나 이길까"가 된다. 유니버스 동일가중 평균은
+    시총가중 지수와 다른 물건이다 — 실측(2026-09-08 test 2년) 동일가중 +95.7% 대
+    코스피200 +220.0% 로 두 배 넘게 벌어진다.
+
+    ⚠️ look-ahead 아니다. `market_relative` 와 같은 원칙이다 — 빼는 값은 **같은 미래
+    창의 값이라 라벨 정의의 일부**이고, 피처로는 들어가지 않는다(매크로 경로와 분리해
+    여기서만 읽는 이유다). 추론 시점에 알 필요도 없다.
+    """
+    code = str(feat_cfg.get("benchmark_index", "201"))
+    horizon = int(feat_cfg["return_horizon"])
+
+    bars = _load_bars(_MACRO_INDEX_KIND, [code])
+    if bars.empty:
+        raise RuntimeError(
+            f"벤치마크 지수 {code} 일봉이 없다 (data/raw/{_MACRO_INDEX_KIND}). "
+            "수집을 먼저 하거나 features.benchmark_index 를 확인할 것."
+        )
+
+    idx = bars.sort_values("date").drop_duplicates("date").set_index("date")["close"]
+    fwd = forward_log_return(idx, horizon)
+    # 지수 휴장일 등으로 비는 날은 0(초과수익 = 종목 수익 그대로)으로 둔다.
+    # ffill 로 채우면 **없는 날의 미래 수익률**을 끌어오는 셈이라 하지 않는다.
+    return panel["date"].map(fwd).astype("float64").fillna(0.0)
 
 
 def _load_flow(codes: list[str], *, bars_last=None) -> pd.DataFrame | None:
@@ -295,6 +331,42 @@ def _market_cap_at(info: pd.DataFrame, panel: pd.DataFrame, train_end) -> pd.Ser
 
     cap_now = info.set_index("code")["market_cap"]
     return cap_now * (at / latest)
+
+
+def add_market_cap(panel: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """패널에 날짜별 시가총액(`mcap`)을 붙인다. **비중 결정용이지 모델 입력이 아니다.**
+
+    `dataset.BASE_COLS` 에 `mcap` 이 들어 있어 동적 피처로 잡히지 않는다 — 그래야
+    기존 체크포인트의 입력 차원이 그대로 유지된다.
+
+    `mcap_t = 상장주식수 x 종가_t`. 시간에 따라 변하는 건 가격뿐이고 그 가격은 t
+    시점에 이미 알 수 있다. 단위(천주 x 원)는 비중을 정규화할 때 상쇄되므로 맞추지 않는다.
+
+    ⚠️ **완전히 결백하지는 않다.** `listed_shares` 는 `stock_info` 의 **조회시점
+    스냅샷**이라 과거 날짜에도 현재 주식수를 쓴다. `_market_cap_at()` 도 같은 근사를
+    지지만 거기는 train_end **한 시점**의 범주형 피처에만 쓰이고, 여기는 **백테스트 전
+    구간의 매 리밸런싱 비중**에 쓰인다 — 노출이 훨씬 넓다.
+      - 액면분할·병합은 무해하다. 종가가 수정주가라 주식수 변화와 정확히 상쇄된다.
+      - 남는 건 유상증자·자사주 소각처럼 **실제 주식수가 변한** 경우뿐이고, 그 종목의
+        과거 시총이 그만큼 왜곡된다. 키움 스냅샷에 과거 주식수가 없어 지금은 보정할
+        방법이 없다 — `docs/LIMITATIONS.md` 에 한계로 적어 두었다.
+
+    주식수를 모르는 종목은 NA 로 남긴다 — 비중 계산이 이 결측을 받아 처리한다.
+    """
+    codes = [u["code"] for u in cfg["data"]["universe"]]
+    info = storage.load_kind("stock_info", codes=codes)
+    if info.empty or "listed_shares" not in info.columns:
+        panel["mcap"] = pd.NA
+        log.warning("stock_info 에 listed_shares 가 없다 — mcap 을 비워 둔다")
+        return panel
+
+    shares = info.drop_duplicates("code").set_index("code")["listed_shares"]
+    panel["mcap"] = panel["code"].map(shares) * panel["close"]
+
+    known = int(panel.groupby("code")["mcap"].first().notna().sum())
+    log.info("mcap: %d/%d 종목에 시총 부여 (상장주식수 x 종가)",
+             known, panel["code"].nunique())
+    return panel
 
 
 # --------------------------------------------------------------- static

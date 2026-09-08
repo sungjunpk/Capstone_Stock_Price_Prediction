@@ -29,13 +29,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd  # noqa: E402
 
 from src.evaluation.backtest import buy_and_hold, run_backtest  # noqa: E402
+from src.evaluation.benchmark import (  # noqa: E402
+    excess_return,
+    index_returns,
+)
 from src.evaluation.metrics import summarize  # noqa: E402
-from src.training.train import _config_hash  # noqa: E402
 from src.models.inference import (  # noqa: E402
     load_features,
     load_model,
     predict_split,
 )
+from src.training.train import _config_hash  # noqa: E402
 from src.utils.config import PROJECT_ROOT, load_config  # noqa: E402
 from src.utils.logging import get_logger, setup_logging  # noqa: E402
 
@@ -97,6 +101,12 @@ RULE_VARIANTS: list[tuple[str, dict]] = [
     ("+버퍼+밴드", {}),
     ("+익절해제", {"take_profit_pct": 99.0}),
     ("absolute", {"mode": "absolute", "min_trade_weight": 0.0}),
+    # 목표가 '코스피200 초과수익'이 된 뒤 추가한 변형 (2026-09-08).
+    # 지수가 시총가중이라 동일·확신도 가중으로는 구조적으로 못 이긴다 —
+    # 종목 선택은 그대로 모델 q50 이 하고, **비중만** 지수와 같은 규칙으로 나눈다.
+    ("시총가중", {"sizing_method": "cap_weighted", "max_position_pct": 1.0}),
+    ("시총가중+기권75", {"sizing_method": "cap_weighted", "max_position_pct": 1.0,
+                        "abstain_percentile": 75}),
 ]
 
 
@@ -104,6 +114,14 @@ def _variant_cfg(base: dict, override: dict) -> dict:
     """기본 설정에 변형을 얹은 사본. 원본은 건드리지 않는다."""
     cfg = copy.deepcopy(base)
     d, s, r = cfg["trading"]["direction"], cfg["trading"]["sizing"], cfg["trading"]["risk"]
+    a = cfg["trading"]["abstain"]
+
+    if "sizing_method" in override:
+        s["method"] = override["sizing_method"]
+    if "max_position_pct" in override:
+        s["max_position_pct"] = override["max_position_pct"]
+    if "abstain_percentile" in override:
+        a["percentile"] = override["abstain_percentile"]
 
     if "mode" in override:
         d["mode"] = override["mode"]
@@ -144,14 +162,17 @@ def _print_diagnostics(result) -> None:
     print(f"  판정           {verdict}")
 
 
-def _print_single(result, bh: dict, split: str) -> None:
+def _print_single(result, benches: dict[str, dict], split: str) -> None:
     print("\n" + "=" * 66)
     print(f"백테스트 결과 ({split} 구간, 거래비용 반영)")
     print("=" * 66)
-    print(f"{'지표':<16}{'전략':>14}{'매수후보유':>14}")
+    names = list(benches)
+    print(f"{'지표':<16}{'전략':>14}" + "".join(f"{n:>14}" for n in names))
     for k in ("cagr", "volatility", "sharpe", "sortino", "calmar",
               "max_drawdown", "hit_rate", "total_return"):
-        print(f"  {k:<14}{result.metrics[k]:>14.4f}{bh[k]:>14.4f}")
+        print(f"  {k:<14}{result.metrics[k]:>14.4f}"
+              + "".join(f"{benches[n][k]:>14.4f}" for n in names))
+    _print_verdict({"": result.metrics}, benches)
 
     _print_diagnostics(result)
     s = result.signal_stats
@@ -186,7 +207,8 @@ def _print_single(result, bh: dict, split: str) -> None:
         print(f"    무포지션 비율  {s['flat_rate']:.1%}  (조건이 안 맞아 쉰 구간)")
 
 
-def _print_compare(runs: list[tuple[str, object]], bh: dict, split: str) -> None:
+def _print_compare(runs: list[tuple[str, object]], benches: dict[str, dict],
+                   split: str) -> None:
     """규칙 변형 나란히 비교. 격차 중 비용 몫과 종목선택 몫을 가르는 게 목적이다."""
     names = [n for n, _ in runs]
     w = max(12, max(len(n) for n in names) + 2)
@@ -194,11 +216,14 @@ def _print_compare(runs: list[tuple[str, object]], bh: dict, split: str) -> None
     print("\n" + "=" * 66)
     print(f"매매 규칙 비교 ({split} 구간, 거래비용 반영)")
     print("=" * 66)
-    print(f"  {'지표':<16}" + "".join(f"{n:>{w}}" for n in names) + f"{'매수후보유':>{w}}")
+    bnames = list(benches)
+    print(f"  {'지표':<16}" + "".join(f"{n:>{w}}" for n in names)
+          + "".join(f"{n:>{w}}" for n in bnames))
     for k in ("sharpe", "sortino", "calmar", "max_drawdown",
               "volatility", "cagr", "total_return"):
         row = "".join(f"{r.metrics[k]:>{w}.4f}" for _, r in runs)
-        print(f"    {k:<14}" + row + f"{bh[k]:>{w}.4f}")
+        print(f"    {k:<14}" + row
+              + "".join(f"{benches[n][k]:>{w}.4f}" for n in bnames))
 
     print("\n  거래 활동 — 회전율이 내려가면 비용도 같이 내려가야 한다")
     rows = [
@@ -221,15 +246,42 @@ def _print_compare(runs: list[tuple[str, object]], bh: dict, split: str) -> None
                         for _, r in runs))
 
 
-def _write_report(result, bh: dict, ckpt_path: Path, args, label: str) -> Path:
+def _print_verdict(runs: dict[str, dict], benches: dict[str, dict]) -> None:
+    """목표는 코스피200 초과수익이다 — 그 판정을 마지막에 한 줄로 남긴다.
+
+    누적수익의 차이가 아니라 **비(比)** 로 적는다. +410% 와 +220% 의 격차를
+    '190%p' 로 적으면 복리를 잘못 읽는다 (실제로는 1.59배).
+    """
+    idx = next((n for n in benches if n.startswith("코스피200")), None)
+    if idx is None:
+        return
+    base = benches[idx]["total_return"]
+    print(f"\n목표 판정 — 코스피200({base:+.1%}) 초과수익")
+    for name, m in runs.items():
+        ex = excess_return(m["total_return"], base)
+        mark = "달성" if ex > 0 else "미달"
+        label = name or "전략"
+        print(f"  {label:<14}{m['total_return']:>9.1%}   초과 {ex:>+8.1%}   {mark}")
+
+
+def _write_report(result, benches: dict[str, dict], ckpt_path: Path,
+                  args, label: str) -> Path:
     """실험 결과는 날짜+체크포인트로 남기고 덮어쓰지 않는다 (절대 규칙 8)."""
+    idx = next((n for n in benches if n.startswith("코스피200")), None)
     report = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "checkpoint": ckpt_path.name, "split": args.split,
         "variant": label,
         "diagnostics": result.diagnostics,
         "allow_short": args.allow_short,
-        "strategy": result.metrics, "buy_and_hold": bh,
+        "strategy": result.metrics,
+        "buy_and_hold": benches.get("매수후보유"),
+        "benchmarks": benches,
+        "excess_vs_index": (
+            round(excess_return(result.metrics["total_return"],
+                                benches[idx]["total_return"]), 5)
+            if idx else None
+        ),
         "signal_stats": result.signal_stats,
     }
     suffix = f"_{label}" if label else ""
@@ -275,15 +327,24 @@ def main() -> int:
     #    전 구간(lookback 대기)을 집계에서 빼므로, 여기서 안 맞추면 매수후보유만
     #    더 긴 기간으로 재게 되어 비교가 우리 쪽으로 기운다.
     bench_px = prices[prices["date"] >= preds["date"].min()]
-    bh = summarize(buy_and_hold(bench_px), periods_per_year=periods)
+    bh_rets = buy_and_hold(bench_px)
+    bh = summarize(bh_rets, periods_per_year=periods)
+
+    # 목표가 "코스피200 초과수익"이 된 뒤로 지수는 참고가 아니라 판정 기준이다.
+    # 지수 수익률은 전략과 **같은 날짜축**에서 재야 비교가 성립한다.
+    benches = {"매수후보유": bh}
+    idx_code = str(cfg.get("backtest", {}).get("benchmark_index", "201"))
+    idx_rets = index_returns(idx_code, pd.Index(bh_rets.index))
+    if idx_rets is not None:
+        benches[f"코스피200({idx_code})"] = summarize(idx_rets, periods_per_year=periods)
 
     if not args.compare:
         log.info("매매 규칙: mode=%s | exposure_scaling=%s",
                  cfg["trading"]["direction"]["mode"],
                  cfg["trading"]["sizing"]["exposure_scaling"])
         result = run_backtest(preds, prices, cfg, allow_short=args.allow_short)
-        _print_single(result, bh, args.split)
-        out = _write_report(result, bh, ckpt_path, args, "")
+        _print_single(result, benches, args.split)
+        out = _write_report(result, benches, ckpt_path, args, "")
         print(f"\n저장: {out.relative_to(PROJECT_ROOT)}")
         return 0
 
@@ -294,10 +355,11 @@ def main() -> int:
         result = run_backtest(preds, prices, _variant_cfg(cfg, override),
                               allow_short=args.allow_short)
         runs.append((label, result))
-        _write_report(result, bh, ckpt_path, args, label)
+        _write_report(result, benches, ckpt_path, args, label)
 
     _print_diagnostics(runs[0][1])      # 규칙과 무관하므로 한 번만
-    _print_compare(runs, bh, args.split)
+    _print_compare(runs, benches, args.split)
+    _print_verdict({n: r.metrics for n, r in runs}, benches)
     print(f"\n저장: outputs/reports/ 에 변형 {len(runs)}개")
     return 0
 

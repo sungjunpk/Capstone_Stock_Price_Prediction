@@ -189,6 +189,23 @@ def _run(loaded: LoadedModel, ds, rows: list[int] | None, batch_size: int) -> np
     return torch.cat(out).numpy()
 
 
+CONTEXT_COLS = ("mcap", "rvol_20")
+
+
+def attach_context(preds: pd.DataFrame, raw_panel: pd.DataFrame) -> pd.DataFrame:
+    """예측에 **비중·기권 계산용 맥락**(시총, 실현변동성)을 붙인다.
+
+    모델 출력이 아니다 — 정규화 전 원본 패널에서 그대로 가져온다. 여기 한 곳에서
+    붙이므로 백테스트와 모의투자가 같은 값을 본다 (CLAUDE.md 절대 규칙 7).
+    패널에 없는 컬럼은 조용히 건너뛴다 — 옛 패널로도 돌아가야 한다.
+    """
+    cols = [c for c in CONTEXT_COLS if c in raw_panel.columns]
+    if not cols:
+        return preds
+    ctx = raw_panel[["code", "date", *cols]]
+    return preds.merge(ctx, on=["code", "date"], how="left")
+
+
 def predict_split(
     loaded: LoadedModel, bundle: FeatureBundle, cfg: dict, split: str,
     *, batch_size: int = 1024,
@@ -199,6 +216,7 @@ def predict_split(
 
     preds = ds.sample_keys()
     preds[QUANTILE_COLS] = _run(loaded, ds, None, batch_size)
+    preds = attach_context(preds, bundle.raw_panel)
 
     raw_part = split_by_date(bundle.raw_panel, bundle.spec)[split]
     prices = raw_part[["code", "date", "close"]].copy()
@@ -235,6 +253,7 @@ def predict_recent(
 
     out = keys.loc[rows].reset_index(drop=True)
     out[QUANTILE_COLS] = _run(loaded, ds, rows, batch_size)
+    out = attach_context(out, bundle.raw_panel)
     # target 은 이 경로에서 의미가 없다(미래가 안 왔다). 실수로 쓰이지 않게 버린다.
     out = out.drop(columns=["target"], errors="ignore")
     log.info("최근 예측 %d건 | 종목 %d | %s ~ %s",

@@ -19,6 +19,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from src.utils.logging import get_logger
+
+log = get_logger(__name__)
+
 
 class Action(StrEnum):
     BUY = "buy"
@@ -33,6 +37,11 @@ class QuantilePrediction:
     q10: float
     q50: float
     q90: float
+    # 아래 둘은 모델 출력이 아니라 **비중·기권 계산에 필요한 맥락**이다.
+    # `models/inference.py` 가 한 곳에서 실어 보내므로 백테스트와 모의투자가
+    # 같은 값을 받는다 (CLAUDE.md 절대 규칙 7).
+    mcap: float | None = None   # 시가총액 = 상장주식수 x 종가
+    vol: float | None = None    # 최근 실현변동성 (rvol_20)
 
     @property
     def interval_width(self) -> float:
@@ -54,6 +63,69 @@ class Signal:
     target_weight: float   # 총자산 대비 목표 비중 (0~max_position_pct)
     confidence: float      # 0~1, 사이징 근거
     reason: str
+
+
+def prediction_from_row(row) -> QuantilePrediction:
+    """예측 DataFrame 한 행 → `QuantilePrediction`.
+
+    백테스트와 모의투자가 **같은 함수**로 만든다. 예전에는 두 파일이 각자
+    생성자를 부르고 있었는데, 맥락 컬럼(mcap/vol)이 늘어나면 한쪽만 빠뜨려도
+    에러가 아니라 '조용히 다른 비중'이 된다 — 규칙 7 이 막으려는 실패다.
+    """
+    def _opt(name: str) -> float | None:
+        v = getattr(row, name, None)
+        if v is None:
+            return None
+        v = float(v)
+        return None if v != v else v        # NaN 이면 '모름' — pandas 를 끌어오지 않는다
+
+    return QuantilePrediction(
+        row.code, float(row.q10), float(row.q50), float(row.q90),
+        mcap=_opt("mcap"), vol=_opt("rvol_20"),
+    )
+
+
+def abstain_basis(abstain_cfg: dict) -> str:
+    """기권을 무엇으로 재는가. `width`(기본) | `width_over_vol`.
+
+    ⚠️ **절대 폭 기준은 고변동 종목을 항상 배제한다.** 실측(2026-09-08): 폭 기준
+    기권을 끄기만 해도 test 2년 누적이 +6.5% → +129.9% 로 올랐다. 지수를 끌어올린
+    종목들이 정확히 변동성 큰 대형주였고, 기권이 그들을 구조적으로 걸러내고 있었다.
+
+    `width_over_vol` 은 폭을 그 종목의 실현변동성으로 나눈다 — "이 종목치고 예측이
+    넓은가"가 되므로 변동성 수준 자체로는 배제되지 않는다. 기권을 없애는 게 아니라
+    기준을 바꾸는 것이다(기권은 이 프로젝트의 핵심 차별점이다).
+    """
+    basis = str(abstain_cfg.get("basis", "width"))
+    if basis not in ("width", "width_over_vol"):
+        raise ValueError(f"abstain.basis 는 width|width_over_vol 이다: {basis!r}")
+    return basis
+
+
+def abstain_score(pred: QuantilePrediction, basis: str) -> float:
+    """기권 판정에 쓰는 값. 임계값과 같은 척도여야 한다.
+
+    변동성을 모르는 종목(`vol` 없음/0)은 절대 폭으로 물러난다 — 조용히 0으로
+    나누느니 기존 기준을 쓰는 편이 낫다.
+    """
+    if basis == "width_over_vol" and pred.vol is not None and pred.vol > 1e-9:
+        return pred.interval_width / float(pred.vol)
+    return pred.interval_width
+
+
+def abstain_scores(df, abstain_cfg: dict):
+    """예측 DataFrame → 기권 척도 배열. **백테스트와 모의투자가 같이 쓴다.**
+
+    임계값(`resolve_abstain_threshold`)을 이 배열에서 뽑으므로, 두 실행 경로가
+    다른 척도를 쓰면 임계값과 판정이 어긋난다 — 그래서 한 함수로 둔다.
+    """
+    width = (df["q90"] - df["q10"]).to_numpy(dtype=float)
+    if abstain_basis(abstain_cfg) == "width" or "rvol_20" not in df.columns:
+        return width
+    import numpy as np
+
+    vol = df["rvol_20"].to_numpy(dtype=float)
+    return np.where(vol > 1e-9, width / vol, width)
 
 
 def resolve_abstain_threshold(widths, abstain_cfg: dict) -> float:
@@ -135,17 +207,19 @@ def generate_signal(
     max_pos = float(sizing_cfg["max_position_pct"])
 
     # 1) 기권 판단 — 방향보다 먼저 온다
-    if pred.interval_width > max_width:
+    basis = abstain_basis(trading_cfg["abstain"])
+    score = abstain_score(pred, basis)
+    if score > max_width:
         return Signal(
             pred.code, Action.ABSTAIN, 0.0, 0.0,
-            f"신뢰구간 {pred.interval_width:.4f} > 임계 {max_width:.4f}",
+            f"불확실 {score:.4f} > 임계 {max_width:.4f} ({basis})",
         )
 
     # 2) 방향 판단 — 임계값은 거래비용 위로 강제
     long_th = max(float(dir_cfg["long_threshold"]), cost)
     short_th = min(float(dir_cfg["short_threshold"]), -cost)
 
-    conf = _confidence(pred.interval_width, max_width)
+    conf = _confidence(score, max_width)
 
     if pred.q50 >= long_th:
         action, edge = Action.BUY, pred.q50
@@ -259,22 +333,62 @@ def _target_exposure(n_survivors: int, universe_size: int, trading_cfg: dict) ->
     return max_gross * min(survivor_ratio / target_ratio, 1.0)
 
 
-def _normalize_weights(
-    confs: list[float], exposure: float, max_pos: float
+def _allocation(
+    chosen: list[QuantilePrediction], confs: list[float], sizing_cfg: dict
 ) -> list[float]:
-    """확신도 비율대로 나눠 담되, 종목당 상한을 넘으면 나머지에 재분배한다.
+    """비중을 나눌 **몫**. 정규화·상한 재분배는 `_normalize_weights` 가 한다.
+
+    `cap_weighted` 는 `몫_i = 시총_i^alpha x 확신도_i^beta` 다.
+    alpha=1, beta=0 이면 순수 시총가중, alpha=0, beta=1 이면 기존 확신도 가중과 같다.
+
+    **왜 시총가중인가.** 코스피200 은 시가총액 가중 지수라 소수 대형주가 지수를 끈다.
+    실측(2026-09-08, test 2년): 유니버스 197종목 중 지수(+220.0%)를 이긴 건 21종목
+    (10.7%)뿐이고 중앙값 종목은 +49.9% 다. 동일가중·확신도가중으로는 구조적으로
+    지수를 이길 수 없다. 같은 20종목이어도 동일가중 +100.1% vs 시총가중 +202.1% 였다.
+
+    시총을 모르는 종목은 **알려진 시총의 중앙값**으로 채운다. 0 이나 확신도로
+    바꿔치우면 척도가 섞여(시총은 1e6 단위, 확신도는 0~1) 그 종목만 비중이
+    사라지거나 독차지한다.
+    """
+    method = sizing_cfg.get("method", "inverse_width")
+    if method != "cap_weighted":
+        return list(confs)
+
+    alpha = float(sizing_cfg.get("cap_alpha", 1.0))
+    beta = float(sizing_cfg.get("conf_beta", 0.0))
+    caps = [p.mcap for p in chosen]
+    known = sorted(float(c) for c in caps if c is not None and float(c) > 0)
+    if not known:
+        # 조용히 물러나면 리포트에는 "시총가중"이라 찍히는데 실제로는 확신도가중으로
+        # 돈다. 옛 panel.parquet(mcap 없음)을 재빌드 없이 쓰면 실제로 이렇게 된다.
+        log.warning("cap_weighted 인데 시총을 아는 종목이 하나도 없다 — "
+                    "확신도 가중으로 물러난다. panel 에 mcap 이 있는지 확인할 것")
+        return list(confs)
+    fallback = known[len(known) // 2]
+
+    out = []
+    for p, conf in zip(chosen, confs, strict=True):
+        cap = float(p.mcap) if p.mcap is not None and float(p.mcap) > 0 else fallback
+        out.append((cap**alpha) * (max(conf, 1e-9) ** beta))
+    return out
+
+
+def _normalize_weights(
+    shares: list[float], exposure: float, max_pos: float
+) -> list[float]:
+    """배분 몫 비율대로 나눠 담되, 종목당 상한을 넘으면 나머지에 재분배한다.
 
     단순히 conf x max_pos 로 하면 안 된다. 기권을 통과한 종목은 정의상 폭이 임계값
     아래라 conf 가 0 근처에 몰려 있어서, 상위 종목을 골라도 총 노출이 20%를 못 넘는다
     (실측에서 이것이 두 번째 병목이었다).
     """
-    n = len(confs)
+    n = len(shares)
     if n == 0 or exposure <= 0:
         return [0.0] * n
 
-    # conf 가 전부 0이면(폭이 모두 임계값에 붙어 있으면) 균등배분으로 물러난다
-    total = sum(confs)
-    share = [c / total for c in confs] if total > 1e-12 else [1.0 / n] * n
+    # 몫이 전부 0이면(폭이 모두 임계값에 붙어 있으면) 균등배분으로 물러난다
+    total = sum(shares)
+    share = [c / total for c in shares] if total > 1e-12 else [1.0 / n] * n
 
     weights = [s * exposure for s in share]
     for _ in range(n):                       # 상한에 걸린 만큼만 재분배, 최대 n회
@@ -339,12 +453,14 @@ def _cross_sectional_signals(
     exit_rank = max(int(dir_cfg.get("exit_rank", top_n)), top_n)
 
     # 1) 기권 — 신뢰구간이 넓으면 순위 경쟁에 아예 참여시키지 않는다
+    basis = abstain_basis(trading_cfg["abstain"])
+    score_of = {p.code: abstain_score(p, basis) for p in preds}
     survivors, out = [], {}
     for p in preds:
-        if p.interval_width > max_width:
+        if score_of[p.code] > max_width:
             out[p.code] = Signal(
                 p.code, Action.ABSTAIN, 0.0, 0.0,
-                f"신뢰구간 {p.interval_width:.4f} > 임계 {max_width:.4f}",
+                f"불확실 {score_of[p.code]:.4f} > 임계 {max_width:.4f} ({basis})",
             )
         else:
             survivors.append(p)
@@ -367,14 +483,16 @@ def _cross_sectional_signals(
         if p.code in chosen_codes:
             continue
         out[p.code] = Signal(
-            p.code, Action.HOLD, 0.0, _confidence(p.interval_width, max_width),
+            p.code, Action.HOLD, 0.0, _confidence(score_of[p.code], max_width),
             f"q50 순위 {rank}/{len(ranked)} — 미선택",
         )
 
-    # 4) 사이징 — 확신도 비율대로 나눠 담는다
+    # 4) 사이징 — 배분 몫(확신도 또는 시총가중)을 정규화해 나눠 담는다
     exposure = _target_exposure(len(survivors), len(preds), trading_cfg)
-    confs = [_confidence(p.interval_width, max_width) for p in chosen]
-    weights = _normalize_weights(confs, exposure, max_pos)
+    confs = [_confidence(score_of[p.code], max_width) for p in chosen]
+    weights = _normalize_weights(
+        _allocation(chosen, confs, sizing_cfg), exposure, max_pos
+    )
 
     rank_of = {p.code: i for i, p in enumerate(ranked, start=1)}
     for p, conf, w in zip(chosen, confs, weights, strict=True):

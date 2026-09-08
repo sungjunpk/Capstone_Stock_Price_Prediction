@@ -36,7 +36,9 @@ from src.trading.signal import (
     Action,
     QuantilePrediction,
     Signal,
+    abstain_scores,
     generate_signals,
+    prediction_from_row,
     resolve_abstain_threshold,
     should_trade,
 )
@@ -202,7 +204,7 @@ def build_plan(
     latest = recent_preds[dates == decision_date]
 
     # 1) 기권 임계값 — 백테스트와 같은 함수, 입력만 '최근 예측 폭'이다
-    widths = (recent_preds["q90"] - recent_preds["q10"]).to_numpy()
+    widths = abstain_scores(recent_preds, tcfg["abstain"])
     max_width = resolve_abstain_threshold(widths, tcfg["abstain"])
 
     notes: list[str] = []
@@ -211,7 +213,7 @@ def build_plan(
         if r.code not in prices:
             continue                      # 현재가를 못 받은 종목은 주문 수량을 못 낸다
         try:
-            preds.append(QuantilePrediction(r.code, float(r.q10), float(r.q50), float(r.q90)))
+            preds.append(prediction_from_row(r))
         except ValueError as exc:
             log.warning("분위 교차 무시: %s", exc)
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import date
 
 import pandas as pd
+import pytest
 
 from src.features.build import _market_cap_at
 
@@ -79,3 +80,87 @@ def test_ranking_follows_train_end_not_today():
     cap = _market_cap_at(info, panel, TRAIN_END)
     # 현재 시총은 '뜬놈'이 크지만, train_end 시점엔 '큰놈'이 컸다
     assert cap["큰놈"] > cap["뜬놈"]
+
+
+# --------------------------------------------------------------- mcap (2026-09-08)
+# 비중을 시총가중으로 바꾸면서 패널에 `mcap` 이 들어왔다. static 과 달리 **날짜별**로
+# 변하므로 look-ahead 가 들어올 자리가 하나 더 생겼다 — 그 자리를 여기서 막는다.
+
+
+def test_mcap_does_not_use_future_prices(monkeypatch):
+    """뒤쪽 데이터를 잘라내고 계산한 mcap 이, 전체로 계산한 값의 앞부분과 같아야 한다.
+
+    시총은 t 시점 종가만 곱하므로 미래 가격이 개입할 자리가 없다. 이 성질이 깨지면
+    (예: 최근 종가로 정규화하는 코드가 들어오면) 조용히 미래를 보게 된다.
+    """
+    from src.features import build
+
+    panel = _panel([
+        ("A", "2024-01-02", 100.0), ("A", "2024-01-03", 110.0), ("A", "2024-01-04", 900.0),
+        ("B", "2024-01-02", 200.0), ("B", "2024-01-03", 200.0), ("B", "2024-01-04", 200.0),
+    ])
+    info = pd.DataFrame([{"code": "A", "listed_shares": 10.0},
+                         {"code": "B", "listed_shares": 5.0}])
+    monkeypatch.setattr(build.storage, "load_kind", lambda *a, **k: info)
+    cfg = {"data": {"universe": [{"code": "A"}, {"code": "B"}]}}
+
+    full = build.add_market_cap(panel.copy(), cfg)
+    cut = build.add_market_cap(
+        panel[panel["date"] < date(2024, 1, 4)].copy(), cfg
+    )
+    merged = cut.merge(full, on=["code", "date"], suffixes=("_cut", "_full"))
+    assert len(merged) == 4
+    assert (merged["mcap_cut"] == merged["mcap_full"]).all()
+
+    # 값 자체도 확인 — 상장주식수 x 종가
+    a2 = full[(full["code"] == "A") & (full["date"] == date(2024, 1, 3))]["mcap"].iloc[0]
+    assert a2 == 110.0 * 10.0
+
+
+def test_mcap_is_not_a_model_feature():
+    """mcap 이 동적 피처로 새면 입력 차원이 늘어 기존 체크포인트가 조용히 깨진다."""
+    from src.training.dataset import dynamic_feature_columns
+
+    panel = pd.DataFrame(columns=["code", "date", "open", "high", "low", "close",
+                                  "volume", "value", "mcap", "rsi", "target"])
+    assert dynamic_feature_columns(panel) == ["rsi"]
+
+
+# ------------------------------------------------- index_relative 타깃 (2026-09-08)
+
+
+def test_index_relative_subtracts_index_forward_return(monkeypatch):
+    """타깃 = 종목 forward 로그수익 − 지수 forward 로그수익. 그 이상도 이하도 아니다."""
+    import numpy as np
+
+    from src.features import build
+
+    dates = [date(2024, 1, d) for d in range(2, 10)]
+    idx_close = [100.0, 101.0, 103.0, 102.0, 105.0, 104.0, 106.0, 108.0]
+    monkeypatch.setattr(
+        build, "_load_bars",
+        lambda kind, codes: pd.DataFrame({"date": dates, "close": idx_close}),
+    )
+
+    panel = pd.DataFrame({
+        "code": ["A"] * len(dates),
+        "date": dates,
+        "target": np.linspace(0.01, 0.08, len(dates)),
+    })
+    cfg = {"return_horizon": 2, "target_mode": "index_relative", "benchmark_index": "201"}
+    out = build._apply_target_mode(panel.copy(), cfg)
+
+    idx = pd.Series(idx_close, index=dates)
+    expected = panel["target"] - build.forward_log_return(idx, 2).reindex(dates).fillna(0.0).values
+    assert np.allclose(out["target"].to_numpy(), expected.to_numpy())
+
+
+def test_index_relative_needs_the_index(monkeypatch):
+    """지수가 없으면 조용히 raw 로 돌아가면 안 된다 — 그러면 타깃이 몰래 달라진다."""
+    from src.features import build
+
+    monkeypatch.setattr(build, "_load_bars", lambda kind, codes: pd.DataFrame())
+    panel = pd.DataFrame({"code": ["A"], "date": [date(2024, 1, 2)], "target": [0.01]})
+    with pytest.raises(RuntimeError, match="벤치마크 지수"):
+        build._apply_target_mode(panel, {"return_horizon": 2,
+                                         "target_mode": "index_relative"})

@@ -26,7 +26,9 @@ from src.utils.logging import get_logger
 
 log = get_logger(__name__)
 
-BASE_COLS = ("code", "date", "open", "high", "low", "close", "volume", "value")
+# mcap 은 데이터지 피처가 아니다 — 비중 결정(signal.py)에만 쓰이고 모델 입력으로는
+# 들어가지 않는다. 여기 빠뜨리면 입력 차원이 늘어 기존 체크포인트가 조용히 깨진다.
+BASE_COLS = ("code", "date", "open", "high", "low", "close", "volume", "value", "mcap")
 TARGET_COL = "target"
 
 
