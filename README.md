@@ -428,6 +428,10 @@ GBDT 의 IC 는 **0과 구분되지 않는다**(t=0.56). Qlib 벤치마크와 �
 | Phase1 | 31.6% | 1.63 | -10.8% | 19.8 |
 | GBDT | 36.9% | 1.62 | -16.2% | 26.5 |
 
+> ⚠️ **이 Phase1 숫자(31.6% / 1.63)는 `market_cap_bucket` look-ahead 가 있던 상태다.**
+> 2026-09-08 귀속 실험에서 그 누수가 백테스트 성과를 3.5배로 부풀린다는 것이 실측됐다.
+> 누수를 제거한 정직한 성과는 **CAGR 3.79% / Sharpe 0.30** 이다.
+
 IC 가 0 인 신호가 IC 0.024 인 신호와 같은 Sharpe 를 낸다. 그러면 그 Sharpe 는
 어디서 오는가.
 
@@ -527,21 +531,54 @@ turnover_z 0.1280 | vol_ratio 0.0939 | ret_1d 0.0926 | atr 0.0738 | bb_width 0.0
 - ⚠️ 평균 노출도가 92%인데 CAGR 3.6% 다. 이 격차가 종목선택 실패인지 대형주 쏠림인지
   **귀속이 필요하다** — `scripts/backtest_recent.py`
 
-#### 귀속 실험 — look-ahead 기여분을 분리한다 (준비 완료, 미실행)
+#### 귀속 실험 — IC 로는 look-ahead 를 못 잡는다 (2026-09-08 실행)
 
-유니버스를 201종목으로 **고정한 채 시총 기준만** 예전(조회시점)으로 되돌린다.
-이 트랙의 IC 와 기본 트랙(−0.0018)의 차이가 곧 look-ahead 기여분이다.
+유니버스를 201종목으로 **고정한 채 시총 기준만** 예전(조회시점)으로 되돌려 재학습했다
+(`profiles.mcap_snapshot`, `phase1_c777b776_mcapsnap.pt`). `panel`·`macro` 는 기본
+트랙과 **완전히 동일**하고 `market_cap_bucket` 만 116종목(58%) 다르다.
 
+| | 기본 (look-ahead 제거) | 대조군 (look-ahead 복원) |
+|---|---|---|
+| 랭크 IC | −0.0018 (t=−0.23) | **+0.0023 (t=+0.36)** |
+| 십분위 스프레드 | −0.0007 | +0.0001 |
+| val pinball 개선 | **+3.75%** | +2.50% |
+| Sharpe (+버퍼) | 0.2961 | **1.0475** |
+| CAGR (+버퍼) | 3.79% | **21.07%** |
+| MDD (+버퍼) | −18.4% | −19.3% |
+
+**두 가지가 동시에 나왔다.**
+
+1. **look-ahead 를 되살려도 IC 가 안 돌아온다.** 둘 다 t<1 로 0과 구분되지 않는다.
+   즉 8/31 의 IC 0.0235 (t=3.87) 는 `market_cap_bucket` 때문이 **아니다.**
+2. **그런데 백테스트 성과는 3.5배가 된다.** Sharpe 0.30 → 1.05, CAGR 3.8% → 21.1%.
+   pinball 은 오히려 대조군이 나쁘다(+2.50% vs +3.75%).
+
+> ### IC 만으로는 look-ahead 를 잡을 수 없다
+>
+> 누수가 **방향 예측이 아니라 종목 선택 경로**로 샜다. `market_cap_bucket` 에
+> "이 종목은 2026년에 대형주가 된다"가 들어 있으면 모델의 **폭(불확실성) 추정**이
+> 그 종목들에서 달라지고, 기권 로직은 폭이 좁은 종목을 고르므로 **결과적으로
+> '나중에 커진 종목'을 우선 담는다.** 횡단면 순위는 그대로인데 포트폴리오가 바뀐다.
+>
+> 이것이 "IC 0 인 신호가 IC 0.024 인 신호와 같은 Sharpe 를 낸다"(8/31 순열검정)
+> 는 미해결 질문에 대한 답의 일부다.
+
+⚠️ **그래서 8/31 에 기록된 `Phase1 CAGR 31.6% / Sharpe 1.63` 은 이 누수가 있던
+숫자다.** 제거한 정직한 성과는 **CAGR 3.79% / Sharpe 0.30** 이다.
+
+IC 0.0235 → −0.0018 의 붕괴는 여전히 미설명이다. 남은 후보는 **유니버스 변경**
+(146종목에 있던 코스닥 22종목 — 이상현상은 중소형주에서 강하다)과 `size_class` 제거다.
+**146종목으로 돌아가 확인하지는 않는다** — 유니버스는 코스피200 으로 확정했다.
+
+재현:
 ```bash
-python scripts/build_features.py --profile mcap_snapshot   # → *_mcapsnap.parquet
-python scripts/package_data.py  --profile mcap_snapshot    # → train_bundle_mcapsnap.zip
-# 캐글: PROFILE = 'mcap_snapshot' 로 학습 → 로컬에서
+python scripts/build_features.py --profile mcap_snapshot
+python scripts/package_data.py  --profile mcap_snapshot
+# 캐글에서 PROFILE = 'mcap_snapshot' 로 학습한 뒤
 python scripts/backtest.py --profile mcap_snapshot --compare
 ```
-
-대조군은 `panel`·`macro` 가 기본 트랙과 **완전히 동일**하고 `market_cap_bucket` 만
-116종목(58%) 다르다. 체크포인트에 `_mcapsnap` 태그가 붙어 무태그만 받는
-`paper_trade.py` 의 실주문 경로로는 **샐 수 없다.**
+체크포인트에 `_mcapsnap` 태그가 붙어 무태그만 받는 `paper_trade.py` 의 실주문
+경로로는 **샐 수 없다.**
 
 ### 2026-09-01 최근 6개월 재측정 — 구간 시작일이 결과를 지배한다
 
