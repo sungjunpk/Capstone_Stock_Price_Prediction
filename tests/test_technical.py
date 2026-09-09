@@ -100,3 +100,46 @@ def test_halted_days_would_fake_zero_returns():
     assert (tech.log_return(df["close"]) == 0).any()          # 정지일이 0 수익률을 만든다
     cleaned = tech.drop_halted_days(df)
     assert not (tech.log_return(cleaned["close"]).dropna() == 0).any()
+
+
+# ------------------------------------------- 지수 대비 상대 지표 (2026-09-09)
+
+
+def _idx_series(n: int, seed: int = 7) -> pd.Series:
+    rng = np.random.default_rng(seed)
+    return pd.Series(100 * np.exp(np.cumsum(rng.normal(0.0004, 0.009, n))))
+
+
+def test_index_relative_no_lookahead(ohlcv):
+    """지수 쪽 미래를 망가뜨려도 과거 상대지표는 변하면 안 된다.
+
+    타깃(초과수익)은 미래 지수를 쓰는 게 맞지만, **피처는 아니다.**
+    이 둘이 섞이면 IC 가 치솟고 아무도 못 알아챈다.
+    """
+    cutoff = 200
+    idx = _idx_series(len(ohlcv))
+    full = tech.index_relative_features(ohlcv["close"], idx)
+
+    tampered = idx.copy()
+    tampered.loc[cutoff:] *= 3.0                 # 지수의 미래를 망가뜨린다
+    partial = tech.index_relative_features(ohlcv["close"], tampered)
+
+    pd.testing.assert_frame_equal(
+        full.loc[: cutoff - 1], partial.loc[: cutoff - 1]
+    )
+
+
+def test_index_relative_measures_excess_return(ohlcv):
+    """rs_n 은 정확히 '종목 로그수익 − 지수 로그수익' 이어야 한다."""
+    idx = _idx_series(len(ohlcv))
+    out = tech.index_relative_features(ohlcv["close"], idx, rs_windows=(20,))
+    expected = (tech.log_return(ohlcv["close"], 20) - tech.log_return(idx, 20))
+    pd.testing.assert_series_equal(out["rs_20"], expected, check_names=False)
+
+
+def test_beta_of_the_index_against_itself_is_one():
+    """지수 자신의 베타는 1 이다 — 부호나 분모가 뒤집히면 여기서 걸린다."""
+    idx = _idx_series(400)
+    out = tech.index_relative_features(idx, idx, rs_windows=(20,), beta_window=120)
+    assert np.allclose(out["beta_120"].dropna(), 1.0)
+    assert np.allclose(out["rs_20"].dropna(), 0.0)      # 자기 대비 초과수익은 0

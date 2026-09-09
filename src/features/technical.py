@@ -190,3 +190,38 @@ def add_technical_features(df: pd.DataFrame, cfg: dict | None = None) -> pd.Data
     out = out.join(volume_features(vol))
 
     return out
+
+
+# --------------------------------------------------------------- 지수 대비 (2026-09-09)
+def index_relative_features(
+    close: pd.Series, index_close: pd.Series,
+    *, rs_windows=(20, 60), beta_window: int = 120,
+) -> pd.DataFrame:
+    """벤치마크 지수 대비 상대 지표. **`close` 와 `index_close` 는 같은 날짜축이어야 한다.**
+
+    왜 필요한가 — 기존 피처 24개는 전부 종목 자기 시계열에서 나온다. 목표가
+    "코스피200 초과수익"인데 모델에는 **'이 종목이 지수를 앞서는가'를 표현할 채널이
+    아예 없었다.** 2026-09-09 실측이 그 증상이었다: 타깃만 초과수익으로 바꿨더니
+    IC 가 유의해졌는데(|t| 0.23 → 3.70) 부호가 국면마다 뒤집혔고, VSN 상위가 전부
+    변동성 지표였다 — 모델이 목표를 볼 눈이 없어 저변동성 팩터를 대신 탄 것이다.
+
+      rs_<n>   n일 누적 상대수익 = 종목 로그수익 − 지수 로그수익
+      beta_<n> n일 롤링 베타 = cov(종목일수익, 지수일수익) / var(지수일수익)
+
+    ⚠️ look-ahead 없음 — rolling 은 전부 과거 방향이고 `shift(-n)` 을 쓰지 않는다.
+
+    ⚠️ **이 값들은 수준(level)이 정보다.** RevIN 이 종목별 창 안에서 평균을 빼면
+    "이 종목은 지수를 계속 이겨왔다"가 지워진다. 그래서 `features.cross_sectional` 에
+    올려 `xs_` 채널(RevIN 우회)로도 같이 넣는 것을 전제로 한다.
+    """
+    idx = index_close.reindex(close.index)
+    out = pd.DataFrame(index=close.index)
+
+    for n in rs_windows:
+        out[f"rs_{n}"] = log_return(close, n) - log_return(idx, n)
+
+    r_s, r_i = log_return(close), log_return(idx)
+    var = r_i.rolling(beta_window, min_periods=beta_window).var()
+    cov = r_s.rolling(beta_window, min_periods=beta_window).cov(r_i)
+    out[f"beta_{beta_window}"] = cov / var.where(var > 0)
+    return out

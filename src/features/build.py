@@ -16,6 +16,7 @@ from src.features.technical import (
     add_technical_features,
     drop_halted_days,
     forward_log_return,
+    index_relative_features,
     log_return,
     realized_vol,
     volume_features,
@@ -68,6 +69,9 @@ def build_panel(cfg: dict) -> pd.DataFrame:
         flow = None
         log.info("%s 패널이라 수급 피처를 쓰지 않는다 — 수급은 일 단위 데이터다", kind)
 
+    # 지수 종가는 종목마다 같으므로 루프 밖에서 한 번만 읽는다.
+    idx_close = _benchmark_close(feat_cfg) if feat_cfg.get("index_features") else None
+
     frames, halted_total = [], 0
     for code, part in raw.groupby("code", sort=True):
         part = part.sort_values("date").reset_index(drop=True)
@@ -77,6 +81,15 @@ def build_panel(cfg: dict) -> pd.DataFrame:
         halted_total += before - len(part)
 
         feats = add_technical_features(part, feat_cfg.get("technical", {}))
+        if idx_close is not None:
+            aligned = pd.Series(idx_close.reindex(feats["date"]).to_numpy(),
+                                index=feats.index)
+            rel = index_relative_features(
+                feats["close"], aligned,
+                rs_windows=tuple(feat_cfg["index_features"].get("rs_windows", (20, 60))),
+                beta_window=int(feat_cfg["index_features"].get("beta_window", 120)),
+            )
+            feats = pd.concat([feats, rel], axis=1)
         if flow is not None:
             feats = _join_flow(feats, flow[flow["code"] == code])
         feats["target"] = forward_log_return(feats["close"], horizon)
@@ -87,6 +100,22 @@ def build_panel(cfg: dict) -> pd.DataFrame:
     panel = _add_cross_sectional(panel, feat_cfg)
     panel = _apply_target_mode(panel, feat_cfg)
     return panel.reset_index(drop=True)
+
+
+def _benchmark_close(feat_cfg: dict) -> pd.Series:
+    """벤치마크 지수 종가. date 로 색인된 Series. 없으면 멈춘다.
+
+    타깃(`_index_forward_return`)과 피처(`index_relative_features`)가 **같은 지수를
+    같은 방식으로** 읽어야 한다 — 둘이 어긋나면 초과수익을 다른 기준으로 재게 된다.
+    """
+    code = str(feat_cfg.get("benchmark_index", "201"))
+    bars = _load_bars(_MACRO_INDEX_KIND, [code])
+    if bars.empty:
+        raise RuntimeError(
+            f"벤치마크 지수 {code} 일봉이 없다 (data/raw/{_MACRO_INDEX_KIND}). "
+            "수집을 먼저 하거나 features.benchmark_index 를 확인할 것."
+        )
+    return bars.sort_values("date").drop_duplicates("date").set_index("date")["close"]
 
 
 def _add_cross_sectional(panel: pd.DataFrame, feat_cfg: dict) -> pd.DataFrame:
@@ -170,18 +199,9 @@ def _index_forward_return(panel: pd.DataFrame, feat_cfg: dict) -> pd.Series:
     창의 값이라 라벨 정의의 일부**이고, 피처로는 들어가지 않는다(매크로 경로와 분리해
     여기서만 읽는 이유다). 추론 시점에 알 필요도 없다.
     """
-    code = str(feat_cfg.get("benchmark_index", "201"))
     horizon = int(feat_cfg["return_horizon"])
 
-    bars = _load_bars(_MACRO_INDEX_KIND, [code])
-    if bars.empty:
-        raise RuntimeError(
-            f"벤치마크 지수 {code} 일봉이 없다 (data/raw/{_MACRO_INDEX_KIND}). "
-            "수집을 먼저 하거나 features.benchmark_index 를 확인할 것."
-        )
-
-    idx = bars.sort_values("date").drop_duplicates("date").set_index("date")["close"]
-    fwd = forward_log_return(idx, horizon)
+    fwd = forward_log_return(_benchmark_close(feat_cfg), horizon)
     # 지수 휴장일 등으로 비는 날은 0(초과수익 = 종목 수익 그대로)으로 둔다.
     # ffill 로 채우면 **없는 날의 미래 수익률**을 끌어오는 셈이라 하지 않는다.
     return panel["date"].map(fwd).astype("float64").fillna(0.0)

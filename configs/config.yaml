@@ -55,6 +55,13 @@ features:
   # 이름은 xs_<원본> 이 되고, 모델은 이 채널만 RevIN 을 건너뛴다 —
   # RevIN 이 종목별 창 안에서 표준화하면 "오늘 몇 등인가"가 지워지기 때문이다.
   cross_sectional: []
+  # 지수 대비 상대 지표 (2026-09-09). null/false 면 안 만든다.
+  # 왜: 기존 피처는 전부 종목 자기 시계열이라 "이 종목이 지수를 앞서는가"를
+  # 표현할 채널이 없었다. 타깃만 초과수익으로 바꿨더니(idxrel) IC 가 유의해졌는데
+  # (|t| 0.23→3.70) 부호가 국면마다 뒤집혔고 VSN 상위가 전부 변동성이었다 —
+  # 목표를 볼 눈이 없어 저변동성 팩터를 대신 탄 것이다.
+  # ⚠️ 수준이 정보라 RevIN 이 지운다. cross_sectional 에 같이 올려 xs_ 채널로 넣는다.
+  index_features: null
   lookback: 120            # 입력 시퀀스 길이(영업일)
   technical:
     ma_windows: [5, 20, 60]
@@ -306,6 +313,21 @@ profiles:
       processed_suffix: "_idxrel"
     features:
       target_mode: index_relative
+
+  # idxrel 의 후속 (2026-09-09). 타깃은 그대로 두고 **모델에 지수를 볼 눈을 준다.**
+  #   rs_20 / rs_60  지수 대비 누적 상대수익
+  #   beta_120       지수 민감도
+  # 셋 다 xs_ 로도 넣어 RevIN 을 우회시킨다 — 수준이 지워지면 의미가 없다.
+  # 동적 피처 24 → 30 개가 된다.
+  idxrel2:
+    data:
+      processed_suffix: "_idxrel2"
+    features:
+      target_mode: index_relative
+      index_features:
+        rs_windows: [20, 60]
+        beta_window: 120
+      cross_sectional: [rs_20, rs_60, beta_120]
 
   # 60분봉 타점 탐지 트랙. 일봉 트랙은 이 블록을 읽지 않는다.
   # 목표가 다르다 — 주기적 리밸런싱이 아니라 **조건이 맞는 타점에서만 진입**한다.
