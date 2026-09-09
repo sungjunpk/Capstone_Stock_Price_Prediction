@@ -32,10 +32,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint")
     ap.add_argument("--split", default="test", choices=["val", "test"])
+    ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: idxrel2)")
     args = ap.parse_args()
 
     setup_logging(run_name="calendar_sensitivity")
-    cfg = load_config().raw
+    cfg = load_config(profile=args.profile).raw
 
     loaded = load_model(find_checkpoint(args.checkpoint, cfg))
     preds, prices = predict_split(loaded, load_features(cfg, loaded), cfg, args.split)
