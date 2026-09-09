@@ -253,21 +253,32 @@ def _print_compare(runs: list[tuple[str, object]], benches: dict[str, dict],
 
 
 def _print_verdict(runs: dict[str, dict], benches: dict[str, dict]) -> None:
-    """목표는 코스피200 초과수익이다 — 그 판정을 마지막에 한 줄로 남긴다.
+    """목표 판정. **2026-09-09 부터 기준이 바뀌었다 — 수익률이 아니라 위험조정이다.**
 
-    누적수익의 차이가 아니라 **비(比)** 로 적는다. +410% 와 +220% 의 격차를
-    '190%p' 로 적으면 복리를 잘못 읽는다 (실제로는 1.59배).
+    다섯 단계로 "코스피200 수익률 초과"를 시도해 전부 미달했고, 마지막 두 번은
+    모델을 실제로 개선했는데도(IC t 2.69 → 5.98) 못 넘었다. 유니버스 197종목 중
+    지수를 이긴 게 21종목(10.7%)뿐인 구간에서 분산 포트폴리오가 시총가중 지수를
+    따라잡을 구조가 아니다. 그래서 목표를 **하방 보호**로 옮겼다.
+
+    누적수익 비교는 참고로 남긴다 — 다만 차이가 아니라 **비(比)** 로 적는다.
+    +410% 와 +220% 의 격차를 '190%p' 로 적으면 복리를 잘못 읽는다(실제 1.59배).
     """
     idx = next((n for n in benches if n.startswith("코스피200")), None)
     if idx is None:
         return
-    base = benches[idx]["total_return"]
-    print(f"\n목표 판정 — 코스피200({base:+.1%}) 초과수익")
+    b = benches[idx]
+    print("\n목표 판정 — 위험조정 (기준: 코스피200)")
+    print(f"  {'':14}{'Sharpe':>9}{'Calmar':>9}{'MDD':>9}{'누적':>10}{'지수대비':>10}")
+    print(f"  {'코스피200':<14}{b['sharpe']:>9.2f}{b['calmar']:>9.2f}"
+          f"{b['max_drawdown']:>9.1%}{b['total_return']:>10.1%}{'—':>10}")
     for name, m in runs.items():
-        ex = excess_return(m["total_return"], base)
-        mark = "달성" if ex > 0 else "미달"
         label = name or "전략"
-        print(f"  {label:<14}{m['total_return']:>9.1%}   초과 {ex:>+8.1%}   {mark}")
+        won = m["max_drawdown"] > b["max_drawdown"]       # 낙폭이 얕으면 통과
+        print(f"  {label:<14}{m['sharpe']:>9.2f}{m['calmar']:>9.2f}"
+              f"{m['max_drawdown']:>9.1%}{m['total_return']:>10.1%}"
+              f"{excess_return(m['total_return'], b['total_return']):>+10.1%}"
+              f"   {'낙폭 우위' if won else ''}")
+    print("  ⚠️ 한 칸짜리 숫자다 — 인용 전에 scripts/calendar_sensitivity.py 로 범위를 볼 것")
 
 
 def _write_report(result, benches: dict[str, dict], ckpt_path: Path,
