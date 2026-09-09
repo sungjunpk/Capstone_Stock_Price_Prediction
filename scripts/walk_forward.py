@@ -60,8 +60,13 @@ def _window_cfg(base: dict, tr_start, tr_end, va_end, te_end) -> dict:
     return cfg
 
 
-def _run_windows(base: dict, args) -> pd.DataFrame:
-    """창마다 학습 → 그 창의 test 구간만 예측 → 이어붙인다."""
+def _run_windows(base: dict, args, stamp: str) -> pd.DataFrame:
+    """창마다 학습 → 그 창의 test 구간만 예측 → 이어붙인다.
+
+    ⚠️ **창을 끝낼 때마다 곧바로 디스크에 쓴다.** 8창을 돌다 7번째에서 메모리 부족으로
+    죽어 30분치를 통째로 잃은 적이 있다(2026-09-09). 마지막에 한 번만 저장하면
+    중간에 죽는 순간 아무것도 안 남는다.
+    """
     panel_dates = _panel_date_range(base)
     wf = base["backtest"]["walk_forward"]
     windows = walk_forward_windows(
@@ -103,6 +108,8 @@ def _run_windows(base: dict, args) -> pd.DataFrame:
 
         preds = preds.assign(window=i)
         frames.append(preds)
+        part_path = REPORTS_DIR / f"walkforward_preds_{stamp}_w{i}.parquet"
+        preds.to_parquet(part_path, index=False)
         ic = rank_ic(preds)
         rows.append({
             "window": i, "train_start": str(tr_s), "train_end": str(tr_e),
@@ -169,7 +176,7 @@ def main() -> int:
         preds = pd.read_parquet(args.preds)
         log.info("예측 %d건 재사용: %s", len(preds), args.preds)
     else:
-        preds = _run_windows(cfg, args)
+        preds = _run_windows(cfg, args, stamp)
         path = REPORTS_DIR / f"walkforward_preds_{stamp}.parquet"
         preds.to_parquet(path, index=False)
         log.info("예측 저장: %s (%d건)", path.name, len(preds))
