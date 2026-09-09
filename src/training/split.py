@@ -20,6 +20,11 @@ class SplitSpec:
     train_end: date
     val_end: date
     embargo_days: int = 5
+    # walk-forward 전용. None 이면 데이터 처음부터 = 지금까지의 확장창(expanding).
+    # 값이 있으면 **롤링창**이 된다 — 오래된 국면을 학습에서 떨어뜨리기 위해서다.
+    train_start: date | None = None
+    # walk-forward 전용. test 를 이 날짜까지만 자른다. None 이면 데이터 끝까지.
+    test_end: date | None = None
 
     @classmethod
     def from_config(cls, cfg: dict) -> SplitSpec:
@@ -28,6 +33,10 @@ class SplitSpec:
             train_end=pd.Timestamp(s["train_end"]).date(),
             val_end=pd.Timestamp(s["val_end"]).date(),
             embargo_days=int(s.get("embargo_days", 5)),
+            train_start=(pd.Timestamp(s["train_start"]).date()
+                         if s.get("train_start") else None),
+            test_end=(pd.Timestamp(s["test_end"]).date()
+                      if s.get("test_end") else None),
         )
 
 
@@ -38,10 +47,17 @@ def split_by_date(
     d = pd.to_datetime(df[date_col]).dt.date
     gap = timedelta(days=spec.embargo_days)
 
+    train = d <= spec.train_end
+    if spec.train_start is not None:
+        train &= d >= spec.train_start
+    test = d > spec.val_end + gap
+    if spec.test_end is not None:
+        test &= d <= spec.test_end
+
     return {
-        "train": df[d <= spec.train_end],
+        "train": df[train],
         "val": df[(d > spec.train_end + gap) & (d <= spec.val_end)],
-        "test": df[d > spec.val_end + gap],
+        "test": df[test],
     }
 
 

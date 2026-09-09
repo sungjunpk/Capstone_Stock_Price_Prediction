@@ -263,6 +263,33 @@ def predict_recent(
     return out
 
 
+def predict_range(
+    loaded: LoadedModel, bundle: FeatureBundle, cfg: dict,
+    start, end, *, batch_size: int = 1024,
+) -> pd.DataFrame:
+    """[start, end] 구간을 예측한다. **walk-forward 전용.**
+
+    `predict_split` 과 다른 점 하나: 데이터셋을 **패널 전체**에서 만들고 날짜로 고른다.
+    split 안에서만 윈도우를 만들면 앞쪽 lookback(120일)이 통째로 날아가는데,
+    walk-forward 는 창이 6개월이라 그러면 남는 게 거의 없다. 창 앞의 과거는
+    **그 시점에 이미 알 수 있는 값**이므로 lookback 으로 쓰는 데 문제가 없다.
+
+    ⚠️ 정규화 통계는 그대로 그 창의 train 구간에서만 나온다(`load_features`) —
+    바뀌는 건 윈도우를 어디서 만드느냐뿐이다.
+    """
+    ds = _make_dataset(bundle.panel, bundle, cfg, loaded, require_target=True)
+    keys = ds.sample_keys()
+    d = pd.to_datetime(keys["date"]).dt.date
+    rows = keys.index[(d >= pd.Timestamp(start).date())
+                      & (d <= pd.Timestamp(end).date())].tolist()
+    if not rows:
+        return keys.iloc[:0].assign(**{c: [] for c in QUANTILE_COLS})
+
+    out = keys.loc[rows].reset_index(drop=True)
+    out[QUANTILE_COLS] = _run(loaded, ds, rows, batch_size)
+    return attach_context(out, bundle.raw_panel)
+
+
 @torch.no_grad()
 def vsn_weights_split(
     loaded: LoadedModel, bundle: FeatureBundle, cfg: dict, split: str,

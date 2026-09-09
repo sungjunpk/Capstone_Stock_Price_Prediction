@@ -234,9 +234,14 @@ backtest:
   rebalance_days: 10
   walk_forward:
     train_months: 36
-    val_months: 6
-    test_months: 6
-    step_months: 6
+    # ⚠️ val 은 lookback(120거래일 ≈ 6개월)보다 **충분히 길어야 한다.** 학습의 val
+    # 로더는 자기 구간 안에서만 윈도우를 만들어서, 6개월로 두면 한 건도 안 만들어지고
+    # evaluate() 가 빈 로더를 받는다(2026-09-09 실측). 12개월이면 약 120일이 남는다.
+    val_months: 12
+    # test 구간은 `predict_range` 가 패널 전체에서 윈도우를 만들어 덮으므로
+    # lookback 제약을 받지 않는다 — 여기 값은 창을 미는 일정만 정한다.
+    test_months: 12
+    step_months: 12
   metrics: [sharpe, sortino, calmar, max_drawdown, hit_rate, turnover]
 
 # ------------------------------------------------- 프로파일 (base 와의 차이만)
