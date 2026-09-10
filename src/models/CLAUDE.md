@@ -43,6 +43,33 @@
   손실 페널티만으로는 교차가 남을 수 있고, 교차가 나면 `trading/signal.py` 가
   예외를 던져 백테스트가 통째로 죽는다. 페널티(`crossing_weight=0.01`)는 보조로 유지.
 
+### 아키텍처 스위치 (2026-09-10 추가)
+
+새 모델 클래스를 만들지 않는다. `Phase1Config` 의 필드 둘로 경로만 가른다 —
+기본값이 현재 동작이라 기존 체크포인트도 그대로 열린다
+(`inference.py` 가 `Phase1Config(**ckpt["config"])` 로 복원하므로 기본값 있는
+필드 추가는 하위호환이다).
+
+| 필드 | 기본 | 대안 | 바꾸는 곳 |
+|---|---|---|---|
+| `endog_mode` | `patch` (PatchTST) | `variate` (iTransformer) | 종목 경로 |
+| `exog_mode` | `patch_cross` (우리 설계) | `variate_token` (TimeXer) | 매크로 경로 |
+
+둘 다 `variate_embed.py` 의 `VariateEmbedding` 하나를 공유한다 —
+시계열 하나를 통째로 토큰 하나로 만드는 모듈이다.
+
+**`variate` 에서는 VSN 이 인코더 뒤로 간다.** 위의 "VSN 을 인코더 앞에 둔다"는
+성능 근거(채널 수만큼 반복)가 여기서는 성립하지 않는다 — 변수축이 곧 시퀀스축이라
+인코더가 한 번만 돈다. VSN 을 앞에 두면 인코더가 볼 변수가 없어진다.
+`dynamic_weights` 가 `(B,N,C)` → `(B,1,C)` 가 된다.
+
+프로필 `timexer` / `itrans` 로 돌린다. 데이터는 `_idxrel2` 를 공유하고 체크포인트만
+갈라지므로 무태그만 받는 실주문 경로로는 샐 수 없다.
+
+**실측 결과와 채택 판정은 [`docs/REFERENCES.md`](../../docs/REFERENCES.md) 3절.**
+요약: iTransformer 채택(랭크 IC 0.0535, 순열검정 p=0.050 — 유일하게 성과가 신호에
+귀속), TimeXer 탈락(p=0.800). **랭크 IC 순위와 Sharpe 순위가 역순으로 나왔다.**
+
 ### Phase 2 (스트레치 목표 — 시간 남을 때만)
 
 - Phase 1의 Self-Attention 인코더를 **Mamba(장기) + Transformer(단기) 병렬 전문가(expert) 구조**로 교체
