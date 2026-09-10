@@ -37,7 +37,19 @@ with KiwoomClient() as c:
     exit 0
 fi
 
+# 1회용 강제 리밸런싱. 전략을 바꾼 직후처럼 주기를 못 기다릴 때 쓴다.
+#   켜기: touch outputs/paper_trading/force_rebalance.flag
+# ⚠️ **쓰고 나면 스스로 지운다.** 남겨두면 매일 전량 교체가 돌아 회전율이 폭발한다.
+#    주문 경로는 여전히 paper_trade.py --execute 하나다(절대 규칙 9).
+FLAG="$PROJECT/outputs/paper_trading/force_rebalance.flag"
+FORCE=""
+if [ -f "$FLAG" ]; then
+    FORCE="--force-rebalance"
+    rm -f "$FLAG"
+    echo "1회용 강제 리밸런싱 플래그 발견 — 이번 회차에만 적용하고 플래그를 지웠다"
+fi
+
 echo "--- 주문 전송 ---"
-"$PY" scripts/paper_trade.py --execute || { echo "매매 실패"; exit 1; }
+"$PY" scripts/paper_trade.py --execute $FORCE || { echo "매매 실패"; exit 1; }
 
 echo "=========== $(date '+%F %T') 매매 완료 ==========="
