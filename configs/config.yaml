@@ -368,6 +368,47 @@ profiles:
         beta_window: 120
       cross_sectional: [rs_20, rs_60, beta_120]
 
+  # ── 최신 아키텍처 대조 실험 (2026-09-10) ───────────────────────────────
+  # idxrel2 와 **데이터·타깃·분할이 전부 같고 모델만 다르다.** 대조군이 되려면
+  # 다른 건 고정해야 하므로 아래 features 블록은 idxrel2 의 복사본이다
+  # (프로필끼리는 합성되지 않는다). processed_suffix 도 _idxrel2 그대로 둬서
+  # panel_idxrel2.parquet 을 재빌드 없이 공유한다.
+  #
+  # model: 이 바뀌므로 _config_hash 가 달라져 체크포인트 파일이 안 겹치고,
+  # 접미사 _idxrel2 가 붙으므로 무태그만 받는 paper_trade.py 로는 샐 수 없다.
+
+  # TimeXer (NeurIPS 2024) — 외생변수(매크로) 주입 방식만 교체.
+  # 매크로 13채널을 각각 토큰 하나로 만든다. 크로스어텐션 가중치가
+  # (B,24,24) "어느 시점" → (B,24,13) "어느 지수" 가 되어 해석 근거가 된다.
+  timexer:
+    data:
+      processed_suffix: "_idxrel2"
+    model:
+      exog:
+        mode: variate_token
+    features:
+      target_mode: index_relative
+      index_features:
+        rs_windows: [20, 60]
+        beta_window: 120
+      cross_sectional: [rs_20, rs_60, beta_120]
+
+  # iTransformer (ICLR 2024) — 내생(종목) 백본만 교체.
+  # 시점이 아니라 변수를 토큰으로 본다. 변수축이 곧 시퀀스축이라 인코더가 한 번만
+  # 돌고, 그래서 VSN 을 인코더 **뒤**로 옮긴다(phase1.py forward 참조).
+  itrans:
+    data:
+      processed_suffix: "_idxrel2"
+    model:
+      endog:
+        mode: variate
+    features:
+      target_mode: index_relative
+      index_features:
+        rs_windows: [20, 60]
+        beta_window: 120
+      cross_sectional: [rs_20, rs_60, beta_120]
+
   # 60분봉 타점 탐지 트랙. 일봉 트랙은 이 블록을 읽지 않는다.
   # 목표가 다르다 — 주기적 리밸런싱이 아니라 **조건이 맞는 타점에서만 진입**한다.
   intraday:

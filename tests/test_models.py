@@ -116,3 +116,73 @@ def test_grouped_grn_matches_per_channel_semantics():
     assert torch.allclose(out[:, :, 0], out[:, :, 2], atol=1e-6)
     # 1번 채널은 달라야 한다(입력이 다르므로)
     assert not torch.allclose(out[:, :, 0], out[:, :, 1], atol=1e-4)
+
+
+# ── 최신 아키텍처 대조 트랙 (timexer / itrans 프로필) ──────────────────────
+#
+# 두 스위치는 서로 독립이고 기본값은 현재 동작이다. 여기서 고정하는 계약은
+# "기본 경로가 변하지 않는다" 와 "새 경로의 해석 가중치 shape" 두 가지다.
+
+
+def _model(**modes):
+    return Phase1Model(
+        Phase1Config(n_dynamic=17, n_macro=13, static_vocab=VOCAB, **modes)
+    )
+
+
+def test_default_modes_are_the_patch_track(model):
+    """기본값을 건드리면 실거래 모델이 조용히 바뀐다 — 기본은 항상 patch 다."""
+    assert model.cfg.endog_mode == "patch"
+    assert model.cfg.exog_mode == "patch_cross"
+    assert hasattr(model, "patch_dyn") and hasattr(model, "encoder_mac")
+    assert not hasattr(model, "embed_dyn") and not hasattr(model, "embed_mac")
+
+
+def test_timexer_exog_gives_per_macro_weights():
+    """TimeXer: 매크로 채널당 토큰 하나 → 가중치가 '어느 지수를 봤나' 가 된다."""
+    m = _model(exog_mode="variate_token")
+    out = m(*_batch(), need_cross_weights=True)
+
+    assert out.cross_weights.shape == (4, 24, 13)   # (B, n_patch, n_macro)
+    assert out.dynamic_weights.shape == (4, 24, 17)  # 종목 경로는 그대로
+    assert not hasattr(m, "encoder_mac"), "매크로 인코더가 남아 파라미터를 낭비한다"
+
+
+def test_itransformer_endog_runs_encoder_over_variates():
+    """iTransformer: 변수축이 시퀀스축이다.
+
+    인코더 입력은 여전히 3차원(B,C,d)이고 forward 당 한 번만 돈다 —
+    patch 트랙의 계약(test_encoder_runs_once_not_per_channel)과 같다.
+    VSN 은 인코더 **뒤**로 가므로 가중치의 패치축이 1 이 된다.
+    """
+    m = _model(endog_mode="variate")
+    seen = []
+    orig = m.encoder.forward
+    m.encoder.forward = lambda x: (seen.append(tuple(x.shape)), orig(x))[1]
+
+    out = m(*_batch(), need_cross_weights=True)
+
+    assert seen == [(4, 17, m.cfg.d_model)], f"인코더가 변수축으로 돌지 않는다 ({seen})"
+    assert out.dynamic_weights.shape == (4, 1, 17)
+    assert out.cross_weights.shape == (4, 1, 24)
+
+
+@pytest.mark.parametrize(
+    "modes",
+    [{"exog_mode": "variate_token"}, {"endog_mode": "variate"}],
+)
+def test_new_modes_keep_the_output_contract(modes):
+    """분위 단조성과 VSN 가중치 합 = 1 은 어느 트랙에서도 깨지면 안 된다."""
+    out = _model(**modes)(*_batch())
+
+    assert out.quantiles.shape == (4, 3)
+    assert (out.quantiles[:, 1:] >= out.quantiles[:, :-1]).all()
+    assert torch.allclose(out.dynamic_weights.sum(-1), torch.ones(1), atol=1e-5)
+    assert torch.allclose(out.static_weights.sum(-1), torch.ones(1), atol=1e-5)
+
+
+@pytest.mark.parametrize("bad", [{"endog_mode": "itransformer"}, {"exog_mode": "timexer"}])
+def test_unknown_mode_fails_loudly(bad):
+    """오타가 조용히 기본값으로 떨어지면 대조 실험이 통째로 무효가 된다."""
+    with pytest.raises(ValueError):
+        _model(**bad)
