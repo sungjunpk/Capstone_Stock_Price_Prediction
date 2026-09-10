@@ -56,7 +56,10 @@ def test_mktrel_profile_only_changes_the_target_definition():
     mr = load_config(profile="mktrel").raw
 
     assert mr["features"]["target_mode"] == "market_relative"
-    assert base["features"]["target_mode"] == "raw"
+    # base 의 target_mode 가 무엇인지는 여기서 고정하지 않는다 — 실거래 트랙은
+    # 목표가 바뀌면 같이 바뀐다(2026-09-10 raw → index_relative). 이 테스트가
+    # 지켜야 하는 건 "프로파일이 타깃과 저장경로 말고는 안 건드린다"는 것뿐이다.
+    assert mr["features"]["target_mode"] != base["features"]["target_mode"]
     assert mr["data"]["processed_suffix"] == "_mr"
 
     # 모델·학습·매매 규칙은 손대지 않는다
