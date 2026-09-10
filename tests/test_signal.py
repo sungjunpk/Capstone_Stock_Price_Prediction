@@ -386,3 +386,36 @@ def test_prediction_from_row_carries_context_and_survives_nan():
     a, b = (prediction_from_row(r) for r in df.itertuples())
     assert (a.mcap, a.vol) == (500.0, 0.03)
     assert b.mcap is None and b.vol is None     # NaN 은 '모름'이지 0 이 아니다
+
+
+def test_mcap_pool_cuts_to_the_largest_before_abstain():
+    """시총 풀은 판단이 아니라 **유니버스 정의**라 기권보다 먼저 걸려야 한다.
+
+    벤치마크가 시총가중 지수라, 중소형주를 아무리 잘 골라도 못 따라간다 —
+    실측(2026-09-10): 유니버스 전부를 동일가중으로 사도 베타 0.49 였다.
+    """
+    cfg = {**XS_CAP, "direction": {**XS_CAP["direction"], "mcap_pool": 2, "top_n": 2,
+                                   "exit_rank": 2}}
+    preds = [_capped("BIG1", 0.01, 900.0), _capped("BIG2", 0.02, 800.0),
+             _capped("SMALL", 0.09, 10.0)]          # q50 은 SMALL 이 압도적으로 높다
+    sigs = {s.code: s for s in generate_signals(preds, cfg, max_width=0.05)}
+    assert sigs["BIG1"].action is Action.BUY
+    assert sigs["BIG2"].action is Action.BUY
+    # 풀 밖이면 q50 이 아무리 높아도 안 산다
+    assert sigs["SMALL"].action is not Action.BUY
+
+
+def test_mcap_pool_keeps_unknown_cap_names():
+    """시총을 '모른다'를 '작다'로 읽으면 안 된다 — 신규상장이 조용히 배제된다."""
+    cfg = {**XS_CAP, "direction": {**XS_CAP["direction"], "mcap_pool": 1, "top_n": 2,
+                                   "exit_rank": 2}}
+    preds = [_capped("BIG", 0.01, 900.0), _capped("UNKNOWN", 0.05, None)]
+    sigs = {s.code: s for s in generate_signals(preds, cfg, max_width=0.05)}
+    assert sigs["UNKNOWN"].action is Action.BUY
+
+
+def test_mcap_pool_none_keeps_everyone():
+    """기본값(null)에서는 아무도 안 자른다 — 기존 동작이 그대로여야 한다."""
+    preds = [_capped("A", 0.03, 900.0), _capped("B", 0.02, 1.0)]
+    sigs = generate_signals(preds, XS_CAP, max_width=0.05)
+    assert sum(1 for s in sigs if s.action is Action.BUY) == 2

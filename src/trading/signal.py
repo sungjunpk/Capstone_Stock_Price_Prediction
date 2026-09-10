@@ -452,6 +452,29 @@ def _cross_sectional_signals(
     min_candidates = int(dir_cfg.get("min_candidates", 0))
     exit_rank = max(int(dir_cfg.get("exit_rank", top_n)), top_n)
 
+    # 0) 후보 풀 — 시총 상위 N개로 먼저 자른다 (설정이 있을 때만)
+    #
+    # 왜 기권보다 앞인가: 이건 판단이 아니라 **유니버스 정의**다. 벤치마크가
+    # 시총가중 지수라 중소형주를 아무리 잘 골라도 지수를 못 따라간다 —
+    # 실측(2026-09-10, test 2년): 유니버스 201종목을 **전부 동일가중으로 사도**
+    # 베타 0.49 / 누적 +88.1% 인데, 시총 상위 50 을 시총가중으로 담으면
+    # 베타 1.02 / 누적 +193.1% 다. 종목 선택이 아니라 풀이 정하는 부분이다.
+    # 모델은 이 풀 **안에서** 계속 고른다 — 그게 초과수익의 출처다.
+    all_preds, dropped = preds, {}
+    pool = dir_cfg.get("mcap_pool")
+    if pool:
+        known = [p for p in preds if p.mcap is not None and p.mcap > 0]
+        if len(known) > int(pool):
+            keep = {p.code for p in sorted(known, key=lambda p: -p.mcap)[:int(pool)]}
+            # 시총을 모르는 종목은 배제하지 않는다 — '모름'을 '작다'로 읽으면 안 된다
+            keep |= {p.code for p in preds if p.mcap is None or p.mcap <= 0}
+            # ⚠️ 풀 밖 종목도 **신호를 낸다.** 입력 하나당 신호 하나가 이 함수의
+            #    계약이고, 빠뜨리면 보유분 처리가 호출자마다 갈린다.
+            dropped = {p.code: Signal(p.code, Action.HOLD, 0.0, 0.0,
+                                      f"시총 상위 {int(pool)} 밖 — 후보 아님")
+                       for p in preds if p.code not in keep}
+            preds = [p for p in preds if p.code in keep]
+
     # 1) 기권 — 신뢰구간이 넓으면 순위 경쟁에 아예 참여시키지 않는다
     basis = abstain_basis(trading_cfg["abstain"])
     score_of = {p.code: abstain_score(p, basis) for p in preds}
@@ -472,7 +495,7 @@ def _cross_sectional_signals(
                 p.code, Action.ABSTAIN, 0.0, 0.0,
                 f"후보 {len(survivors)}개 < 최소 {min_candidates}개 — 순위 무의미",
             )
-        return [out[p.code] for p in preds]
+        return [out.get(p.code) or dropped[p.code] for p in all_preds]
 
     # 3) q50 내림차순 정렬. 공통 편차는 여기서 상쇄된다
     ranked = sorted(survivors, key=lambda p: -p.q50)
@@ -504,4 +527,4 @@ def _cross_sectional_signals(
             f"\ud3ed={p.interval_width:.4f}, \ub178\ucd9c={exposure:.0%})",
         )
 
-    return [out[p.code] for p in preds]
+    return [out.get(p.code) or dropped[p.code] for p in all_preds]
