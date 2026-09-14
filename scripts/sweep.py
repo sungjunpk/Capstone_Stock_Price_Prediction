@@ -57,6 +57,45 @@ PRESETS: dict[str, dict] = {
         "d_model": 24, "n_layers": 1, "d_ff": 48,
         "dropout": 0.5, "weight_decay": 1e-2, "lr": 2e-4,
     },
+    # ── 감독 밀도 늘리기 (2026-09-14). 정규화 승자(reg_drop, dropout 0.65)를
+    #    바닥으로 깔고 그 위에 얹는다. 새 기준선은 +2.17% 다.
+    #    분위 목록에 0.1/0.5/0.9 가 반드시 있어야 한다 — 매매 경로가 쓰는 세 값.
+    "sup_q9": {           # 분위 3 → 9
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.65, "weight_decay": 1e-2, "lr": 2e-4,
+        "quantiles": [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95],
+    },
+    "sup_multih": {       # 보조 지평 t+1 · t+2 · t+3
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.65, "weight_decay": 1e-2, "lr": 2e-4,
+        "aux_horizons": [1, 2, 3],
+    },
+    "sup_both": {         # 둘 다
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.65, "weight_decay": 1e-2, "lr": 2e-4,
+        "quantiles": [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95], "aux_horizons": [1, 2, 3],
+    },
+    # ── 과적합 축소 전용 (2026-09-14). 크기는 minimal 로 **고정**하고
+    #    정규화 강도만 바꾼다. 크기를 줄이는 방향은 이미 바닥을 쳤다 —
+    #    VSN 공유로 파라미터를 59% 줄이자 best epoch 이 2 → 1 로 앞당겨졌다.
+    "reg_wd": {        # 가중치 감쇠만 3배
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.5, "weight_decay": 3e-2, "lr": 2e-4,
+    },
+    "reg_drop": {      # 드롭아웃 0.5 → 0.65
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.65, "weight_decay": 1e-2, "lr": 2e-4,
+    },
+    "reg_chan": {      # 입력 채널 드롭아웃 — 아직 안 써본 축
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.5, "weight_decay": 1e-2, "lr": 2e-4,
+        "channel_dropout": 0.2,
+    },
+    "reg_all": {       # 셋 다
+        "d_model": 32, "n_layers": 1, "d_ff": 64,
+        "dropout": 0.6, "weight_decay": 3e-2, "lr": 1e-4,
+        "channel_dropout": 0.2,
+    },
     "pico": {
         "d_model": 16, "n_layers": 1, "d_ff": 32,
         "dropout": 0.5, "weight_decay": 3e-2, "lr": 2e-4,
@@ -78,6 +117,17 @@ def apply_preset(cfg: dict, p: dict) -> dict:
     )
     c["training"]["weight_decay"] = p["weight_decay"]
     c["training"]["lr"] = p["lr"]
+    # 프리셋이 안 주면 0 — 기존 프리셋의 의미가 바뀌지 않는다
+    # 스윕 산출물은 실험이다. 무태그로 떨어지면 실주문 경로(paper_trade.py 는
+    # 무태그 중 최신을 집는다)가 이걸 운영 모델로 쓴다 — 반드시 태그를 붙인다.
+    c["data"]["checkpoint_suffix"] = (
+        c["data"].get("processed_suffix", "") + "_sweep"
+    )
+    c["model"]["channel_dropout"] = p.get("channel_dropout", 0.0)
+    # 분위 개수와 보조 지평도 프리셋으로 가른다. 안 주면 base 값 그대로다.
+    if "quantiles" in p:
+        c["model"]["head"]["quantiles"] = list(p["quantiles"])
+    c["model"]["aux_horizons"] = list(p.get("aux_horizons", []))
     # 과적합이 2 epoch 만에 오므로 오래 기다릴 이유가 없다
     c["training"]["warmup_epochs"] = 2
     c["training"]["early_stopping"]["patience"] = 5

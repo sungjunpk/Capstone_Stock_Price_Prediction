@@ -91,7 +91,25 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
         log.info("[smoke] 종목 %d개로 축소", len(codes))
 
     feature_cols = dynamic_feature_columns(panel)
+    # 보조 지평 타깃. dynamic_feature_columns 가 target* 을 전부 걸러내므로
+    # 피처로는 절대 안 들어간다 (절대 규칙 5, tests/test_dataset.py 가 고정).
+    hz = int(cfg["features"]["return_horizon"])
+    # 모델이 쓰겠다고 선언한 것만 싣는다 (패널에는 더 많이 있을 수 있다).
+    aux_hz = [int(h) for h in cfg["model"].get("aux_horizons", []) if int(h) != hz]
+    aux_target_cols = [
+        f"target_h{h}" for h in aux_hz if f"target_h{h}" in panel.columns
+    ]
     spec = SplitSpec.from_config(cfg)
+    # ⚠️ embargo 는 **가장 긴 지평**을 덮어야 한다. 보조 지평이 20일인데 embargo 가
+    #    5일이면 train 마지막 샘플의 t+20 라벨이 val 구간 15일치를 훔쳐본다
+    #    (절대 규칙 5). 에러가 아니라 val 이 조용히 좋아지는 실패라 여기서 막는다.
+    longest = max([hz, *aux_hz])
+    if aux_target_cols and spec.embargo_days < longest:
+        raise ValueError(
+            f"embargo_days({spec.embargo_days}) 가 가장 긴 지평({longest})보다 짧다 — "
+            f"보조 지평 {aux_hz} 의 라벨이 구간 경계를 넘어 샌다. "
+            "split.embargo_days 를 늘리거나 aux_horizons 를 줄일 것."
+        )
     parts = split_by_date(panel, spec)
 
     # 정규화 통계는 **train 구간에서만** 계산한다 (CLAUDE.md 절대 규칙)
@@ -117,6 +135,7 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
             apply_normalizer(part, stats), macro_n, static,
             lookback=int(cfg["features"]["lookback"]),
             feature_cols=feature_cols, vocab=vocab,
+            aux_target_cols=aux_target_cols,
         )
         loaders[name] = DataLoader(
             ds, batch_size=int(train_cfg["batch_size"]),
@@ -132,6 +151,7 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
     base_q = torch.quantile(y_train, torch.tensor(quantiles))
 
     meta = {
+        "aux_target_cols": aux_target_cols,
         "feature_cols": feature_cols, "macro_cols": macro_cols,
         "vocab_sizes": vocab.sizes, "sizes": sizes, "split": str(spec),
         "baseline_quantiles": [float(v) for v in base_q],
@@ -166,10 +186,22 @@ def _baseline_loss(loader, base_q, quantiles, device) -> float:
     qs = torch.tensor(quantiles, dtype=torch.float32, device=device)
     total, n = 0.0, 0
     for *_, y in loader:
-        y = y.to(device)
+        # 보조 지평이 켜지면 y 가 (B, 1+A) 다. 기준선은 **주 지평만** 잰다 —
+        # 이 값이 모든 실험의 비교 축이라 정의가 흔들리면 안 된다.
+        y = _split_y(y.to(device))[0]
         total += pinball_loss(q.expand(y.size(0), -1), y, qs).item() * y.size(0)
         n += y.size(0)
     return total / max(n, 1)
+
+
+def _split_y(y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor | None]:
+    """(B,) 또는 (B, 1+A) 를 (주 타깃, 보조 타깃) 으로 가른다.
+
+    보조 지평이 꺼져 있으면 y 가 그냥 (B,) 라 예전과 같은 경로다.
+    """
+    if y.dim() == 1:
+        return y, None
+    return y[:, 0], (y[:, 1:] if y.shape[1] > 1 else None)
 
 
 @torch.no_grad()
@@ -180,7 +212,10 @@ def evaluate(model, loader, criterion, device) -> tuple[float, np.ndarray]:
     for dyn, mac, stat, y in loader:
         dyn, mac, stat, y = (t.to(device, non_blocking=True) for t in (dyn, mac, stat, y))
         out = model(dyn, mac, stat)
-        loss = criterion(out.quantiles, y)
+        # ⚠️ 검증 손실은 **주 지평만** 잰다. 보조를 섞으면 무조건부 분위수 기준선과
+        #    지금까지의 모든 실험 수치와 비교가 안 된다.
+        y_main, _ = _split_y(y)
+        loss = criterion(out.quantiles, y_main)
         bs = y.size(0)
         total += loss.item() * bs
         n += bs
@@ -209,6 +244,8 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
 
     t = cfg["training"]
     criterion = QuantileLoss(mcfg.quantiles, crossing_weight=0.01).to(device)
+    # 보조 지평 손실의 비중. 주 과제를 밀어내지 않을 정도로만 준다.
+    aux_weight = float(cfg["training"].get("aux_weight", 0.3))
 
     # 기준선 손실을 먼저 재둔다. 학습이 이걸 못 이기면 의미가 없다.
     baseline_loss = _baseline_loss(loaders["val"], meta["baseline_quantiles"],
@@ -239,7 +276,12 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     # 트랙 태그를 이름에 넣는다. 해시만으로는 부족하다 — 학습 당시 설정과
     # 지금 설정의 해시가 어긋나면(캐글에서 받은 체크포인트 등) 자동 선택이
     # 다른 트랙 것을 집어간다. 그러면 **조용히 틀린 숫자**가 나온다.
-    tag = cfg["data"].get("processed_suffix", "")
+    # 파일명 태그는 보통 데이터 접미사와 같지만, **갈라 쓸 수 있어야 한다.**
+    # 스윕은 base 데이터(panel.parquet)를 그대로 읽으면서 체크포인트만 따로
+    # 떨어져야 한다 — 무태그로 떨어지면 scripts/paper_trade.py 가 실험 모델을
+    # 실주문에 집어간다(2026-09-14 실제 발생). 데이터 접미사를 바꾸면 없는
+    # panel<suffix>.parquet 을 찾으므로 그 방법은 못 쓴다.
+    tag = cfg["data"].get("checkpoint_suffix", cfg["data"].get("processed_suffix", ""))
     suffix = "_smoke" if smoke else ""
     ckpt_path = CKPT_DIR / f"phase1_{cfg_hash}{tag}{suffix}.pt"
     history = []
@@ -255,7 +297,15 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
             opt.zero_grad(set_to_none=True)
             with torch.amp.autocast("cuda", enabled=use_amp(device)):
                 out = model(dyn, mac, stat)
-                loss = criterion(out.quantiles, y)
+                y_main, y_aux = _split_y(y)
+                loss = criterion(out.quantiles, y_main)
+                if out.aux_quantiles is not None and y_aux is not None:
+                    n_aux = min(out.aux_quantiles.shape[1], y_aux.shape[1])
+                    aux = sum(
+                        criterion(out.aux_quantiles[:, i], y_aux[:, i])
+                        for i in range(n_aux)
+                    ) / max(n_aux, 1)
+                    loss = loss + aux_weight * aux
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)

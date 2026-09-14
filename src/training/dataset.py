@@ -30,6 +30,9 @@ log = get_logger(__name__)
 # 들어가지 않는다. 여기 빠뜨리면 입력 차원이 늘어 기존 체크포인트가 조용히 깨진다.
 BASE_COLS = ("code", "date", "open", "high", "low", "close", "volume", "value", "mcap")
 TARGET_COL = "target"
+# 보조 지평 타깃(target_h1 …)이 늘어도 **하나도** 피처가 되면 안 된다.
+# 아래 선택이 제외 방식이라, 빠뜨리면 모델이 미래를 직접 본다 (절대 규칙 5).
+TARGET_PREFIX = "target"
 
 
 XS_PREFIX = "xs_"
@@ -41,7 +44,8 @@ def dynamic_feature_columns(panel: pd.DataFrame) -> list[str]:
     횡단면 피처(`xs_`)는 **항상 맨 뒤로** 보낸다. 모델이 뒤에서 N개를 잘라
     RevIN 을 건너뛰기 때문에, 순서가 곧 계약이다 (Phase1Config.n_passthrough).
     """
-    cols = [c for c in panel.columns if c not in set(BASE_COLS) | {TARGET_COL}]
+    cols = [c for c in panel.columns
+            if c not in set(BASE_COLS) and not c.startswith(TARGET_PREFIX)]
     return ([c for c in cols if not c.startswith(XS_PREFIX)]
             + [c for c in cols if c.startswith(XS_PREFIX)])
 
@@ -117,9 +121,13 @@ class WindowDataset(Dataset):
         feature_cols: list[str],
         vocab: StaticVocab,
         require_target: bool = True,
+        aux_target_cols: list[str] | None = None,
     ):
         self.lookback = int(lookback)
         self.feature_cols = list(feature_cols)
+        # 보조 지평 타깃. 같은 윈도우에서 학습 신호를 더 뽑는 용도라 **주 타깃과
+        # 달리 결측이어도 행을 버리지 않는다**(dropna 대상에 넣지 않는다).
+        self.aux_target_cols = [c for c in (aux_target_cols or []) if c in panel.columns]
         self.vocab = vocab
         # 학습/백테스트는 타깃이 있는 행만 쓴다.
         # 모의투자는 **가장 최근 윈도우**를 써야 하는데 그 구간은 아직 t+h 가 오지 않아
@@ -139,6 +147,7 @@ class WindowDataset(Dataset):
         # --- 종목별 연속 배열 + 윈도우 인덱스 테이블
         self._arrays: list[np.ndarray] = []
         self._targets: list[np.ndarray] = []
+        self._aux: list[np.ndarray] = []
         self._macro_rows: list[np.ndarray] = []
         self._dow: list[np.ndarray] = []
         self._static: list[np.ndarray] = []
@@ -161,6 +170,11 @@ class WindowDataset(Dataset):
                 usable[TARGET_COL].fillna(0.0).to_numpy(dtype=np.float32)
                 if TARGET_COL in usable.columns
                 else np.zeros(len(usable), dtype=np.float32)
+            )
+            self._aux.append(
+                usable[self.aux_target_cols].fillna(0.0).to_numpy(dtype=np.float32)
+                if self.aux_target_cols
+                else np.zeros((len(usable), 0), dtype=np.float32)
             )
             self._codes.append(str(code))
 
@@ -249,10 +263,18 @@ class WindowDataset(Dataset):
 
         stat = np.concatenate([self._static[si], [self._dow[si][end] + 1]])
         y = self._targets[si][end]
+        # 보조가 없으면 예전처럼 스칼라다 — 기존 학습·추론 경로가 그대로 돈다.
+        y_t = (
+            torch.tensor(y, dtype=torch.float32)
+            if not self.aux_target_cols
+            else torch.from_numpy(
+                np.concatenate([[y], self._aux[si][end]]).astype(np.float32)
+            )
+        )
 
         return (
             torch.from_numpy(np.ascontiguousarray(dyn)),
             torch.from_numpy(mac),
             torch.from_numpy(stat),
-            torch.tensor(y, dtype=torch.float32),
+            y_t,
         )

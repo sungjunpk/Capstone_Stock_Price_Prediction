@@ -55,3 +55,40 @@ def test_missing_track_checkpoint_fails_loudly(tmp_path, monkeypatch):
     monkeypatch.setattr(bt, "CKPT_DIR", tmp_path)
     with pytest.raises(SystemExit):
         bt.find_checkpoint(None, load_config(profile="intraday").raw)
+
+
+def test_sweep_checkpoints_cannot_reach_the_order_path():
+    """스윕 산출물은 실주문 경로가 절대 못 집어야 한다.
+
+    재현(2026-09-14): sweep.py 가 base 설정으로 돌아 무태그 체크포인트를 만들었고,
+    그게 운영 모델보다 최신이라 paper_trade.find_checkpoint 가 실험 모델을 골랐다.
+    평일 15:15 자동매매가 그대로 주문을 낼 뻔했다.
+
+    방어는 sweep.py 가 data.checkpoint_suffix 로 `_sweep` 을 붙이는 것이다
+    (train.py 가 processed_suffix 대신 이 값을 파일명 태그로 쓴다).
+    """
+    import re
+
+    daily = re.compile(r"^phase1_[0-9a-f]{8}\.pt$")
+
+    # 스윕이 만드는 이름은 실주문 정규식에 안 걸린다
+    for name in ("phase1_b09d82ab_sweep.pt", "phase1_971a84a3_idxrel2_sweep.pt"):
+        assert not daily.match(name), f"스윕 산출물이 실주문 경로에 샌다: {name}"
+
+    # 운영 모델 이름은 여전히 걸린다
+    assert daily.match("phase1_eadf265f.pt")
+
+
+def test_sweep_sets_a_checkpoint_suffix():
+    """sweep.apply_preset 이 체크포인트 태그를 반드시 붙인다."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "sweep_mod", Path(__file__).resolve().parents[1] / "scripts" / "sweep.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    out = mod.apply_preset(load_config().raw, mod.PRESETS["minimal"])
+
+    assert out["data"]["checkpoint_suffix"].endswith("_sweep")

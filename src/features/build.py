@@ -54,6 +54,7 @@ def build_panel(cfg: dict) -> pd.DataFrame:
     """유니버스 종목별 동적 피처 + 타깃. (code, date) 키."""
     feat_cfg = cfg["features"]
     horizon = int(feat_cfg["return_horizon"])
+    aux_horizons = [int(h) for h in feat_cfg.get("aux_horizons", []) if int(h) != horizon]
     codes = [u["code"] for u in cfg["data"]["universe"]]
     kind = cfg["data"].get("chart_kind", _CHART_KIND)
 
@@ -93,6 +94,10 @@ def build_panel(cfg: dict) -> pd.DataFrame:
         if flow is not None:
             feats = _join_flow(feats, flow[flow["code"] == code])
         feats["target"] = forward_log_return(feats["close"], horizon)
+        # 보조 지평 — 같은 입력에서 학습 신호를 더 뽑는다(과적합 완화).
+        # ⚠️ target 접두사여야 dataset.dynamic_feature_columns 가 피처에서 제외한다.
+        for h in aux_horizons:
+            feats[f"target_h{h}"] = forward_log_return(feats["close"], h)
         frames.append(feats)
 
     log.info("거래정지일 총 %d행 제거", halted_total)
@@ -172,22 +177,34 @@ def _apply_target_mode(panel: pd.DataFrame, feat_cfg: dict) -> pd.DataFrame:
     if mode not in ("market_relative", "index_relative"):
         raise ValueError(f"알 수 없는 features.target_mode: {mode}")
 
-    before = panel["target"].std()
-    if mode == "market_relative":
-        ref = panel.groupby("date")["target"].transform("mean")
-        what = "유니버스 평균"
-    else:
-        ref = _index_forward_return(panel, feat_cfg)
-        what = f"지수 {feat_cfg.get('benchmark_index', '201')}"
+    # 보조 지평이 없으면 예전과 완전히 같은 경로다 (horizon 을 안 읽어도 된다).
+    horizon = int(feat_cfg.get("return_horizon", 0))
+    cols = [("target", horizon)] + [
+        (f"target_h{h}", int(h)) for h in feat_cfg.get("aux_horizons", [])
+        if int(h) != horizon and f"target_h{h}" in panel.columns
+    ]
 
-    panel["target"] = panel["target"] - ref
-    log.info("타깃을 %s 대비 초과수익으로 변환 — 표준편차 %.4f → %.4f (공통성분 %.0f%% 제거)",
-             what, before, panel["target"].std(),
-             100 * (1 - panel["target"].std() / before))
+    for col, h in cols:
+        before = panel[col].std()
+        if mode == "market_relative":
+            ref = panel.groupby("date")[col].transform("mean")
+            what = "유니버스 평균"
+        else:
+            # 지평마다 지수 기준선도 같은 지평이어야 한다 — 5일 타깃에서 20일 지수
+            # 수익률을 빼면 라벨 정의가 어긋난다.
+            ref = _index_forward_return(panel, feat_cfg, horizon=h or None)
+            what = f"지수 {feat_cfg.get('benchmark_index', '201')}"
+
+        panel[col] = panel[col] - ref
+        log.info("%s 를 %s 대비 초과수익으로 변환(지평 %d) — 표준편차 %.4f → %.4f "
+                 "(공통성분 %.0f%% 제거)", col, what, h, before, panel[col].std(),
+                 100 * (1 - panel[col].std() / before))
     return panel
 
 
-def _index_forward_return(panel: pd.DataFrame, feat_cfg: dict) -> pd.Series:
+def _index_forward_return(
+    panel: pd.DataFrame, feat_cfg: dict, *, horizon: int | None = None
+) -> pd.Series:
     """벤치마크 지수의 t+1~t+h 누적 로그수익률을 패널 날짜축에 맞춰 돌려준다.
 
     **왜 유니버스 평균이 아니라 지수인가.** 목표가 "코스피200 초과수익"이면 타깃도
@@ -199,7 +216,7 @@ def _index_forward_return(panel: pd.DataFrame, feat_cfg: dict) -> pd.Series:
     창의 값이라 라벨 정의의 일부**이고, 피처로는 들어가지 않는다(매크로 경로와 분리해
     여기서만 읽는 이유다). 추론 시점에 알 필요도 없다.
     """
-    horizon = int(feat_cfg["return_horizon"])
+    horizon = int(feat_cfg["return_horizon"]) if horizon is None else int(horizon)
 
     fwd = forward_log_return(_benchmark_close(feat_cfg), horizon)
     # 지수 휴장일 등으로 비는 날은 0(초과수익 = 종목 수익 그대로)으로 둔다.

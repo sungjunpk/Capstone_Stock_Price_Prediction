@@ -36,6 +36,21 @@ from src.utils.seed import get_device
 log = get_logger(__name__)
 
 QUANTILE_COLS = ["q10", "q50", "q90"]
+# 매매 경로가 받는 분위. 모델이 더 촘촘한 분위(9개 등)를 내도 여기서 세 개만 골라
+# 내보낸다 — signal.py 의 QuantilePrediction 계약이 바뀌면 안 된다 (절대 규칙 7).
+TRADING_QUANTILES = (0.1, 0.5, 0.9)
+
+
+def _trading_indices(quantiles) -> list[int]:
+    """모델 분위 목록에서 q10/q50/q90 의 위치. 없으면 학습 설정이 잘못된 것이다."""
+    levels = [round(float(q), 6) for q in quantiles]
+    try:
+        return [levels.index(round(q, 6)) for q in TRADING_QUANTILES]
+    except ValueError as exc:
+        raise ValueError(
+            f"모델 분위 {levels} 에 매매용 {list(TRADING_QUANTILES)} 가 없다 — "
+            "configs 의 model.head.quantiles 에 0.1/0.5/0.9 를 포함시킬 것"
+        ) from exc
 
 
 @dataclass
@@ -185,8 +200,9 @@ def _run(loaded: LoadedModel, ds, rows: list[int] | None, batch_size: int) -> np
         ).quantiles
         out.append(q.float().cpu())
     if not out:
-        return np.empty((0, 3), dtype=np.float32)
-    return torch.cat(out).numpy()
+        return np.empty((0, len(QUANTILE_COLS)), dtype=np.float32)
+    idx = _trading_indices(loaded.model.cfg.quantiles)
+    return torch.cat(out)[:, idx].numpy()
 
 
 CONTEXT_COLS = ("mcap", "rvol_20")

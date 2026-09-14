@@ -65,6 +65,13 @@ class Phase1Config:
     exog_mode: str = "patch_cross"
     # 채널별 GRN 30벌 대신 한 벌을 공유한다. select(해석 근거)는 그대로다.
     vsn_shared_transform: bool = False
+    # 학습 중 입력 채널을 통째로 무작위 마스킹한다(0 이면 끈다).
+    # 30채널에 상관 높은 쌍이 많아(rs_20↔xs_rs_20, macd↔macd_signal↔macd_hist)
+    # 모델이 한 채널에 기대는 것을 막는다. 추론에서는 동작하지 않는다.
+    channel_dropout: float = 0.0
+    # 보조 지평 개수. 0 이면 보조 헤드를 안 만든다 — 기존 경로와 완전히 같다.
+    # 주 출력 quantiles (B,Q) 의 모양은 어떤 경우에도 안 바뀐다 (절대 규칙 7).
+    n_aux_horizons: int = 0
     # 뒤쪽 N개 채널은 RevIN 을 **건너뛴다**. 횡단면 순위 피처(`xs_`)가 여기 해당한다.
     # RevIN 은 종목별 윈도우 안에서 표준화하므로 "오늘 시장에서 몇 등인가"를 지운다 —
     # 정확히 매매 규칙이 쓰는 정보라서, 통과시키지 않으면 모델이 그걸 볼 수 없다.
@@ -96,6 +103,14 @@ class Phase1Config:
             endog_mode=str(m.get("endog", {}).get("mode", "patch")),
             exog_mode=str(m.get("exog", {}).get("mode", "patch_cross")),
             vsn_shared_transform=bool(m["vsn"].get("shared_transform", False)),
+            channel_dropout=float(m.get("channel_dropout", 0.0)),
+            # 데이터에 어떤 타깃 컬럼을 만들지는 features.aux_horizons 가 정하고,
+            # **그걸 실제로 쓸지는 model.aux_horizons 가 정한다.** 둘을 갈라야
+            # 같은 패널로 보조 지평 on/off 를 비교할 수 있다.
+            n_aux_horizons=len([
+                h for h in m.get("aux_horizons", [])
+                if int(h) != int(cfg["features"]["return_horizon"])
+            ]),
             n_passthrough=n_passthrough,
         )
 
@@ -106,6 +121,8 @@ class Phase1Output:
     dynamic_weights: torch.Tensor           # (B, N, C) 해석용
     static_weights: torch.Tensor            # (B, n_static) 해석용
     cross_weights: torch.Tensor | None = field(default=None)
+    # 보조 지평 예측 (B, n_aux, Q). 학습 손실에만 쓰이고 매매 경로는 안 본다.
+    aux_quantiles: torch.Tensor | None = field(default=None)
 
 
 class Phase1Model(nn.Module):
@@ -183,6 +200,13 @@ class Phase1Model(nn.Module):
             cfg.d_model, len(cfg.quantiles), dropout=cfg.cross_dropout,
             init_quantiles=cfg.init_quantiles,
         )
+        # 지평마다 별도 헤드. 주 헤드와 분리해 두면 보조 과제가 주 출력의
+        # 스케일을 끌고 가지 않는다.
+        self.aux_heads = nn.ModuleList(
+            QuantileHead(cfg.d_model, len(cfg.quantiles), dropout=cfg.cross_dropout,
+                         init_quantiles=cfg.init_quantiles)
+            for _ in range(cfg.n_aux_horizons)
+        ) if cfg.n_aux_horizons else None
 
     def _patch_branch(
         self, x: torch.Tensor, ctx: torch.Tensor
@@ -216,6 +240,12 @@ class Phase1Model(nn.Module):
                  dynamic[..., self.n_revin :]], dim=-1)
         else:
             x = self.revin_dyn(dynamic)                  # (B,L,C)
+        if self.training and self.cfg.channel_dropout > 0:
+            # 표본마다 다른 채널을 끈다. 남은 채널을 키워 기댓값을 보존한다.
+            keep_p = 1.0 - self.cfg.channel_dropout
+            keep = torch.rand(x.shape[0], 1, x.shape[-1], device=x.device) < keep_p
+            x = x * keep / keep_p
+
         ctx, w_static = self.static_vsn(static)          # (B,d), (B,n_static)
 
         mode = self.cfg.endog_mode
@@ -259,9 +289,15 @@ class Phase1Model(nn.Module):
             scale = self.revin_dyn.scale_of(self.cfg.target_scale_channel)
             q = q * scale.unsqueeze(-1)
 
+        aux = None
+        if self.aux_heads is not None:
+            aux = torch.stack([h(pooled) for h in self.aux_heads], dim=1)  # (B,A,Q)
+            if self.cfg.scale_target:
+                aux = aux * scale.unsqueeze(-1).unsqueeze(-1)
+
         return Phase1Output(
             quantiles=q, dynamic_weights=w_dyn, static_weights=w_static,
-            cross_weights=w_cross,
+            cross_weights=w_cross, aux_quantiles=aux,
         )
 
     def target_scale(self) -> torch.Tensor:

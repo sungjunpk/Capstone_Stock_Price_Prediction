@@ -46,6 +46,12 @@ split:
 # ------------------------------------------------------------ 피처
 features:
   return_horizon: 5        # 예측 대상: t+1 ~ t+5 누적 로그수익률
+  # 보조 지평 — 같은 윈도우에서 학습 신호를 더 뽑아 과적합을 줄인다.
+  # 여기는 **패널에 어떤 target_hN 컬럼을 만들지**만 정한다. 실제로 쓸지는
+  # model.aux_horizons 가 정한다 (같은 패널로 on/off 비교를 하려고 갈라 놓았다).
+  # ⚠️ split.embargo_days(5) 보다 긴 지평을 넣으면 학습이 거부한다 —
+  #    train 마지막 샘플의 라벨이 val 구간을 훔쳐보기 때문(절대 규칙 5).
+  aux_horizons: [1, 2, 3]
   # raw | market_relative | index_relative — 무엇을 빼서 '초과수익'으로 만들지.
   # market_relative = 유니버스 동일가중 평균, index_relative = 벤치마크 지수.
   # 근거는 build.py:_apply_target_mode

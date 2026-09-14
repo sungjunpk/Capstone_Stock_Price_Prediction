@@ -264,3 +264,54 @@ def test_improvements_keep_the_output_contract(modes):
 
     assert (out.quantiles[:, 1:] >= out.quantiles[:, :-1]).all()
     assert torch.allclose(out.dynamic_weights.sum(-1), torch.ones(1), atol=1e-5)
+
+
+# ── 감독 밀도 늘리기 (분위 9개 · 다중 지평) ────────────────────────────────
+#
+# 목적은 성능이 아니라 **과적합 완화**다. 매매 경로가 받는 계약(q10/q50/q90)은
+# 어떤 경우에도 안 바뀌어야 한다 (절대 규칙 7).
+
+Q9 = (0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95)
+
+
+def test_nine_quantiles_stay_monotonic():
+    """분위를 늘려도 누적 softplus 구조가 단조성을 보장해야 한다."""
+    out = _model(endog_mode="variate", quantiles=Q9)(*_batch())
+
+    assert out.quantiles.shape == (4, 9)
+    assert (out.quantiles[:, 1:] >= out.quantiles[:, :-1]).all()
+
+
+def test_trading_path_gets_exactly_three_quantiles():
+    """모델이 9개를 내도 매매 경로는 q10/q50/q90 만 받는다."""
+    from src.models.inference import _trading_indices
+
+    idx = _trading_indices(Q9)
+    assert [Q9[i] for i in idx] == [0.1, 0.5, 0.9]
+
+    out = _model(endog_mode="variate", quantiles=Q9)(*_batch())
+    assert out.quantiles[:, idx].shape == (4, 3)
+
+
+def test_trading_quantiles_missing_fails_loudly():
+    """0.1/0.5/0.9 가 빠진 설정으로 학습하면 매매가 조용히 틀리면 안 된다."""
+    from src.models.inference import _trading_indices
+
+    with pytest.raises(ValueError, match="매매용"):
+        _trading_indices((0.05, 0.5, 0.95))
+
+
+def test_aux_heads_are_off_by_default(model):
+    """보조 지평이 꺼져 있으면 출력도 파라미터도 예전 그대로다."""
+    assert model.aux_heads is None
+    assert model(*_batch()).aux_quantiles is None
+
+
+def test_aux_heads_do_not_change_the_primary_output_shape():
+    """보조 헤드를 켜도 주 출력 (B,Q) 는 불변이어야 한다 — 추론 계약이다."""
+    m = _model(endog_mode="variate", n_aux_horizons=3)
+    out = m(*_batch())
+
+    assert out.quantiles.shape == (4, 3)          # 주 출력 불변
+    assert out.aux_quantiles.shape == (4, 3, 3)   # (B, 보조지평, 분위)
+    assert (out.aux_quantiles[..., 1:] >= out.aux_quantiles[..., :-1]).all()

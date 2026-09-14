@@ -145,3 +145,21 @@ def test_unknown_category_falls_back_to_zero():
 
 def test_old_checkpoint_without_codebook_returns_none():
     assert StaticVocab.from_meta({"vocab_sizes": {"sector": 3}}) is None
+
+
+def test_target_columns_never_become_features(data):
+    """`target` 으로 시작하는 컬럼은 **하나도** 모델 입력이 되면 안 된다.
+
+    dynamic_feature_columns 는 제외 방식이라(BASE_COLS 와 target 만 빼고 전부 피처)
+    보조 지평 타깃을 패널에 추가하는 순간 그게 입력으로 들어가 **미래를 직접 본다.**
+    에러가 아니라 조용히 성능이 좋아 보이는 실패라 테스트로 못박는다 (절대 규칙 5).
+    """
+    panel, _, _ = data
+    panel = panel.copy()
+    for col in ("target_h1", "target_h10", "target_h20"):
+        panel[col] = 0.0
+
+    cols = dynamic_feature_columns(panel)
+
+    assert cols == ["f1", "f2"], f"타깃이 피처로 샜다: {cols}"
+    assert not any(c.startswith("target") for c in cols)
