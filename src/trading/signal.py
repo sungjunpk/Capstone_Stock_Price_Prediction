@@ -244,10 +244,11 @@ def _size(
 ) -> float:
     method = sizing_cfg.get("method", "inverse_width")
 
-    # rank_normalized 는 횡단면 모드 전용이다(비중을 종목들 사이에서 정규화하므로
-    # 단일 종목만 보고는 계산할 수 없다). absolute 모드에서 이 설정을 만나면
-    # 같은 취지의 per-stock 방식인 inverse_width 로 물러난다 — 대조군 실행을 위해서다.
-    if method in ("inverse_width", "rank_normalized"):
+    # rank_normalized / cap_weighted 는 횡단면 모드 전용이다(비중을 종목들 사이에서
+    # 정규화하거나 시총 몫으로 나누므로 단일 종목만 보고는 계산할 수 없다).
+    # absolute 모드에서 이 설정을 만나면 같은 취지의 per-stock 방식인
+    # inverse_width 로 물러난다 — 대조군 실행을 위해서다.
+    if method in ("inverse_width", "rank_normalized", "cap_weighted"):
         w = conf * max_pos
     elif method == "kelly":
         # 분위 폭을 표준편차 대용으로 쓴 단순 Kelly (f* ≈ μ/σ²).

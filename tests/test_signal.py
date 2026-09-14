@@ -419,3 +419,30 @@ def test_mcap_pool_none_keeps_everyone():
     preds = [_capped("A", 0.03, 900.0), _capped("B", 0.02, 1.0)]
     sigs = generate_signals(preds, XS_CAP, max_width=0.05)
     assert sum(1 for s in sigs if s.action is Action.BUY) == 2
+
+
+def test_absolute_mode_accepts_cross_sectional_sizing():
+    """횡단면 전용 sizing 을 absolute 모드에서 만나도 터지면 안 된다.
+
+    `--compare` 가 같은 예측으로 규칙만 갈아끼우며 absolute 대조군을 돌린다.
+    `cap_weighted`/`rank_normalized` 는 종목들 사이에서 비중을 정하므로 단일 종목만
+    보고는 계산할 수 없다 — per-stock 방식으로 물러나야 대조군 실행이 된다.
+
+    재현(2026-09-14, Kaggle): sizing.method=cap_weighted 인 설정으로 backtest.py
+    --compare 를 돌리면 absolute 변형에서 ValueError 로 죽었다.
+    """
+    from src.trading.signal import generate_signals
+
+    cfg = {
+        **XS_CFG,
+        "direction": {"mode": "absolute", "long_threshold": 0.004,
+                      "short_threshold": -0.004},
+        "sizing": {"method": "cap_weighted", "max_position_pct": 0.10,
+                   "mcap_alpha": 1.0, "conf_beta": 1.0},
+    }
+
+    signals = generate_signals(_universe(), cfg)
+
+    assert len(signals) == 30
+    assert all(0.0 <= s.target_weight <= 0.10 for s in signals)
+    assert any(s.target_weight > 0 for s in signals), "아무것도 안 사면 대조군이 아니다"
