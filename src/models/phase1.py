@@ -25,7 +25,6 @@ from src.models.encoder import TransformerEncoder
 from src.models.patch_embed import PatchEmbedding, num_patches
 from src.models.quantile_head import QuantileHead
 from src.models.revin import RevIN
-from src.models.variate_embed import VariateEmbedding
 from src.models.vsn import DynamicVSN, StaticVSN
 
 
@@ -55,16 +54,6 @@ class Phase1Config:
     # 학습 데이터의 무조건부 분위수. 헤드 bias 를 여기서 출발시킨다.
     init_quantiles: tuple[float, ...] | None = None
     target_scale_channel: int = 0   # panel 의 첫 피처(ret_1d)를 변동성 기준으로 쓴다
-    # 시퀀스를 무엇으로 토큰화할지. 두 축은 서로 독립이다.
-    #   endog "patch"       종목을 5일 단위로 자른다 (PatchTST, 기본)
-    #         "variate"     종목 채널 하나가 토큰 하나 (iTransformer)
-    #   exog  "patch_cross" 매크로도 패치로 잘라 시점끼리 붙인다 (기본)
-    #         "variate_token" 매크로 채널 하나가 토큰 하나 (TimeXer)
-    #         "both"        둘을 병렬 expert 로 돌려 토큰 축에서 합친다
-    endog_mode: str = "patch"
-    exog_mode: str = "patch_cross"
-    # 채널별 GRN 30벌 대신 한 벌을 공유한다. select(해석 근거)는 그대로다.
-    vsn_shared_transform: bool = False
     # 학습 중 입력 채널을 통째로 무작위 마스킹한다(0 이면 끈다).
     # 30채널에 상관 높은 쌍이 많아(rs_20↔xs_rs_20, macd↔macd_signal↔macd_hist)
     # 모델이 한 채널에 기대는 것을 막는다. 추론에서는 동작하지 않는다.
@@ -100,9 +89,6 @@ class Phase1Config:
             revin_affine=bool(m["revin"]["affine"]),
             revin_eps=float(m["revin"]["eps"]),
             scale_target=bool(m["revin"].get("scale_target", False)),
-            endog_mode=str(m.get("endog", {}).get("mode", "patch")),
-            exog_mode=str(m.get("exog", {}).get("mode", "patch_cross")),
-            vsn_shared_transform=bool(m["vsn"].get("shared_transform", False)),
             channel_dropout=float(m.get("channel_dropout", 0.0)),
             # 데이터에 어떤 타깃 컬럼을 만들지는 features.aux_horizons 가 정하고,
             # **그걸 실제로 쓸지는 model.aux_horizons 가 정한다.** 둘을 갈라야
@@ -140,49 +126,25 @@ class Phase1Model(nn.Module):
                 f"n_passthrough={cfg.n_passthrough})"
             )
         self.revin_dyn = RevIN(self.n_revin, cfg.revin_eps, cfg.revin_affine)
-        if cfg.endog_mode not in ("patch", "variate", "both"):
-            raise ValueError(f"endog_mode 를 모른다: {cfg.endog_mode!r}")
-        if cfg.endog_mode in ("patch", "both"):
-            self.patch_dyn = PatchEmbedding(
-                cfg.patch_len, cfg.stride, cfg.d_model, cfg.lookback, cfg.dropout
-            )
-        if cfg.endog_mode in ("variate", "both"):
-            # 변수축이 곧 시퀀스축이 된다 — 인코더가 채널 사이에서 어텐션한다.
-            self.embed_dyn = VariateEmbedding(
-                cfg.lookback, cfg.n_dynamic, cfg.d_model, cfg.dropout
-            )
+        self.patch_dyn = PatchEmbedding(
+            cfg.patch_len, cfg.stride, cfg.d_model, cfg.lookback, cfg.dropout
+        )
         self.encoder = TransformerEncoder(
             cfg.d_model, cfg.n_heads, cfg.n_layers, cfg.d_ff, cfg.dropout
         )
-        if cfg.endog_mode == "both":
-            # 토큰의 의미가 달라(시점 vs 변수) 인코더 가중치를 공유하면 안 된다.
-            self.encoder_var = TransformerEncoder(
-                cfg.d_model, cfg.n_heads, cfg.n_layers, cfg.d_ff, cfg.dropout
-            )
-            # 마지막 패치와 변수 토큰을 합쳐 하나의 표현으로 만든다.
-            self.fuse = nn.Linear(cfg.d_model * 2, cfg.d_model)
 
         # --- 매크로 경로 (별도 인코더 — 성격이 다른 시퀀스라 가중치를 공유하지 않는다)
         self.revin_mac = RevIN(cfg.n_macro, cfg.revin_eps, cfg.revin_affine)
-        if cfg.exog_mode == "variate_token":
-            # 매크로 채널 하나가 토큰 하나 → 크로스어텐션 가중치가
-            # "어느 지수를 봤나" 가 된다. 별도 인코더가 필요 없다.
-            self.embed_mac = VariateEmbedding(
-                cfg.lookback, cfg.n_macro, cfg.d_model, cfg.cross_dropout
-            )
-        elif cfg.exog_mode == "patch_cross":
-            self.patch_mac = PatchEmbedding(
-                cfg.patch_len, cfg.stride, cfg.d_model, cfg.lookback, cfg.dropout
-            )
-            # 매크로는 VSN 을 안 거치므로 채널을 살려둘 이유가 없다.
-            # 채널별로 인코딩한 뒤 합치면 인코더가 13번 도는데, 합친 뒤 한 번 도는 것과
-            # 표현력 차이는 없고 비용만 13배다.
-            self.macro_merge = nn.Linear(cfg.n_macro * cfg.d_model, cfg.d_model)
-            self.encoder_mac = TransformerEncoder(
-                cfg.d_model, cfg.cross_heads, max(1, cfg.n_layers - 1), cfg.d_ff, cfg.dropout
-            )
-        else:
-            raise ValueError(f"exog_mode 를 모른다: {cfg.exog_mode!r}")
+        self.patch_mac = PatchEmbedding(
+            cfg.patch_len, cfg.stride, cfg.d_model, cfg.lookback, cfg.dropout
+        )
+        # 매크로는 VSN 을 안 거치므로 채널을 살려둘 이유가 없다.
+        # 채널별로 인코딩한 뒤 합치면 인코더가 13번 도는데, 합친 뒤 한 번 도는 것과
+        # 표현력 차이는 없고 비용만 13배다.
+        self.macro_merge = nn.Linear(cfg.n_macro * cfg.d_model, cfg.d_model)
+        self.encoder_mac = TransformerEncoder(
+            cfg.d_model, cfg.cross_heads, max(1, cfg.n_layers - 1), cfg.d_ff, cfg.dropout
+        )
 
         # --- VSN
         self.static_vsn = StaticVSN(
@@ -191,7 +153,6 @@ class Phase1Model(nn.Module):
         self.dynamic_vsn = DynamicVSN(
             cfg.n_dynamic, cfg.d_model, cfg.vsn_hidden, cfg.vsn_dropout,
             context_size=cfg.d_model,
-            shared_transform=cfg.vsn_shared_transform,
         )
 
         # --- 결합 + 출력
@@ -208,21 +169,6 @@ class Phase1Model(nn.Module):
             for _ in range(cfg.n_aux_horizons)
         ) if cfg.n_aux_horizons else None
 
-    def _patch_branch(
-        self, x: torch.Tensor, ctx: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """(B,L,C) → (B,N,d), (B,N,C). VSN 이 인코더 앞이다 (TFT 순서)."""
-        h = self.patch_dyn(x)                            # (B,C,N,d)
-        h, w = self.dynamic_vsn(h, ctx)                  # (B,N,d), (B,N,C)
-        return self.encoder(h), w
-
-    def _variate_branch(
-        self, x: torch.Tensor, ctx: torch.Tensor, encoder: nn.Module
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """(B,L,C) → (B,1,d), (B,1,C). 변수축 어텐션 뒤에 VSN 이 온다."""
-        h = encoder(self.embed_dyn(x))                   # (B,C,d)
-        return self.dynamic_vsn(h.unsqueeze(2), ctx)     # (B,1,d), (B,1,C)
-
     def forward(
         self,
         dynamic: torch.Tensor,
@@ -232,8 +178,8 @@ class Phase1Model(nn.Module):
         need_cross_weights: bool = False,
     ) -> Phase1Output:
         """dynamic (B,L,C) / macro (B,L,M) / static (B,n_static) int64"""
-        # 종목 경로. patch 모드에서는 TFT 순서대로 **변수 선택을 인코더 앞에서** 한다 —
-        # 뒤에 두면 인코더가 채널 수만큼 반복 실행돼 비용이 그만큼 늘어난다.
+        # 종목 경로 — TFT 순서대로 **변수 선택을 인코더 앞에서** 한다.
+        # 인코더 뒤에 두면 인코더가 채널 수만큼 반복 실행돼 비용이 그만큼 늘어난다.
         if self.cfg.n_passthrough:
             x = torch.cat(                               # (B,L,C)
                 [self.revin_dyn(dynamic[..., : self.n_revin]),
@@ -245,42 +191,23 @@ class Phase1Model(nn.Module):
             keep_p = 1.0 - self.cfg.channel_dropout
             keep = torch.rand(x.shape[0], 1, x.shape[-1], device=x.device) < keep_p
             x = x * keep / keep_p
+        x = self.patch_dyn(x)                            # (B,C,N,d)
 
         ctx, w_static = self.static_vsn(static)          # (B,d), (B,n_static)
+        x, w_dyn = self.dynamic_vsn(x, ctx)              # (B,N,d), (B,N,C)
+        x = self.encoder(x)                              # (B,N,d)
 
-        mode = self.cfg.endog_mode
-        if mode == "variate":
-            # 변수축 어텐션이 먼저다. VSN 을 앞에 두면 인코더가 볼 변수가 없어진다 —
-            # 여기서는 인코더가 채널마다 도는 문제가 없으므로 순서를 뒤집어도 된다.
-            x, w_dyn = self._variate_branch(x, ctx, self.encoder)   # (B,1,d), (B,1,C)
-        elif mode == "patch":
-            x, w_dyn = self._patch_branch(x, ctx)        # (B,N,d), (B,N,C)
-        else:
-            # 병렬 expert — 두 축이 버리는 것이 서로 다르다. 토큰 축에서 합친다.
-            xp, wp = self._patch_branch(x, ctx)          # (B,N,d), (B,N,C)
-            xv, wv = self._variate_branch(x, ctx, self.encoder_var)  # (B,1,d), (B,1,C)
-            x = torch.cat([xp, xv], dim=1)               # (B,N+1,d)
-            w_dyn = torch.cat([wp, wv], dim=1)           # (B,N+1,C)
-
-        # 매크로 경로
+        # 매크로 경로 — 채널을 먼저 합치고 한 번만 인코딩
         m = self.revin_mac(macro)
-        if self.cfg.exog_mode == "variate_token":
-            m = self.embed_mac(m)                        # (B,M,d) — 채널당 토큰 하나
-        else:
-            # 채널을 먼저 합치고 한 번만 인코딩
-            m = self.patch_mac(m)                        # (B,M,N,d)
-            b, n_mac, n, d = m.shape
-            m = self.macro_merge(m.permute(0, 2, 1, 3).reshape(b, n, n_mac * d))  # (B,N,d)
-            m = self.encoder_mac(m)
+        m = self.patch_mac(m)                            # (B,M,N,d)
+        b, n_mac, n, d = m.shape
+        m = self.macro_merge(m.permute(0, 2, 1, 3).reshape(b, n, n_mac * d))  # (B,N,d)
+        m = self.encoder_mac(m)
 
         # 결합
         z, w_cross = self.cross(x, m, need_weights=need_cross_weights)
         z = z + ctx.unsqueeze(1)                         # static 문맥을 한 번 더 주입
-        if self.cfg.endog_mode == "both":
-            # 마지막 패치(가장 최근 구간) + 변수 토큰(전 채널 요약)
-            pooled = self.fuse(torch.cat([z[:, -2], z[:, -1]], dim=-1))
-        else:
-            pooled = z[:, -1]                            # 마지막 패치 = 가장 최근 구간
+        pooled = z[:, -1]                                # 마지막 패치 = 가장 최근 구간
 
         q = self.head(pooled)                            # (B,Q) 정규화 공간
 

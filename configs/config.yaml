@@ -84,12 +84,6 @@ features:
 # ------------------------------------------------------------ 모델
 model:
   phase: 1                 # 1 = Transformer, 2 = Mamba 하이브리드(스트레치)
-  # 2026-09-14: 기본 아키텍처를 iTransformer 로 확정했다.
-  # 대조 실험(docs/REFERENCES.md 3절)에서 네 기준 전부를 이겼다 —
-  # 랭크 IC 0.0535(t=8.37) / 십분위 스프레드 0.0086 / 순열검정 p=0.050 / 신호기여 +0.38.
-  # 기존 patch 백본은 스프레드 0.0005 로 왕복비용 0.31% 를 못 넘어 탈락했다.
-  endog:
-    mode: variate
   revin:
     affine: true
     eps: 1.0e-5
@@ -373,87 +367,6 @@ profiles:
   idxrel2:
     data:
       processed_suffix: "_idxrel2"
-    features:
-      target_mode: index_relative
-      index_features:
-        rs_windows: [20, 60]
-        beta_window: 120
-      cross_sectional: [rs_20, rs_60, beta_120]
-
-  # ── 최신 아키텍처 대조 실험 (2026-09-10) ───────────────────────────────
-  # idxrel2 와 **데이터·타깃·분할이 전부 같고 모델만 다르다.** 대조군이 되려면
-  # 다른 건 고정해야 하므로 아래 features 블록은 idxrel2 의 복사본이다
-  # (프로필끼리는 합성되지 않는다). processed_suffix 도 _idxrel2 그대로 둬서
-  # panel_idxrel2.parquet 을 재빌드 없이 공유한다.
-  #
-  # model: 이 바뀌므로 _config_hash 가 달라져 체크포인트 파일이 안 겹치고,
-  # 접미사 _idxrel2 가 붙으므로 무태그만 받는 paper_trade.py 로는 샐 수 없다.
-
-  # iTransformer (ICLR 2024) — 내생(종목) 백본만 교체.
-  # 시점이 아니라 변수를 토큰으로 본다. 변수축이 곧 시퀀스축이라 인코더가 한 번만
-  # 돌고, 그래서 VSN 을 인코더 **뒤**로 옮긴다(phase1.py forward 참조).
-  itrans:
-    data:
-      processed_suffix: "_idxrel2"
-    model:
-      endog:
-        mode: variate
-    features:
-      target_mode: index_relative
-      index_features:
-        rs_windows: [20, 60]
-        beta_window: 120
-      cross_sectional: [rs_20, rs_60, beta_120]
-
-  # ── iTransformer 위의 개선 2종 (2026-09-10) ────────────────────────────
-  # itrans 와 데이터·타깃·분할이 같고 모델만 다르다. 두 개선은 직교해서
-  # 따로 켤 수 있다 — 그래야 각각 얼마나 기여했는지 분리 측정된다.
-  #
-  #   ① vsn.shared_transform  채널별 GRN 30벌 → 한 벌 공유
-  #      채택 모델 파라미터의 62%(313,024/503,384)가 이 transform 에 있는데,
-  #      LIMITATIONS §1(b) 가 VSN 가중치는 창마다 거의 안 변한다고 실측했고
-  #      variate 모드에선 인코더가 이미 변수 토큰을 처리해 중복이다.
-  #      select(해석 근거)는 손대지 않으므로 해석가능성은 그대로다.
-  #   ② endog.mode: both      patch/variate 를 병렬 expert 로 돌려 토큰 축에서 합침
-  #      iTransformer 가 버린 시간 해상도를 되살린다 — 이 모델의 유일한 실측
-  #      강점이 변동성 예측인데(폭 IC 0.294 vs 방향 0.024) 변동성은 시간 군집한다.
-
-  itrans_slim:
-    data:
-      processed_suffix: "_idxrel2"
-    model:
-      endog:
-        mode: variate
-      vsn:
-        shared_transform: true
-    features:
-      target_mode: index_relative
-      index_features:
-        rs_windows: [20, 60]
-        beta_window: 120
-      cross_sectional: [rs_20, rs_60, beta_120]
-
-  hybrid:
-    data:
-      processed_suffix: "_idxrel2"
-    model:
-      endog:
-        mode: both
-    features:
-      target_mode: index_relative
-      index_features:
-        rs_windows: [20, 60]
-        beta_window: 120
-      cross_sectional: [rs_20, rs_60, beta_120]
-
-  hybrid_slim:
-    data:
-      processed_suffix: "_idxrel2"
-    model:
-      endog:
-        mode: both
-      vsn:
-        shared_transform: true
     features:
       target_mode: index_relative
       index_features:

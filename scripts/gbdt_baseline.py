@@ -306,7 +306,7 @@ def main() -> int:
     ap.add_argument("--no-phase1", action="store_true", help="Phase1 비교를 건너뛴다")
     ap.add_argument("--permutations", type=int, default=20,
                     help="음성 대조군 횟수. 0 이면 건너뛴다")
-    ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: itrans)")
+    ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: idxrel2)")
     args = ap.parse_args()
 
     setup_logging(run_name="gbdt_baseline")
