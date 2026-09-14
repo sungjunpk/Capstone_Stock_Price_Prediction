@@ -143,6 +143,36 @@ data/raw/{TR이름}/{종목코드}.parquet   ← API 응답 원본
 data/processed/features.parquet        ← 지표·라벨까지 계산된 학습용 테이블
 ```
 
+## ↩️ 실거래 모델 되돌림 (2026-09-14 저녁) — 다시 `phase1_eadf265f`
+
+같은 날 오후의 iTransformer 교체(바로 아래 섹션)를 **실주문 전에 되돌렸다.**
+목표를 **눈에 보이는 누적 수익률 최우선**으로 정했기 때문이다(발표 평가 기준 반영).
+iTransformer 는 한 번도 실주문을 내지 않았다.
+
+최근 구간 백테스트 (`scripts/backtest_recent.py`, 같은 패널·규칙·날짜, 구간마다 빈 계좌에서 시작):
+
+| 구간 | `eadf265f` 누적 | `8a710f4f` 누적 | 코스피200 | `eadf265f` IC t | `8a710f4f` IC t |
+|---|---|---|---|---|---|
+| 2년 | **+228.8%** | +102.6% | +206.1% | 1.68 | 7.97 |
+| 1년 | **+122.0%** | +113.3% | +126.2% | 1.44 | 4.77 |
+| 6개월 | −4.3% | **+5.0%** | +27.1% | 2.27 | 3.34 |
+
+**대가를 숨기지 않는다.** `eadf265f` 의 순위 신호는 2년·1년 구간에서 유의하지 않고
+(2년 십분위 스프레드 −0.06%), 순열검정 p=0.150 이다. 수익은 대부분 2025-09~2026-06
+지수 급등기를 더 바짝 따라간 데서 나왔다. 숫자는 **시작일 하나**의 결과라 달력 민감도
+검증(`scripts/calendar_sensitivity.py`)은 아직 안 했다 — 발표에서 인용하기 전에 돌릴 것.
+
+### 되돌림 확인
+
+- 무태그 `phase1_8a710f4f.pt` 를 삭제했다 — 태그 원본 `_idxrel2.pt` 와 `cmp` 로 바이트 동일 확인 후.
+  남은 무태그 중 최신이 `eadf265f.pt`(9/10) 라 `find_checkpoint` 가 이걸 집는다
+- dry-run 정상: `모델 로드: phase1_eadf265f.pt (val loss 0.011887, epoch 5)`
+- `configs/config.yaml` 의 `endog.mode: variate` 는 **그대로다.** 추론은 체크포인트에 저장된
+  설정을 쓰므로 실주문에는 영향이 없다. 새로 학습하면 variate 로 학습된다는 점만 주의
+- 다시 iTransformer 로 가려면 `cp outputs/checkpoints/phase1_8a710f4f_idxrel2.pt outputs/checkpoints/phase1_8a710f4f.pt`
+
+실거래 기록 구간: 8/26~9/9 구모델(raw) · 9/10~ `eadf265f` (계속).
+
 ## 🔁 실거래 모델 교체 (2026-09-14) — `phase1_8a710f4f` (iTransformer)
 
 `configs/config.yaml` 기본값은 9/14 에 `endog.mode: variate` 로 바뀌었지만, 실주문
