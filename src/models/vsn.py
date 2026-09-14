@@ -123,13 +123,21 @@ class DynamicVSN(nn.Module):
     """
 
     def __init__(self, n_vars: int, d_model: int, hidden: int, dropout: float,
-                 context_size: int | None = None):
+                 context_size: int | None = None, shared_transform: bool = False):
         super().__init__()
         self.n_vars = n_vars
         self.select = GatedResidualNetwork(
             d_model * n_vars, hidden, n_vars, dropout=dropout, context_size=context_size
         )
-        self.transform = GroupedGRN(n_vars, d_model, hidden, dropout)
+        # 채널별 GRN 30벌이 모델 파라미터의 62% 를 먹는다(실측 313,024 / 503,384).
+        # 해석 근거를 만드는 것은 위의 select 이고 transform 은 표현 변환일 뿐이다.
+        # variate 모드에서는 인코더가 이미 변수 토큰을 처리하므로 더 중복된다.
+        # GatedResidualNetwork 는 마지막 축에만 작용해 (B,N,C,d) 를 그대로 받는다.
+        self.transform = (
+            GatedResidualNetwork(d_model, hidden, d_model, dropout=dropout)
+            if shared_transform
+            else GroupedGRN(n_vars, d_model, hidden, dropout)
+        )
 
     def forward(
         self, x: torch.Tensor, context: torch.Tensor | None = None

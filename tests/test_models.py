@@ -186,3 +186,81 @@ def test_unknown_mode_fails_loudly(bad):
     """오타가 조용히 기본값으로 떨어지면 대조 실험이 통째로 무효가 된다."""
     with pytest.raises(ValueError):
         _model(**bad)
+
+
+# ── iTransformer 위의 개선 2종 ────────────────────────────────────────────
+#
+# ① vsn_shared_transform  채널별 GRN 30벌 → 한 벌 공유 (파라미터 62% 가 여기 있다)
+# ② endog_mode="both"     patch / variate 를 병렬 expert 로 돌려 토큰 축에서 합침
+# 둘은 직교한다 — 따로 켜고 끌 수 있어야 ablation 이 성립한다.
+
+
+def test_defaults_keep_the_per_channel_grn(model):
+    """기본값을 건드리면 실거래 모델이 조용히 바뀐다."""
+    from src.models.vsn import GroupedGRN
+
+    assert model.cfg.vsn_shared_transform is False
+    assert isinstance(model.dynamic_vsn.transform, GroupedGRN)
+    assert not hasattr(model, "fuse") and not hasattr(model, "encoder_var")
+
+
+def test_shared_transform_cuts_parameters():
+    """공유 transform 이 VSN 파라미터를 한 자릿수로 줄여야 의미가 있다."""
+    grouped = _model().dynamic_vsn
+    shared = _model(vsn_shared_transform=True).dynamic_vsn
+
+    n_grouped = sum(p.numel() for p in grouped.transform.parameters())
+    n_shared = sum(p.numel() for p in shared.transform.parameters())
+
+    assert n_shared * 10 < n_grouped, f"공유가 안 줄인다 ({n_shared} vs {n_grouped})"
+    # select 는 해석 근거라 손대면 안 된다
+    assert sum(p.numel() for p in shared.select.parameters()) == sum(
+        p.numel() for p in grouped.select.parameters()
+    )
+
+
+def test_hybrid_concatenates_both_axes():
+    """병렬 expert — 패치 24토큰 + 변수 토큰 1개가 이어붙는다."""
+    m = _model(endog_mode="both")
+    out = m(*_batch(), need_cross_weights=True)
+
+    assert out.dynamic_weights.shape == (4, 25, 17)   # 24 패치 + 1 변수
+    assert out.cross_weights.shape == (4, 25, 24)
+    assert out.quantiles.shape == (4, 3)
+
+
+def test_hybrid_runs_each_encoder_once():
+    """두 인코더가 각자 한 번씩만, 3차원 입력으로 돈다.
+
+    가중치를 공유하면 안 된다 — 토큰의 의미가 시점 대 변수로 다르다.
+    """
+    m = _model(endog_mode="both")
+    assert m.encoder is not m.encoder_var
+
+    seen = {}
+    for name in ("encoder", "encoder_var"):
+        enc = getattr(m, name)
+        orig = enc.forward
+        seen[name] = []
+        enc.forward = (
+            lambda x, _o=orig, _s=seen[name]: (_s.append(x.dim()), _o(x))[1]
+        )
+
+    m(*_batch())
+    assert seen == {"encoder": [3], "encoder_var": [3]}, seen
+
+
+@pytest.mark.parametrize(
+    "modes",
+    [
+        {"vsn_shared_transform": True},
+        {"endog_mode": "both"},
+        {"endog_mode": "both", "vsn_shared_transform": True},
+    ],
+)
+def test_improvements_keep_the_output_contract(modes):
+    """분위 단조성과 가중치 합 = 1 은 어느 조합에서도 깨지면 안 된다."""
+    out = _model(**modes)(*_batch())
+
+    assert (out.quantiles[:, 1:] >= out.quantiles[:, :-1]).all()
+    assert torch.allclose(out.dynamic_weights.sum(-1), torch.ones(1), atol=1e-5)

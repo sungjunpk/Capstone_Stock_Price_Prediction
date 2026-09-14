@@ -50,10 +50,15 @@
 (`inference.py` 가 `Phase1Config(**ckpt["config"])` 로 복원하므로 기본값 있는
 필드 추가는 하위호환이다).
 
-| 필드 | 기본 | 대안 | 바꾸는 곳 |
-|---|---|---|---|
-| `endog_mode` | `patch` (PatchTST) | `variate` (iTransformer) | 종목 경로 |
-| `exog_mode` | `patch_cross` (우리 설계) | `variate_token` (TimeXer) | 매크로 경로 |
+| 필드 | 값 | 바꾸는 곳 |
+|---|---|---|
+| `endog_mode` | **`variate` (iTransformer, 2026-09-14 기본)** / `patch` / `both` | 종목 경로 |
+| `exog_mode` | **`patch_cross` (우리 설계, 기본)** / `variate_token` (TimeXer) | 매크로 경로 |
+| `vsn_shared_transform` | **`false` (기본)** / `true` — 채널별 GRN 30벌 → 한 벌 | VSN |
+
+⚠️ **`dataclass` 기본값은 `patch`/`false` 로 두었다**(하위호환 — 기존 체크포인트가
+`Phase1Config(**ckpt["config"])` 로 복원된다). **프로젝트 기본은 `configs/config.yaml`
+의 `model.endog.mode: variate` 다.** 둘을 헷갈리지 말 것.
 
 둘 다 `variate_embed.py` 의 `VariateEmbedding` 하나를 공유한다 —
 시계열 하나를 통째로 토큰 하나로 만드는 모듈이다.
@@ -66,9 +71,14 @@
 프로필 `timexer` / `itrans` 로 돌린다. 데이터는 `_idxrel2` 를 공유하고 체크포인트만
 갈라지므로 무태그만 받는 실주문 경로로는 샐 수 없다.
 
-**실측 결과와 채택 판정은 [`docs/REFERENCES.md`](../../docs/REFERENCES.md) 3절.**
-요약: iTransformer 채택(랭크 IC 0.0535, 순열검정 p=0.050 — 유일하게 성과가 신호에
-귀속), TimeXer 탈락(p=0.800). **랭크 IC 순위와 Sharpe 순위가 역순으로 나왔다.**
+**실측 결과와 채택 판정은 [`docs/REFERENCES.md`](../../docs/REFERENCES.md) 3·3-1절.**
+
+- **iTransformer 채택** — 랭크 IC 0.0535(t=8.37), 순열검정 p=0.050. 네 기준 전부 1위
+- TimeXer 탈락 — p=0.800, 신호기여 −0.12 (셔플한 쪽이 나았다)
+- **그 위의 개선 2종(VSN 공유 · 병렬)은 둘 다 실패.** 특히 파라미터를 59% 줄이자
+  best epoch 이 2 → **1** 로 앞당겨졌다 — **과적합 가설이 틀렸다.** VSN 가중치가
+  창마다 고정이라는 것과 그 모듈이 불필요하다는 것은 다른 얘기였다
+- **랭크 IC 순위와 Sharpe 순위가 역순이다. 독립 2쌍에서 재현됐다.**
 
 ### Phase 2 (스트레치 목표 — 시간 남을 때만)
 
