@@ -153,8 +153,9 @@ def main() -> int:
                     help="리밸런싱 주기를 무시하고 이번에 리밸런싱한다")
     ap.add_argument("--liquidate", action="store_true",
                     help="보유 전 종목을 매도한다 (매수 없음). 전략 교체 시 초기화용")
-    ap.add_argument("--recent-days", type=int, default=90,
-                    help="기권 임계값을 잡을 예측 폭 분포의 관측 구간(일)")
+    ap.add_argument("--recent-days", type=int,
+                    help="기권 임계값을 잡을 예측 폭 분포의 관측 구간(일). 기본은 "
+                         "trading.abstain.recent_days — 백테스트와 같은 값")
     ap.add_argument("--ignore-stale", action="store_true",
                     help="데이터가 오래돼도 진행한다 — 리밸런싱 차단까지 푼다 (권장하지 않음)")
     args = ap.parse_args()
@@ -174,7 +175,8 @@ def main() -> int:
         )
 
     # --- 2) 예측. 최신 하루가 아니라 최근 구간을 낸다(기권 임계값이 분포 기반이라서)
-    recent = predict_recent(loaded, bundle, cfg, days=args.recent_days)
+    recent_days = args.recent_days or int(cfg["trading"]["abstain"]["recent_days"])
+    recent = predict_recent(loaded, bundle, cfg, days=recent_days)
 
     # --- 3) 계좌
     with PaperBroker() as broker:

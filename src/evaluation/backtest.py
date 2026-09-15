@@ -38,7 +38,7 @@ from src.trading.signal import (
     generate_signals,
     one_way_cost,
     prediction_from_row,
-    resolve_abstain_threshold,
+    recent_abstain_threshold,
     round_trip_cost,
     should_trade,
 )
@@ -63,10 +63,13 @@ def run_backtest(
     cfg: dict,
     *,
     allow_short: bool = False,
+    width_history: pd.DataFrame | None = None,
 ) -> BacktestResult:
     """
     predictions: code, date, q10, q50, q90  — date 시점 데이터로 만든 예측
     prices:      code, date, close
+    width_history: 기권 임계값을 잡을 예측 폭의 출처. 구간을 잘라 돌릴 때 **구간 앞의
+        예측**까지 넘기면 첫 판단일부터 최근 `recent_days` 일이 차 있다. 없으면 predictions.
     """
     tcfg = cfg["trading"]
     bcfg = cfg.get("backtest", {})
@@ -106,14 +109,21 @@ def run_backtest(
         log.info("예측 시작 이전 %d일을 수익률 집계에서 제외 (%s 부터 집계)",
                  start - 1, dates[start] if start < len(dates) else "-")
 
-    # 기권 임계값을 예측 폭 분포에서 확정한다.
+    # 기권 임계값은 **판단일마다** 그날까지의 최근 예측 폭 분포로 정한다 — 모의투자와 같다.
     # 절대값을 미리 추측하면 거의 항상 틀린다 — 초기 추측 0.05 로는 기권률 95.8%,
     # 거래 0건이 나왔다(5일 수익률의 자연 폭은 0.124).
+    # ⚠️ 구간 전체 분포로 한 번에 잡으면 판단일 뒤의 폭이 앞쪽 기권을 바꾼다(look-ahead).
     widths = abstain_scores(predictions, tcfg["abstain"])
-    max_width = resolve_abstain_threshold(widths, tcfg["abstain"])
+    hist = predictions if width_history is None else width_history
+    hist_scores = abstain_scores(hist, tcfg["abstain"])
+    hist_dates = pd.to_datetime(hist["date"]).to_numpy()
+    if hist_scores.size == 0 and "percentile" in tcfg["abstain"]:
+        # 예측 0건은 조용히 0% 수익으로 넘어가면 안 된다 — 설정 사고다
+        raise ValueError("percentile 방식은 관측된 폭이 필요하다 — 예측이 0건이다")
+    thresholds: list[float] = []
     log.info(
-        "기권 임계값 %.4f (%s) | 불확실도 분포 p10=%.4f p50=%.4f p90=%.4f",
-        max_width, abstain_basis(tcfg["abstain"]),
+        "기권 임계값: 판단일까지 최근 %s일 (%s) | 불확실도 분포 p10=%.4f p50=%.4f p90=%.4f",
+        tcfg["abstain"].get("recent_days", "전체"), abstain_basis(tcfg["abstain"]),
         *[float(pd.Series(widths).quantile(q)) for q in (0.1, 0.5, 0.9)],
     )
 
@@ -187,6 +197,8 @@ def run_backtest(
             continue
 
         # 보유분을 넘겨야 이력 버퍼가 동작한다 — 밀려난 종목을 바로 팔지 않는다
+        max_width = recent_abstain_threshold(hist_scores, hist_dates, signal_date, tcfg["abstain"])
+        thresholds.append(max_width)
         sigs = generate_signals(preds, tcfg, max_width=max_width,
                                 held=set(positions))
         stats["decisions"] += len(sigs)
@@ -277,7 +289,10 @@ def run_backtest(
         "n_trades": len(trades),
         "round_trip_cost": round(round_trip_cost(costs), 5),
         "cash_weight_end": round(cash_weight, 4),
-        "abstain_threshold": round(float(max_width), 5),
+        # 판단일마다 달라지므로 평균과 처음·마지막을 남긴다
+        "abstain_threshold": round(_mean(thresholds), 5),
+        "abstain_threshold_first": round(thresholds[0], 5) if thresholds else None,
+        "abstain_threshold_last": round(thresholds[-1], 5) if thresholds else None,
         "width_p50": round(float(pd.Series(widths).median()), 5),
         "q50_p50": round(float(q50.median()), 5),
         "q50_p90": round(float(q50.quantile(0.9)), 5),

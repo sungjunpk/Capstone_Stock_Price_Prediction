@@ -263,6 +263,52 @@ def _cvar_cfg() -> dict:
     return cfg
 
 
+def _widening_future(preds: pd.DataFrame, cut) -> pd.DataFrame:
+    """cut 이후 예측 폭만 3배로 넓힌다 — 과거 판단이 이걸 보면 안 된다."""
+    out = preds.copy()
+    later = out["date"] > cut
+    mid = out.loc[later, "q50"]
+    half = (out.loc[later, "q90"] - out.loc[later, "q10"]) * 1.5
+    out.loc[later, "q10"], out.loc[later, "q90"] = mid - half, mid + half
+    return out
+
+
+def test_abstain_threshold_does_not_look_ahead(panel):
+    """기권 임계값은 **판단일까지의** 예측 폭으로만 정한다(모의투자와 같다).
+
+    뒤쪽 폭만 바꾼 두 실행의 cut 이전 거래가 같아야 한다. 구간 전체 분포로
+    임계값을 한 번에 잡으면 뒤쪽 폭이 앞쪽 기권을 바꾼다 — 2026-09-15 에 실제로
+    6개월 최고 설정의 +77.9% 가 이것 때문이었다(최근 90일 기준으로는 0.0%).
+    """
+    preds, prices = panel
+    cfg = _cfg(min_trade=0.0, exit_rank=10)
+    cfg["trading"]["abstain"]["recent_days"] = 90
+    cut = prices["date"].quantile(0.6)
+
+    base = run_backtest(preds, prices, cfg)
+    wider = run_backtest(_widening_future(preds, cut), prices, cfg)
+    pd.testing.assert_frame_equal(
+        base.trades[base.trades["date"] <= cut].reset_index(drop=True),
+        wider.trades[wider.trades["date"] <= cut].reset_index(drop=True),
+    )
+
+
+def test_abstain_threshold_uses_history_before_the_window(panel):
+    """구간을 잘라 돌려도 임계값은 구간 앞의 예측 폭을 쓴다 — 첫날부터 최근 90일이 차 있다.
+
+    history 를 넘기면 앞부분을 잘라낸 실행이 전체 실행의 뒷부분과 같은 임계값을 쓴다.
+    """
+    preds, prices = panel
+    cfg = _cfg(min_trade=0.0, exit_rank=10)
+    cfg["trading"]["abstain"]["recent_days"] = 30
+    start = prices["date"].quantile(0.5)
+
+    window = preds[preds["date"] >= start]
+    with_hist = run_backtest(window, prices, cfg, width_history=preds)
+    without = run_backtest(window, prices, cfg)
+    assert with_hist.signal_stats["abstain_threshold_first"] != without.signal_stats["abstain_threshold_first"]
+
+
 def test_cvar_gate_does_not_look_ahead(panel):
     """뒤쪽을 잘라내고 돌린 결과가 전체로 돌린 결과의 앞부분과 **완전히 같아야** 한다.
 

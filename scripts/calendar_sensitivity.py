@@ -52,8 +52,10 @@ def main() -> int:
     rows = []
     for start in starts[:n_shift]:
         pad = (pd.Timestamp(start) - pd.DateOffset(days=20)).date()
+        # 시작일만 미는 실험이라 임계값의 관측 구간은 모든 시작일에 같게 둔다
         res = run_backtest(preds[preds["date"] >= start],
-                           prices[(prices["date"] >= pad) & (prices["date"] <= end)], cfg)
+                           prices[(prices["date"] >= pad) & (prices["date"] <= end)], cfg,
+                           width_history=preds)
         m = res.metrics
         rows.append(m)
         print(f"{str(start):<14}{m['n_days']:>6}{m['total_return']:>10.2%}"

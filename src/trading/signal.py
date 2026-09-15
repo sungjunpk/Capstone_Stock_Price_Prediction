@@ -151,6 +151,30 @@ def resolve_abstain_threshold(widths, abstain_cfg: dict) -> float:
     return float(abstain_cfg["max_interval_width"])
 
 
+def recent_abstain_threshold(scores, dates, as_of, abstain_cfg: dict) -> float:
+    """판단일(`as_of`)까지 **최근 `recent_days` 일**의 기권 척도로 임계값을 정한다.
+
+    모의투자는 `predict_recent(days=recent_days)` 가 그 구간만 예측해 넘기므로 이것과
+    같은 계산이다(`last - days` 이상 ~ `last`). 백테스트는 판단일마다 이 함수를 부른다.
+
+    ⚠️ 2026-09-15 전까지 백테스트는 구간 **전체** 분포로 임계값을 한 번에 잡았다 —
+    판단일 뒤의 폭이 앞쪽 기권을 바꾸는 look-ahead 였다. 6개월 최고 설정의 +77.9% 가
+    이것 때문이었고, 최근 90일 기준으로는 한 번도 매수하지 못했다(0.0%).
+
+    `recent_days` 가 없으면 판단일까지 전부(확장 창)를 쓴다 — 어느 쪽이든 판단일 뒤는 보지 않는다.
+    """
+    import numpy as np
+    import pandas as pd
+
+    d = pd.to_datetime(np.asarray(dates))
+    as_of = pd.Timestamp(as_of)
+    mask = d <= as_of
+    days = abstain_cfg.get("recent_days")
+    if days:
+        mask &= d >= as_of - pd.Timedelta(days=int(days))
+    return resolve_abstain_threshold(np.asarray(scores)[np.asarray(mask)], abstain_cfg)
+
+
 def round_trip_cost(costs: dict) -> float:
     """왕복 거래비용(비율). 임계값은 반드시 이보다 커야 의미가 있다."""
     bps = (

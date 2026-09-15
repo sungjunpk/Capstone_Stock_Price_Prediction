@@ -616,7 +616,8 @@ def main() -> int:
     if w_preds.empty:
         log.error("구간에 예측이 없다"); return 1
 
-    res = run_backtest(w_preds, w_prices, cfg)
+    # 임계값은 구간 앞의 예측까지 써서 첫 판단일부터 최근 recent_days 일이 차 있게 한다
+    res = run_backtest(w_preds, w_prices, cfg, width_history=preds)
     dates = list(res.returns.index)
 
     bh = buy_and_hold(w_prices).reindex(dates).fillna(0.0)
