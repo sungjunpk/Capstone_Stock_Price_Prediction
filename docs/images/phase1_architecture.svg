@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 1030" font-family="'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" role="img" aria-label="종목 경로와 매크로 경로가 각각 RevIN, 패치 임베딩, VSN 또는 채널병합, 인코더를 거친 뒤 크로스어텐션으로 합쳐지고, 정적 컨텍스트가 재주입된 후 분위수 헤드가 q10, q50, q90을 출력하며 폭이 기준을 넘으면 기권하는 흐름도">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2B6F84"/>
+    </marker>
+    <marker id="ahf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8792A0"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="1030" fill="#F6F7F9"/>
+
+  <text x="20" y="26" font-size="14" font-weight="700" fill="#1A2027">PatchTST × TFT 하이브리드 — Phase 1 forward() 흐름</text>
+  <text x="20" y="44" font-size="11.5" fill="#5B6572">phase1.py · eadf265f · 0.33M params (d_model=32, n_layers=1)</text>
+
+  <text x="325" y="72" font-size="12.5" font-weight="600" letter-spacing="1" fill="#8792A0" text-anchor="middle">종목 경로 (DYNAMIC)</text>
+  <text x="945" y="72" font-size="12.5" font-weight="600" letter-spacing="1" fill="#8792A0" text-anchor="middle">매크로 경로 (MACRO)</text>
+
+  <!-- static -->
+  <rect x="20" y="176" width="150" height="64" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="95" y="200" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Static VSN</text>
+  <text x="95" y="218" font-size="11.5" fill="#5B6572" text-anchor="middle">static → context</text>
+  <text x="95" y="232" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, d)</text>
+
+  <!-- dynamic lane -->
+  <rect x="210" y="86" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="325" y="111" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">dynamic</text>
+  <text x="325" y="129" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, L=120, C=30)</text>
+
+  <line x1="325" y1="146" x2="325" y2="176" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="210" y="176" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="325" y="201" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">RevIN</text>
+  <text x="325" y="219" font-size="11.5" fill="#5B6572" text-anchor="middle">종목별 정규화 (n_passthrough 제외)</text>
+
+  <line x1="325" y1="236" x2="325" y2="266" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="210" y="266" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="325" y="289" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Patch Embedding</text>
+  <text x="325" y="305" font-size="11.5" fill="#5B6572" text-anchor="middle">patch_len=5, stride=5</text>
+  <text x="325" y="319" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, C, N, d)</text>
+
+  <line x1="325" y1="326" x2="325" y2="356" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="210" y="356" width="230" height="64" rx="6" fill="rgba(169,105,31,.10)" stroke="#C98A3E" stroke-width="1.8"/>
+  <text x="325" y="379" font-size="15" font-weight="700" fill="#A9691F" text-anchor="middle">Dynamic VSN ★</text>
+  <text x="325" y="397" font-size="11.5" fill="#5B6572" text-anchor="middle">채널 가중합 (context 조건화)</text>
+  <text x="325" y="411" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, N, d)</text>
+
+  <line x1="170" y1="208" x2="205" y2="386" stroke="#8792A0" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#ahf)"/>
+
+  <line x1="325" y1="420" x2="325" y2="450" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="210" y="450" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="325" y="474" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Transformer Encoder</text>
+  <text x="325" y="492" font-size="11.5" fill="#5B6572" text-anchor="middle">1회 실행 (채널마다 아님)</text>
+  <text x="325" y="536" font-size="11" font-weight="600" fill="#A9691F" text-anchor="middle" font-family="'JetBrains Mono',monospace">259ms → 52ms (5×)</text>
+
+  <!-- macro lane -->
+  <rect x="830" y="86" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="945" y="111" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">macro</text>
+  <text x="945" y="129" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, L=120, M)</text>
+
+  <line x1="945" y1="146" x2="945" y2="176" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="830" y="176" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="945" y="201" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">RevIN</text>
+
+  <line x1="945" y1="236" x2="945" y2="266" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="830" y="266" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="945" y="289" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Patch Embedding</text>
+  <text x="945" y="309" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, M, N, d)</text>
+
+  <line x1="945" y1="326" x2="945" y2="356" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="830" y="356" width="230" height="64" rx="6" fill="rgba(169,105,31,.10)" stroke="#C98A3E" stroke-width="1.8"/>
+  <text x="945" y="379" font-size="15" font-weight="700" fill="#A9691F" text-anchor="middle">채널 병합 ★</text>
+  <text x="945" y="397" font-size="11.5" fill="#5B6572" text-anchor="middle">Linear: M·d → d, 1회만 인코딩</text>
+  <text x="945" y="411" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, N, d)</text>
+
+  <line x1="945" y1="420" x2="945" y2="450" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="830" y="450" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="945" y="474" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Transformer Encoder</text>
+  <text x="945" y="492" font-size="11.5" fill="#5B6572" text-anchor="middle">매크로 전용 · 가중치 비공유</text>
+  <text x="945" y="536" font-size="11" font-weight="600" fill="#A9691F" text-anchor="middle" font-family="'JetBrains Mono',monospace">채널별 대비 13× 절감</text>
+
+  <!-- merge -->
+  <line x1="325" y1="510" x2="470" y2="544" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="945" y1="510" x2="800" y2="544" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="370" y="544" width="520" height="72" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="630" y="574" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Cross-Attention</text>
+  <text x="630" y="592" font-size="11.5" fill="#5B6572" text-anchor="middle">Q = 종목 x, KV = 매크로 m</text>
+  <text x="630" y="606" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">z (B, N, d)</text>
+
+  <line x1="630" y1="616" x2="630" y2="654" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="470" y="654" width="320" height="54" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="630" y="676" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">+ context 재주입</text>
+  <text x="630" y="693" font-size="11.5" fill="#5B6572" text-anchor="middle">z += static context</text>
+
+  <polyline points="45,240 45,681 465,681" fill="none" stroke="#8792A0" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#ahf)"/>
+
+  <line x1="630" y1="708" x2="630" y2="734" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="470" y="734" width="320" height="50" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="630" y="754" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">pooled = z[:, −1]</text>
+  <text x="630" y="770" font-size="11.5" fill="#5B6572" text-anchor="middle">마지막 패치 (B, d)</text>
+
+  <line x1="630" y1="784" x2="630" y2="810" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="470" y="810" width="320" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
+  <text x="630" y="833" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Quantile Head</text>
+  <text x="630" y="850" font-size="11.5" fill="#5B6572" text-anchor="middle">단조 누적: q10 → q50 → q90</text>
+
+  <line x1="630" y1="870" x2="630" y2="884" stroke="#2B6F84" stroke-width="2"/>
+  <line x1="544" y1="884" x2="716" y2="884" stroke="#2B6F84" stroke-width="2"/>
+  <line x1="544" y1="884" x2="544" y2="894" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="630" y1="884" x2="630" y2="894" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="716" y1="884" x2="716" y2="894" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+
+  <rect x="509" y="894" width="70" height="36" rx="5" fill="#F0F1F3" stroke="#CBD2D9" stroke-width="1.2"/>
+  <text x="544" y="917" font-size="12" font-weight="600" fill="#1A2027" text-anchor="middle" font-family="'JetBrains Mono',monospace">q10</text>
+  <rect x="595" y="894" width="70" height="36" rx="5" fill="#F0F1F3" stroke="#CBD2D9" stroke-width="1.2"/>
+  <text x="630" y="917" font-size="12" font-weight="600" fill="#1A2027" text-anchor="middle" font-family="'JetBrains Mono',monospace">q50</text>
+  <rect x="681" y="894" width="70" height="36" rx="5" fill="#F0F1F3" stroke="#CBD2D9" stroke-width="1.2"/>
+  <text x="716" y="917" font-size="12" font-weight="600" fill="#1A2027" text-anchor="middle" font-family="'JetBrains Mono',monospace">q90</text>
+
+  <line x1="544" y1="930" x2="544" y2="956" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="630" y1="930" x2="630" y2="956" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="716" y1="930" x2="716" y2="956" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+
+  <rect x="430" y="956" width="400" height="64" rx="6" fill="rgba(169,105,31,.10)" stroke="#C98A3E" stroke-width="1.8"/>
+  <text x="630" y="980" font-size="15" font-weight="700" fill="#A9691F" text-anchor="middle">기권 게이트 ★</text>
+  <text x="630" y="997" font-size="11.5" fill="#5B6572" text-anchor="middle">폭(q90−q10) &gt; 최근 90일 상위 5%? → 기권</text>
+  <text x="630" y="1011" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">src/trading/signal.py</text>
+
+  <text x="20" y="1023" font-size="11" fill="#8792A0" font-family="'JetBrains Mono',monospace">— 텐서 흐름   ┈ context 조건화(static)   ★ 확정된 설계 판단(실측 근거)</text>
+</svg>

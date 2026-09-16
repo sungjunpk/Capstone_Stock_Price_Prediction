@@ -3,6 +3,13 @@
 Quantile 예측 기반 주가 방향 예측 + 모의투자 파이프라인.
 설계 원칙과 규칙은 [`CLAUDE.md`](CLAUDE.md), 데이터 소스 검증은 [`docs/KIWOOM_VERIFY.md`](docs/KIWOOM_VERIFY.md).
 
+## 모델 구조 (Phase 1)
+
+![PatchTST × TFT 하이브리드 구조도](docs/images/phase1_architecture.svg)
+
+종목/매크로 듀얼 경로 → VSN(인코더 앞) → 크로스어텐션 → 분위수 헤드 → 기권 게이트.
+설계 판단의 근거는 [`src/models/CLAUDE.md`](src/models/CLAUDE.md).
+
 ## 셋업
 
 ```bash
