@@ -1,129 +1,290 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 1030" font-family="'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" role="img" aria-label="종목 경로와 매크로 경로가 각각 RevIN, 패치 임베딩, VSN 또는 채널병합, 인코더를 거친 뒤 크로스어텐션으로 합쳐지고, 정적 컨텍스트가 재주입된 후 분위수 헤드가 q10, q50, q90을 출력하며 폭이 기준을 넘으면 기권하는 흐름도">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1090" role="img" aria-label="Phase 1 모델 구조: 주식 30채널을 RevIN과 패칭으로 토큰화하고 TFT 변수선택망으로 채널을 가중합한 뒤 Transformer 인코더를 거쳐, 매크로 13채널 인코딩을 Key/Value로 하는 크로스어텐션과 정적 문맥을 더해 마지막 패치에서 단조 분위 헤드로 5일 초과수익률의 10/50/90 분위를 낸다.">
+  <style>
+    .sans { font-family: 'Arimo', Arial, Helvetica, sans-serif; }
+    .slab { font-family: 'Zilla Slab', Rockwell, Georgia, serif; font-weight: 500; }
+    .serif { font-family: 'Tinos', 'Times New Roman', Times, serif; }
+  </style>
+  <rect x="0" y="0" width="1440" height="1090" fill="#ffffff"/>
   <defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#2B6F84"/>
-    </marker>
-    <marker id="ahf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#8792A0"/>
-    </marker>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#111"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#B8621B"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8C8C8C"/></marker>
   </defs>
 
-  <rect x="0" y="0" width="1100" height="1030" fill="#F6F7F9"/>
+  <!-- ============ legend ============ -->
+  <g>
+    <rect x="20" y="34" width="26" height="14" fill="#FFD966" stroke="#E6A700"/>
+    <text x="54" y="46" class="sans" font-size="12.5" fill="#111">PatchTST backbone</text>
+    <rect x="20" y="59" width="26" height="14" fill="#1B75BC"/>
+    <text x="54" y="71" class="slab" font-size="13.5" fill="#111">TFT components</text>
+    <rect x="20" y="84" width="26" height="14" fill="#1D5C63"/>
+    <text x="54" y="96" class="sans" font-size="12.5" fill="#111">macro cross-attention (added)</text>
+    <line x1="20" y1="116" x2="46" y2="116" stroke="#B8621B" stroke-width="2"/>
+    <text x="54" y="120" class="sans" font-size="12.5" fill="#111">static context <tspan class="serif" font-style="italic" font-size="14">c</tspan><tspan class="serif" font-style="italic" font-size="10" dy="4">s</tspan></text>
+  </g>
 
-  <text x="20" y="26" font-size="14" font-weight="700" fill="#1A2027">PatchTST × TFT 하이브리드 — Phase 1 forward() 흐름</text>
-  <text x="20" y="44" font-size="11.5" fill="#5B6572">phase1.py · eadf265f · 0.33M params (d_model=32, n_layers=1)</text>
+  <!-- ============ dimension track (PatchTST style) ============ -->
+  <line x1="152" y1="985" x2="152" y2="192" stroke="#111" stroke-width="1.4" stroke-dasharray="2 4" marker-end="url(#ah)"/>
+  <g class="serif" font-size="15" fill="#111" text-anchor="end">
+    <text x="140" y="977"><tspan font-style="italic">x</tspan> ∈ ℝ<tspan dy="-7" font-size="11">C×L</tspan></text>
+    <text x="140" y="834"><tspan font-style="italic">x</tspan><tspan dy="4" font-size="11" font-style="italic">p</tspan><tspan dy="-4"> ∈ ℝ</tspan><tspan dy="-7" font-size="11">C×N×P</tspan></text>
+    <text x="140" y="703"><tspan font-style="italic">x</tspan><tspan dy="4" font-size="11" font-style="italic">d</tspan><tspan dy="-4"> ∈ ℝ</tspan><tspan dy="-7" font-size="11">C×N×D</tspan></text>
+    <text x="140" y="618"><tspan font-style="italic">ξ̃</tspan> ∈ ℝ<tspan dy="-7" font-size="11">N×D</tspan></text>
+    <text x="140" y="526"><tspan font-style="italic">z</tspan> ∈ ℝ<tspan dy="-7" font-size="11">N×D</tspan></text>
+    <text x="140" y="410"><tspan font-style="italic">h</tspan> ∈ ℝ<tspan dy="-7" font-size="11">N×D</tspan></text>
+    <text x="140" y="318"><tspan font-style="italic">h</tspan><tspan dy="4" font-size="11" font-style="italic">N</tspan><tspan dy="-4"> ∈ ℝ</tspan><tspan dy="-7" font-size="11">D</tspan></text>
+    <text x="140" y="202"><tspan font-style="italic">ŷ</tspan> ∈ ℝ<tspan dy="-7" font-size="11">3</tspan></text>
+  </g>
 
-  <text x="325" y="72" font-size="12.5" font-weight="600" letter-spacing="1" fill="#8792A0" text-anchor="middle">종목 경로 (DYNAMIC)</text>
-  <text x="945" y="72" font-size="12.5" font-weight="600" letter-spacing="1" fill="#8792A0" text-anchor="middle">매크로 경로 (MACRO)</text>
+  <!-- ============ static column (TFT style) ============ -->
+  <text x="255" y="966" class="serif" font-size="26" font-style="italic" text-anchor="middle" fill="#111">s</text>
+  <text x="255" y="985" class="slab" font-size="11.5" text-anchor="middle" fill="#111">sector · mcap bucket · weekday</text>
+  <line x1="255" y1="946" x2="255" y2="928" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="170" y="880" width="170" height="46" fill="#E9D3B8" stroke="#8A5A2B"/>
+  <text x="255" y="901" class="slab" font-size="15" text-anchor="middle" fill="#3B2410">Entity Embedding</text>
+  <text x="255" y="918" class="slab" font-size="11" text-anchor="middle" fill="#3B2410">categorical → ℝ<tspan dy="-5" font-size="8">D</tspan></text>
+  <line x1="255" y1="880" x2="255" y2="763" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="170" y="715" width="170" height="46" fill="#6E3B12"/>
+  <text x="255" y="736" class="slab" font-size="15" text-anchor="middle" fill="#fff">Variable Selection</text>
+  <text x="255" y="753" class="slab" font-size="11" text-anchor="middle" fill="#fff">static · 3 variables</text>
 
-  <!-- static -->
-  <rect x="20" y="176" width="150" height="64" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="95" y="200" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Static VSN</text>
-  <text x="95" y="218" font-size="11.5" fill="#5B6572" text-anchor="middle">static → context</text>
-  <text x="95" y="232" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, d)</text>
+  <!-- static context lines -->
+  <path d="M255 715 V405 H546" fill="none" stroke="#B8621B" stroke-width="1.8" marker-end="url(#ao)"/>
+  <path d="M255 655 H397" fill="none" stroke="#B8621B" stroke-width="1.8" marker-end="url(#ao)"/>
+  <circle cx="255" cy="655" r="3.2" fill="#B8621B"/>
+  <text x="270" y="647" class="serif" font-size="15" font-style="italic" fill="#B8621B">c<tspan dy="4" font-size="10">s</tspan></text>
+  <text x="270" y="397" class="slab" font-size="12" fill="#B8621B">Static Enrichment</text>
 
-  <!-- dynamic lane -->
-  <rect x="210" y="86" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="325" y="111" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">dynamic</text>
-  <text x="325" y="129" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, L=120, C=30)</text>
+  <!-- ============ main stock column ============ -->
+  <rect x="400" y="960" width="320" height="26" fill="#DAE3F3"/>
+  <text x="560" y="978" class="sans" font-size="13" text-anchor="middle" fill="#1F3864">Input Stock Series  (C = 30, L = 120)</text>
+  <line x1="560" y1="960" x2="560" y2="928" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="325" y1="146" x2="325" y2="176" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="210" y="176" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="325" y="201" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">RevIN</text>
-  <text x="325" y="219" font-size="11.5" fill="#5B6572" text-anchor="middle">종목별 정규화 (n_passthrough 제외)</text>
+  <rect x="400" y="880" width="320" height="46" fill="#FFD966" stroke="#E6A700" stroke-width="1.5"/>
+  <text x="560" y="901" class="sans" font-size="16.5" text-anchor="middle" fill="#111">Instance Norm (RevIN) + Patching</text>
+  <text x="560" y="918" class="sans" font-size="11" text-anchor="middle" fill="#333">P = 5, stride 5 · 3 cross-sectional rank ch. bypass RevIN</text>
+  <line x1="560" y1="880" x2="560" y2="853" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="325" y1="236" x2="325" y2="266" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="210" y="266" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="325" y="289" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Patch Embedding</text>
-  <text x="325" y="305" font-size="11.5" fill="#5B6572" text-anchor="middle">patch_len=5, stride=5</text>
-  <text x="325" y="319" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, C, N, d)</text>
+  <!-- stacked channel-independent patches -->
+  <g stroke="#AFC0E0" stroke-width="0.8">
+    <g fill="#EEF2FA" transform="translate(12 -12)">
+      <rect x="404" y="806" width="24" height="44"/><rect x="444" y="806" width="24" height="44"/><rect x="484" y="806" width="24" height="44"/><rect x="524" y="806" width="24" height="44"/><rect x="564" y="806" width="24" height="44"/><rect x="604" y="806" width="24" height="44"/><rect x="644" y="806" width="24" height="44"/><rect x="684" y="806" width="24" height="44"/>
+    </g>
+    <g fill="#DDE5F4" transform="translate(6 -6)">
+      <rect x="404" y="806" width="24" height="44"/><rect x="444" y="806" width="24" height="44"/><rect x="484" y="806" width="24" height="44"/><rect x="524" y="806" width="24" height="44"/><rect x="564" y="806" width="24" height="44"/><rect x="604" y="806" width="24" height="44"/><rect x="644" y="806" width="24" height="44"/><rect x="684" y="806" width="24" height="44"/>
+    </g>
+    <g fill="#C9D6EE">
+      <rect x="404" y="806" width="24" height="44"/><rect x="444" y="806" width="24" height="44"/><rect x="484" y="806" width="24" height="44"/><rect x="524" y="806" width="24" height="44"/><rect x="564" y="806" width="24" height="44"/><rect x="604" y="806" width="24" height="44"/><rect x="644" y="806" width="24" height="44"/><rect x="684" y="806" width="24" height="44"/>
+    </g>
+  </g>
+  <text x="732" y="828" class="serif" font-size="14" fill="#111">× <tspan font-style="italic">C</tspan></text>
+  <text x="732" y="845" class="sans" font-size="10.5" fill="#555">channel-indep.</text>
+  <line x1="560" y1="792" x2="560" y2="763" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="325" y1="326" x2="325" y2="356" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="210" y="356" width="230" height="64" rx="6" fill="rgba(169,105,31,.10)" stroke="#C98A3E" stroke-width="1.8"/>
-  <text x="325" y="379" font-size="15" font-weight="700" fill="#A9691F" text-anchor="middle">Dynamic VSN ★</text>
-  <text x="325" y="397" font-size="11.5" fill="#5B6572" text-anchor="middle">채널 가중합 (context 조건화)</text>
-  <text x="325" y="411" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, N, d)</text>
+  <rect x="400" y="715" width="320" height="46" fill="#FFD966" stroke="#E6A700" stroke-width="1.5"/>
+  <text x="560" y="736" class="sans" font-size="16.5" text-anchor="middle" fill="#111">Projection + Position Embedding</text>
+  <text x="560" y="753" class="sans" font-size="11" text-anchor="middle" fill="#333">Linear(P → D), shared across channels</text>
+  <line x1="560" y1="715" x2="560" y2="682" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="170" y1="208" x2="205" y2="386" stroke="#8792A0" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#ahf)"/>
+  <rect x="400" y="630" width="320" height="50" fill="#1B75BC"/>
+  <text x="560" y="653" class="slab" font-size="18" text-anchor="middle" fill="#fff">Variable Selection Network</text>
+  <text x="560" y="671" class="slab" font-size="12" text-anchor="middle" fill="#fff">weights v ∈ ℝ<tspan dy="-5" font-size="9">N×C</tspan><tspan dy="5"> → feature importance</tspan></text>
+  <line x1="560" y1="630" x2="560" y2="597" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="325" y1="420" x2="325" y2="450" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="210" y="450" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="325" y="474" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Transformer Encoder</text>
-  <text x="325" y="492" font-size="11.5" fill="#5B6572" text-anchor="middle">1회 실행 (채널마다 아님)</text>
-  <text x="325" y="536" font-size="11" font-weight="600" fill="#A9691F" text-anchor="middle" font-family="'JetBrains Mono',monospace">259ms → 52ms (5×)</text>
+  <rect x="400" y="545" width="320" height="50" fill="#F4B183" stroke="#ED7D31" stroke-width="1.5"/>
+  <text x="560" y="568" class="sans" font-size="18" text-anchor="middle" fill="#111">Transformer Encoder</text>
+  <text x="560" y="586" class="sans" font-size="11" text-anchor="middle" fill="#333">1 layer · 2 heads · D = 32</text>
+  <line x1="560" y1="545" x2="560" y2="498" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <text x="570" y="526" class="serif" font-size="15" font-style="italic" fill="#111">Q</text>
 
-  <!-- macro lane -->
-  <rect x="830" y="86" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="945" y="111" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">macro</text>
-  <text x="945" y="129" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, L=120, M)</text>
+  <!-- ============ macro column ============ -->
+  <rect x="800" y="960" width="220" height="26" fill="#DAE3F3"/>
+  <text x="910" y="978" class="sans" font-size="13" text-anchor="middle" fill="#1F3864">Macro Series  (M = 13)</text>
+  <line x1="910" y1="960" x2="910" y2="928" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="945" y1="146" x2="945" y2="176" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="830" y="176" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="945" y="201" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">RevIN</text>
+  <rect x="800" y="880" width="220" height="46" fill="#FFD966" stroke="#E6A700" stroke-width="1.5"/>
+  <text x="910" y="901" class="sans" font-size="16.5" text-anchor="middle" fill="#111">RevIN + Patching</text>
+  <text x="910" y="918" class="sans" font-size="11" text-anchor="middle" fill="#333">KOSPI · KOSDAQ · US-semis ETF</text>
+  <line x1="910" y1="880" x2="910" y2="853" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="945" y1="236" x2="945" y2="266" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="830" y="266" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="945" y="289" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Patch Embedding</text>
-  <text x="945" y="309" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, M, N, d)</text>
+  <g stroke="#AFC0E0" stroke-width="0.8">
+    <g fill="#EEF2FA" transform="translate(12 -12)">
+      <rect x="812" y="806" width="20" height="44"/><rect x="846" y="806" width="20" height="44"/><rect x="880" y="806" width="20" height="44"/><rect x="914" y="806" width="20" height="44"/><rect x="948" y="806" width="20" height="44"/><rect x="982" y="806" width="20" height="44"/>
+    </g>
+    <g fill="#DDE5F4" transform="translate(6 -6)">
+      <rect x="812" y="806" width="20" height="44"/><rect x="846" y="806" width="20" height="44"/><rect x="880" y="806" width="20" height="44"/><rect x="914" y="806" width="20" height="44"/><rect x="948" y="806" width="20" height="44"/><rect x="982" y="806" width="20" height="44"/>
+    </g>
+    <g fill="#C9D6EE">
+      <rect x="812" y="806" width="20" height="44"/><rect x="846" y="806" width="20" height="44"/><rect x="880" y="806" width="20" height="44"/><rect x="914" y="806" width="20" height="44"/><rect x="948" y="806" width="20" height="44"/><rect x="982" y="806" width="20" height="44"/>
+    </g>
+  </g>
+  <text x="1022" y="828" class="serif" font-size="14" fill="#111">× <tspan font-style="italic">M</tspan></text>
+  <line x1="910" y1="792" x2="910" y2="763" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="945" y1="326" x2="945" y2="356" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="830" y="356" width="230" height="64" rx="6" fill="rgba(169,105,31,.10)" stroke="#C98A3E" stroke-width="1.8"/>
-  <text x="945" y="379" font-size="15" font-weight="700" fill="#A9691F" text-anchor="middle">채널 병합 ★</text>
-  <text x="945" y="397" font-size="11.5" fill="#5B6572" text-anchor="middle">Linear: M·d → d, 1회만 인코딩</text>
-  <text x="945" y="411" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">(B, N, d)</text>
+  <rect x="800" y="715" width="220" height="46" fill="#FFD966" stroke="#E6A700" stroke-width="1.5"/>
+  <text x="910" y="736" class="sans" font-size="16.5" text-anchor="middle" fill="#111">Projection + Pos. Emb.</text>
+  <text x="910" y="753" class="sans" font-size="11" text-anchor="middle" fill="#333">separate weights</text>
+  <line x1="910" y1="715" x2="910" y2="682" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="945" y1="420" x2="945" y2="450" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="830" y="450" width="230" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="945" y="474" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Transformer Encoder</text>
-  <text x="945" y="492" font-size="11.5" fill="#5B6572" text-anchor="middle">매크로 전용 · 가중치 비공유</text>
-  <text x="945" y="536" font-size="11" font-weight="600" fill="#A9691F" text-anchor="middle" font-family="'JetBrains Mono',monospace">채널별 대비 13× 절감</text>
+  <rect x="800" y="630" width="220" height="50" fill="#D3E8E6" stroke="#1D5C63" stroke-width="1.5"/>
+  <text x="910" y="653" class="sans" font-size="17" text-anchor="middle" fill="#0F3439">Channel Merge</text>
+  <text x="910" y="671" class="sans" font-size="11" text-anchor="middle" fill="#0F3439">Linear(M·D → D)</text>
+  <line x1="910" y1="630" x2="910" y2="597" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <!-- merge -->
-  <line x1="325" y1="510" x2="470" y2="544" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="945" y1="510" x2="800" y2="544" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="370" y="544" width="520" height="72" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="630" y="574" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Cross-Attention</text>
-  <text x="630" y="592" font-size="11.5" fill="#5B6572" text-anchor="middle">Q = 종목 x, KV = 매크로 m</text>
-  <text x="630" y="606" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">z (B, N, d)</text>
+  <rect x="800" y="545" width="220" height="50" fill="#F4B183" stroke="#ED7D31" stroke-width="1.5"/>
+  <text x="910" y="568" class="sans" font-size="18" text-anchor="middle" fill="#111">Transformer Encoder</text>
+  <text x="910" y="586" class="sans" font-size="11" text-anchor="middle" fill="#333">1 layer · separate weights</text>
+  <line x1="910" y1="545" x2="910" y2="498" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <text x="920" y="526" class="serif" font-size="15" font-style="italic" fill="#111">K, V</text>
 
-  <line x1="630" y1="616" x2="630" y2="654" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="470" y="654" width="320" height="54" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="630" y="676" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">+ context 재주입</text>
-  <text x="630" y="693" font-size="11.5" fill="#5B6572" text-anchor="middle">z += static context</text>
+  <!-- ============ fusion ============ -->
+  <rect x="400" y="440" width="620" height="56" fill="#1D5C63"/>
+  <text x="710" y="465" class="sans" font-size="18" font-weight="700" text-anchor="middle" fill="#fff">Global–Local Cross-Attention</text>
+  <text x="710" y="485" class="sans" font-size="12" text-anchor="middle" fill="#fff">Query = stock patch tokens · Key / Value = macro patch tokens · + FFN, residual</text>
+  <line x1="560" y1="440" x2="560" y2="418" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <polyline points="45,240 45,681 465,681" fill="none" stroke="#8792A0" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#ahf)"/>
+  <circle cx="560" cy="405" r="11" fill="#fff" stroke="#111" stroke-width="1.4"/>
+  <path d="M553 405 H567 M560 398 V412" stroke="#111" stroke-width="1.4"/>
+  <line x1="560" y1="394" x2="560" y2="373" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="630" y1="708" x2="630" y2="734" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="470" y="734" width="320" height="50" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="630" y="754" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">pooled = z[:, −1]</text>
-  <text x="630" y="770" font-size="11.5" fill="#5B6572" text-anchor="middle">마지막 패치 (B, d)</text>
+  <!-- last-patch pooling -->
+  <g fill="#DAE3F3">
+    <rect x="404" y="334" width="24" height="36"/><rect x="444" y="334" width="24" height="36"/><rect x="484" y="334" width="24" height="36"/><rect x="524" y="334" width="24" height="36"/><rect x="564" y="334" width="24" height="36"/><rect x="604" y="334" width="24" height="36"/><rect x="644" y="334" width="24" height="36"/>
+  </g>
+  <rect x="684" y="334" width="24" height="36" fill="#A9D18E" stroke="#548235" stroke-width="1.5"/>
+  <text x="718" y="350" class="serif" font-size="15" font-style="italic" fill="#111">h<tspan dy="4" font-size="10">N</tspan></text>
+  <text x="718" y="366" class="sans" font-size="10.5" fill="#555">latest week only</text>
+  <line x1="696" y1="334" x2="696" y2="293" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
 
-  <line x1="630" y1="784" x2="630" y2="810" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <rect x="470" y="810" width="320" height="60" rx="6" fill="#FFFFFF" stroke="#9AA5B1" stroke-width="1.4"/>
-  <text x="630" y="833" font-size="15" font-weight="700" fill="#1A2027" text-anchor="middle">Quantile Head</text>
-  <text x="630" y="850" font-size="11.5" fill="#5B6572" text-anchor="middle">단조 누적: q10 → q50 → q90</text>
+  <rect x="400" y="245" width="320" height="46" fill="#A9D18E" stroke="#70AD47" stroke-width="1.5"/>
+  <text x="560" y="266" class="sans" font-size="17" text-anchor="middle" fill="#111">Monotone Quantile Head</text>
+  <text x="560" y="283" class="sans" font-size="11" text-anchor="middle" fill="#333">cumulative softplus · × σ (RevIN scale)</text>
 
-  <line x1="630" y1="870" x2="630" y2="884" stroke="#2B6F84" stroke-width="2"/>
-  <line x1="544" y1="884" x2="716" y2="884" stroke="#2B6F84" stroke-width="2"/>
-  <line x1="544" y1="884" x2="544" y2="894" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="630" y1="884" x2="630" y2="894" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="716" y1="884" x2="716" y2="894" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="560" y1="245" x2="474" y2="211" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="560" y1="245" x2="560" y2="211" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="560" y1="245" x2="646" y2="211" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <g class="serif" font-size="16" text-anchor="middle" fill="#111">
+    <text x="470" y="200"><tspan font-style="italic">ŷ</tspan><tspan dy="4" font-size="11" font-style="italic">t+5</tspan><tspan dy="-4">(0.1)</tspan></text>
+    <text x="560" y="200"><tspan font-style="italic">ŷ</tspan><tspan dy="4" font-size="11" font-style="italic">t+5</tspan><tspan dy="-4">(0.5)</tspan></text>
+    <text x="650" y="200"><tspan font-style="italic">ŷ</tspan><tspan dy="4" font-size="11" font-style="italic">t+5</tspan><tspan dy="-4">(0.9)</tspan></text>
+  </g>
+  <text x="418" y="200" class="serif" font-size="15" text-anchor="end" fill="#111">Quantile Forecasts <tspan font-size="24" dy="3">{</tspan></text>
+  <text x="560" y="170" class="serif" font-size="13" text-anchor="middle" fill="#555">5-day log return in excess of KOSPI 200</text>
 
-  <rect x="509" y="894" width="70" height="36" rx="5" fill="#F0F1F3" stroke="#CBD2D9" stroke-width="1.2"/>
-  <text x="544" y="917" font-size="12" font-weight="600" fill="#1A2027" text-anchor="middle" font-family="'JetBrains Mono',monospace">q10</text>
-  <rect x="595" y="894" width="70" height="36" rx="5" fill="#F0F1F3" stroke="#CBD2D9" stroke-width="1.2"/>
-  <text x="630" y="917" font-size="12" font-weight="600" fill="#1A2027" text-anchor="middle" font-family="'JetBrains Mono',monospace">q50</text>
-  <rect x="681" y="894" width="70" height="36" rx="5" fill="#F0F1F3" stroke="#CBD2D9" stroke-width="1.2"/>
-  <text x="716" y="917" font-size="12" font-weight="600" fill="#1A2027" text-anchor="middle" font-family="'JetBrains Mono',monospace">q90</text>
+  <text x="595" y="1044" class="serif" font-size="20" text-anchor="middle" fill="#111">(a) PatchTST Backbone + TFT Variable Selection</text>
+  <text x="595" y="1070" class="serif" font-size="13.5" text-anchor="middle" fill="#555"><tspan font-style="italic">C</tspan> = 30 stock ch. · <tspan font-style="italic">M</tspan> = 13 macro ch. · <tspan font-style="italic">L</tspan> = 120 days · <tspan font-style="italic">P</tspan> = 5 · <tspan font-style="italic">N</tspan> = 24 patches · <tspan font-style="italic">D</tspan> = 32 · 0.33M params</text>
 
-  <line x1="544" y1="930" x2="544" y2="956" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="630" y1="930" x2="630" y2="956" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="716" y1="930" x2="716" y2="956" stroke="#2B6F84" stroke-width="2" marker-end="url(#ah)"/>
+  <!-- ============ (b) Transformer encoder layer ============ -->
+  <rect x="1080" y="30" width="340" height="270" fill="#fff" stroke="#222" stroke-width="1.3"/>
+  <rect x="1180" y="44" width="150" height="208" rx="10" fill="#E7E6E6" stroke="#7F7F7F"/>
+  <text x="1322" y="62" class="sans" font-size="13" text-anchor="end" fill="#111">1×</text>
+  <line x1="1250" y1="268" x2="1250" y2="244" stroke="#111" stroke-width="1.4"/>
+  <path d="M1225 244 H1275" stroke="#111" stroke-width="1.4"/>
+  <line x1="1225" y1="244" x2="1225" y2="234" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1250" y1="244" x2="1250" y2="234" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1275" y1="244" x2="1275" y2="234" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="1200" y="198" width="100" height="34" rx="5" fill="#C5E0B4" stroke="#548235"/>
+  <text x="1250" y="212" class="serif" font-size="12" text-anchor="middle" fill="#111">Multi-Head</text>
+  <text x="1250" y="226" class="serif" font-size="12" text-anchor="middle" fill="#111">Attention</text>
+  <line x1="1250" y1="198" x2="1250" y2="190" stroke="#111" stroke-width="1.4"/>
+  <rect x="1200" y="172" width="100" height="18" rx="3" fill="#FFF2CC" stroke="#BF9000"/>
+  <text x="1250" y="185" class="serif" font-size="11.5" text-anchor="middle" fill="#111">Add &amp; Norm</text>
+  <line x1="1250" y1="172" x2="1250" y2="152" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="1200" y="116" width="100" height="34" rx="5" fill="#A9DCF5" stroke="#2E75B6"/>
+  <text x="1250" y="130" class="serif" font-size="12" text-anchor="middle" fill="#111">Feed</text>
+  <text x="1250" y="144" class="serif" font-size="12" text-anchor="middle" fill="#111">Forward</text>
+  <line x1="1250" y1="116" x2="1250" y2="108" stroke="#111" stroke-width="1.4"/>
+  <rect x="1200" y="90" width="100" height="18" rx="3" fill="#FFF2CC" stroke="#BF9000"/>
+  <text x="1250" y="103" class="serif" font-size="11.5" text-anchor="middle" fill="#111">Add &amp; Norm</text>
+  <line x1="1250" y1="90" x2="1250" y2="36" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <path d="M1250 256 H1318 V181 H1303" fill="none" stroke="#111" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#ah)"/>
+  <path d="M1250 161 H1318 V99 H1303" fill="none" stroke="#111" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#ah)"/>
+  <text x="1250" y="288" class="sans" font-size="13" text-anchor="middle" fill="#1F3864">(b) Transformer Encoder Layer</text>
 
-  <rect x="430" y="956" width="400" height="64" rx="6" fill="rgba(169,105,31,.10)" stroke="#C98A3E" stroke-width="1.8"/>
-  <text x="630" y="980" font-size="15" font-weight="700" fill="#A9691F" text-anchor="middle">기권 게이트 ★</text>
-  <text x="630" y="997" font-size="11.5" fill="#5B6572" text-anchor="middle">폭(q90−q10) &gt; 최근 90일 상위 5%? → 기권</text>
-  <text x="630" y="1011" font-size="11" fill="#5B6572" text-anchor="middle" font-family="'JetBrains Mono',monospace">src/trading/signal.py</text>
+  <!-- ============ (c) GRN ============ -->
+  <rect x="1080" y="320" width="340" height="250" fill="#fff" stroke="#222" stroke-width="1.3"/>
+  <line x1="1250" y1="350" x2="1250" y2="330" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="1195" y="350" width="110" height="18" fill="#3CA65A"/>
+  <text x="1250" y="364" class="slab" font-size="12.5" text-anchor="middle" fill="#111">Add &amp; Norm</text>
+  <rect x="1205" y="368" width="90" height="16" fill="#F4B183" stroke="#C55A11"/>
+  <text x="1250" y="380.5" class="slab" font-size="12" text-anchor="middle" fill="#111">Gate</text>
+  <line x1="1250" y1="410" x2="1250" y2="386" stroke="#111" stroke-width="1.4"/>
+  <circle cx="1250" cy="397" r="5" fill="#D9372B" stroke="#7A1A12"/>
+  <rect x="1200" y="410" width="100" height="26" fill="#1414E6"/>
+  <text x="1250" y="428" class="slab" font-size="13" text-anchor="middle" fill="#fff">Dense</text>
+  <line x1="1250" y1="446" x2="1250" y2="436" stroke="#111" stroke-width="1.4"/>
+  <rect x="1215" y="446" width="70" height="16" fill="#9DC3E6" stroke="#2E75B6"/>
+  <text x="1250" y="458.5" class="slab" font-size="12" text-anchor="middle" fill="#111">ELU</text>
+  <line x1="1250" y1="472" x2="1250" y2="462" stroke="#111" stroke-width="1.4"/>
+  <rect x="1200" y="472" width="100" height="26" fill="#1414E6"/>
+  <text x="1250" y="490" class="slab" font-size="13" text-anchor="middle" fill="#fff">Dense</text>
+  <line x1="1235" y1="518" x2="1235" y2="500" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1275" y1="518" x2="1275" y2="500" stroke="#8C8C8C" stroke-width="1.4" marker-end="url(#ag)"/>
+  <text x="1235" y="533" class="serif" font-size="16" font-style="italic" text-anchor="middle" fill="#111">a</text>
+  <text x="1275" y="533" class="serif" font-size="16" font-style="italic" text-anchor="middle" fill="#8C8C8C">c</text>
+  <text x="1222" y="531" class="slab" font-size="11" text-anchor="end" fill="#111">primary input</text>
+  <text x="1290" y="531" class="slab" font-size="11" fill="#111">external context</text>
+  <path d="M1235 510 H1165 V359 H1192" fill="none" stroke="#111" stroke-width="1.4" stroke-dasharray="8 3 2 3" marker-end="url(#ah)"/>
+  <text x="1158" y="432" class="slab" font-size="11" text-anchor="end" fill="#111">Residual</text>
+  <text x="1158" y="446" class="slab" font-size="11" text-anchor="end" fill="#111">connection</text>
+  <line x1="1257" y1="397" x2="1316" y2="397" stroke="#555" stroke-width="1" stroke-dasharray="1 3"/>
+  <text x="1320" y="401" class="slab" font-size="11" fill="#111">Dropout</text>
+  <text x="1250" y="560" class="slab" font-size="14.5" font-weight="600" text-anchor="middle" fill="#4B3B8F">(c) Gated Residual Network (GRN)</text>
 
-  <text x="20" y="1023" font-size="11" fill="#8792A0" font-family="'JetBrains Mono',monospace">— 텐서 흐름   ┈ context 조건화(static)   ★ 확정된 설계 판단(실측 근거)</text>
+  <!-- ============ (d) VSN ============ -->
+  <rect x="1080" y="590" width="340" height="280" fill="#fff" stroke="#222" stroke-width="1.3"/>
+  <text x="1240" y="612" class="serif" font-size="15" text-anchor="middle" fill="#111"><tspan font-style="italic">ξ̃</tspan> = Σ<tspan dy="4" font-size="10" font-style="italic">j</tspan><tspan dy="-4" font-style="italic"> v</tspan><tspan dy="-6" font-size="10">(j)</tspan><tspan dy="6" font-style="italic"> ξ̃</tspan><tspan dy="-6" font-size="10">(j)</tspan></text>
+  <line x1="1240" y1="642" x2="1240" y2="620" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <circle cx="1240" cy="652" r="10" fill="#fff" stroke="#111" stroke-width="1.4"/>
+  <path d="M1233 645 L1247 659 M1247 645 L1233 659" stroke="#111" stroke-width="1.4"/>
+  <path d="M1170 706 V652 H1228" fill="none" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <path d="M1125 716 V706 H1215 V716" fill="none" stroke="#111" stroke-width="1.2"/>
+  <text x="1125" y="734" class="serif" font-size="15" font-style="italic" text-anchor="middle" fill="#111">ξ̃<tspan dy="-6" font-size="10" font-style="normal">(1)</tspan></text>
+  <text x="1170" y="730" class="serif" font-size="15" text-anchor="middle" fill="#111">···</text>
+  <text x="1215" y="734" class="serif" font-size="15" font-style="italic" text-anchor="middle" fill="#111">ξ̃<tspan dy="-6" font-size="10" font-style="normal">(C)</tspan></text>
+  <rect x="1098" y="740" width="54" height="24" fill="#7B1D4B"/>
+  <text x="1125" y="757" class="slab" font-size="12.5" text-anchor="middle" fill="#fff">GRN</text>
+  <text x="1170" y="756" class="serif" font-size="15" text-anchor="middle" fill="#111">···</text>
+  <rect x="1188" y="740" width="54" height="24" fill="#A31515"/>
+  <text x="1215" y="757" class="slab" font-size="12.5" text-anchor="middle" fill="#fff">GRN</text>
+  <line x1="1125" y1="790" x2="1125" y2="766" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1215" y1="790" x2="1215" y2="766" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <text x="1125" y="806" class="serif" font-size="15" font-style="italic" text-anchor="middle" fill="#111">ξ<tspan dy="-6" font-size="10" font-style="normal">(1)</tspan></text>
+  <text x="1170" y="804" class="serif" font-size="15" text-anchor="middle" fill="#111">···</text>
+  <text x="1215" y="806" class="serif" font-size="15" font-style="italic" text-anchor="middle" fill="#111">ξ<tspan dy="-6" font-size="10" font-style="normal">(C)</tspan></text>
+  <path d="M1100 814 V820 H1240 V814" fill="none" stroke="#111" stroke-width="1.2"/>
+  <text x="1170" y="834" class="slab" font-size="10.5" text-anchor="middle" fill="#111">patch embeddings (per channel)</text>
+  <text x="1268" y="806" class="serif" font-size="16" text-anchor="middle" fill="#111">=</text>
+  <text x="1320" y="806" class="serif" font-size="16" font-style="italic" text-anchor="middle" fill="#111">Ξ</text>
+  <text x="1385" y="806" class="serif" font-size="16" font-style="italic" text-anchor="middle" fill="#8C8C8C">c<tspan dy="4" font-size="10">s</tspan></text>
+  <text x="1320" y="834" class="slab" font-size="10.5" text-anchor="middle" fill="#111">flattened</text>
+  <text x="1385" y="834" class="slab" font-size="10.5" text-anchor="middle" fill="#111">context</text>
+  <line x1="1320" y1="790" x2="1320" y2="766" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1382" y1="790" x2="1344" y2="767" stroke="#8C8C8C" stroke-width="1.4" marker-end="url(#ag)"/>
+  <rect x="1293" y="740" width="54" height="24" fill="#1414E6"/>
+  <text x="1320" y="757" class="slab" font-size="12.5" text-anchor="middle" fill="#fff">GRN</text>
+  <rect x="1288" y="718" width="64" height="18" fill="#9DC3E6" stroke="#2E75B6"/>
+  <text x="1320" y="731" class="slab" font-size="11.5" text-anchor="middle" fill="#111">Softmax</text>
+  <path d="M1320 718 V652 H1252" fill="none" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <text x="1312" y="686" class="slab" font-size="11" text-anchor="end" fill="#111">selection weights <tspan class="serif" font-style="italic" font-size="14">v</tspan></text>
+  <text x="1312" y="701" class="slab" font-size="11" text-anchor="end" fill="#111">= feature importance</text>
+  <text x="1250" y="860" class="slab" font-size="14.5" font-weight="600" text-anchor="middle" fill="#4B3B8F">(d) Variable Selection Network</text>
+
+  <!-- ============ (e) quantile head ============ -->
+  <rect x="1080" y="890" width="340" height="170" fill="#fff" stroke="#222" stroke-width="1.3"/>
+  <text x="1098" y="957" class="serif" font-size="15" font-style="italic" text-anchor="middle" fill="#111">h<tspan dy="4" font-size="10">N</tspan></text>
+  <line x1="1112" y1="952" x2="1132" y2="952" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="1134" y="912" width="56" height="80" fill="#A9D18E" stroke="#70AD47" stroke-width="1.5"/>
+  <text x="1162" y="949" class="sans" font-size="13" text-anchor="middle" fill="#111">MLP</text>
+  <text x="1162" y="964" class="sans" font-size="9.5" text-anchor="middle" fill="#333">→ 3</text>
+  <line x1="1190" y1="924" x2="1206" y2="924" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1190" y1="952" x2="1206" y2="952" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <line x1="1190" y1="980" x2="1206" y2="980" stroke="#111" stroke-width="1.4" marker-end="url(#ah)"/>
+  <g class="serif" font-size="13.5" fill="#111">
+    <text x="1210" y="929"><tspan font-style="italic">ŷ</tspan>(0.1) = <tspan font-style="italic">b</tspan></text>
+    <text x="1210" y="957"><tspan font-style="italic">ŷ</tspan>(0.5) = <tspan font-style="italic">ŷ</tspan>(0.1) + softplus(<tspan font-style="italic">δ</tspan><tspan dy="4" font-size="9.5">1</tspan><tspan dy="-4">)</tspan></text>
+    <text x="1210" y="985"><tspan font-style="italic">ŷ</tspan>(0.9) = <tspan font-style="italic">ŷ</tspan>(0.5) + softplus(<tspan font-style="italic">δ</tspan><tspan dy="4" font-size="9.5">2</tspan><tspan dy="-4">)</tspan></text>
+  </g>
+  <text x="1250" y="1015" class="sans" font-size="11" text-anchor="middle" fill="#333">× σ (RevIN scale) · quantiles can never cross</text>
+  <text x="1250" y="1046" class="sans" font-size="13" text-anchor="middle" fill="#1F3864">(e) Monotone Quantile Head</text>
 </svg>

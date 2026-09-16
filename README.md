@@ -5,9 +5,9 @@ Quantile 예측 기반 주가 방향 예측 + 모의투자 파이프라인.
 
 ## 모델 구조 (Phase 1)
 
-![PatchTST × TFT 하이브리드 구조도](docs/images/phase1_architecture.svg)
+![PatchTST × TFT 결합 구조도](docs/images/phase1_architecture.svg)
 
-종목/매크로 듀얼 경로 → VSN(인코더 앞) → 크로스어텐션 → 분위수 헤드 → 기권 게이트.
+노란·주황·초록 = PatchTST 백본, 파랑·갈색 = TFT 변수선택·정적 문맥, 청록 = 매크로 크로스어텐션(추가).
 설계 판단의 근거는 [`src/models/CLAUDE.md`](src/models/CLAUDE.md).
 
 ## 셋업
