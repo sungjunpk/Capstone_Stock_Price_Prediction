@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1310" role="img" aria-label="차이점 비교: 맨 아래가 입력, 맨 위가 출력이다. RevIN+Patching(맨 아래)에서 시작해 Projection+Position Embedding, Variable Selection Network, Transformer Encoder, Global-Local Cross-Attention, Static Context 결합을 거쳐 맨 위의 Monotone Quantile Head에서 끝난다. RevIN+Patching, Projection+Position Embedding, Transformer Encoder는 PatchTST에서 그대로 가져왔다. Variable Selection Network는 TFT와 개념이 같지만 위치가 LSTM 앞에서 패치 인코더 앞으로 옮겨졌다. LSTM Encoder/Decoder와 시간축 전체에 대한 Masked Self-Attention은 제거되어 각각 PatchTST 인코더와 신규 매크로 크로스어텐션으로 대체됐다. Static Enrichment는 TFT 개념을 그대로 잔차로 결합했고, Quantile Forecasts는 TFT 개념에 구조적 단조성을 새로 더했다. 매크로 크로스어텐션 자체는 두 원본 어디에도 없던 신규 결합이다.">
+  <style>
+    .sans { font-family: 'Arimo', Arial, Helvetica, sans-serif; }
+    .slab { font-family: 'Zilla Slab', Rockwell, Georgia, serif; font-weight: 500; }
+    .serif { font-family: 'Tinos', 'Times New Roman', Times, serif; }
+  </style>
+  <rect x="0" y="0" width="1440" height="1310" fill="#ffffff"/>
+  <defs>
+    <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#111"/></marker>
+    <marker id="ay4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9C6F00"/></marker>
+    <marker id="ab4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1B75BC"/></marker>
+    <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#C0392B"/></marker>
+  </defs>
+
+  <!-- legend -->
+  <g class="sans" font-size="13.5">
+    <line x1="30" y1="34" x2="70" y2="34" stroke="#9C6F00" stroke-width="2.6" marker-end="url(#ay4)"/>
+    <text x="78" y="39" fill="#111">PatchTST 그대로</text>
+    <line x1="250" y1="34" x2="290" y2="34" stroke="#1B75BC" stroke-width="2.6" marker-end="url(#ab4)"/>
+    <text x="298" y="39" fill="#111">TFT 그대로 (위치 이동·강화 포함)</text>
+    <line x1="560" y1="34" x2="600" y2="34" stroke="#C0392B" stroke-width="2.6" stroke-dasharray="7 4" marker-end="url(#ar4)"/>
+    <text x="608" y="39" fill="#111">제거 · 대체됨</text>
+    <rect x="800" y="25" width="24" height="16" rx="3" fill="#1D5C63"/>
+    <text x="832" y="39" fill="#111">둘 다에 없던 신규 결합</text>
+  </g>
+  <line x1="20" y1="60" x2="1420" y2="60" stroke="#E2E2E2" stroke-width="1"/>
+
+  <!-- column headers -->
+  <text x="210" y="96" class="slab" font-size="19" font-weight="600" text-anchor="middle" fill="#9C6F00">PatchTST 원본</text>
+  <text x="740" y="96" class="slab" font-size="19" font-weight="600" text-anchor="middle" fill="#111">우리 모델 (Phase 1)</text>
+  <text x="1230" y="96" class="slab" font-size="19" font-weight="600" text-anchor="middle" fill="#1B75BC">TFT 원본</text>
+
+  <!-- ================= r7 : Quantile Head — 맨 위, 출력 ================= -->
+  <rect x="520" y="130" width="400" height="80" fill="#A9D18E" stroke="#70AD47" stroke-width="1.6"/>
+  <rect x="758" y="140" width="152" height="23" rx="5" fill="#D9EDC9" stroke="#548235" stroke-width="1"/>
+  <text x="834" y="156" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#3D5C24">TFT 개념 + 신규 강화</text>
+  <text x="700" y="180" class="sans" font-size="17" text-anchor="middle" fill="#111">Monotone Quantile Head</text>
+  <text x="700" y="198" class="sans" font-size="12" text-anchor="middle" fill="#333">누적 softplus로 분위 교차를 구조로 차단</text>
+
+  <rect x="40" y="130" width="340" height="80" fill="#fff" stroke="#C0392B" stroke-width="1.6" stroke-dasharray="7 4"/>
+  <text x="210" y="166" class="sans" font-size="16" text-anchor="middle" fill="#A5301F">✕ Flatten + Linear Head</text>
+  <text x="210" y="186" class="sans" font-size="11.5" text-anchor="middle" fill="#A5301F">점(point) 예측만 — 기권 로직에 못 씀</text>
+  <text x="450" y="161" class="sans" font-size="11.5" text-anchor="middle" fill="#C0392B">제거·대체</text>
+  <line x1="380" y1="170" x2="518" y2="170" stroke="#C0392B" stroke-width="2.4" stroke-dasharray="7 4" marker-end="url(#ar4)"/>
+
+  <rect x="1060" y="130" width="340" height="80" fill="#E7EFF8" stroke="#1B75BC" stroke-width="1.6"/>
+  <text x="1230" y="161" class="slab" font-size="16" text-anchor="middle" fill="#111">Quantile Forecasts</text>
+  <text x="1230" y="180" class="slab" font-size="11.5" text-anchor="middle" fill="#555">10/50/90 분위 동시 출력 — 개념 유지</text>
+  <text x="1230" y="198" class="slab" font-size="11.5" font-weight="600" text-anchor="middle" fill="#1D5C63">+ 단조성을 구조로 보장(신규)</text>
+  <text x="1010" y="161" class="sans" font-size="11.5" text-anchor="middle" fill="#1B75BC">유지+강화</text>
+  <line x1="1058" y1="170" x2="922" y2="170" stroke="#1B75BC" stroke-width="2.4" marker-end="url(#ab4)"/>
+
+  <!-- ================= r6 : Static Enrichment ================= -->
+  <rect x="520" y="295" width="400" height="80" fill="#4B3B8F"/>
+  <rect x="758" y="305" width="152" height="23" rx="5" fill="#332969"/>
+  <text x="834" y="321" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#D9D3F0">TFT 그대로</text>
+  <text x="700" y="345" class="slab" font-size="17" text-anchor="middle" fill="#fff">+ Static Context (Enrichment)</text>
+  <text x="700" y="363" class="slab" font-size="12" text-anchor="middle" fill="#D9D3F0">정적 문맥을 결합 결과에 잔차로 직접 더함</text>
+
+  <rect x="1060" y="295" width="340" height="80" fill="#E7EFF8" stroke="#1B75BC" stroke-width="1.6"/>
+  <text x="1230" y="331" class="slab" font-size="16" text-anchor="middle" fill="#111">Static Enrichment</text>
+  <text x="1230" y="351" class="slab" font-size="11.5" text-anchor="middle" fill="#555">GRN, static context로 조건화 — 개념 그대로</text>
+  <text x="1010" y="331" class="sans" font-size="11.5" text-anchor="middle" fill="#1B75BC">그대로</text>
+  <line x1="1058" y1="335" x2="922" y2="335" stroke="#1B75BC" stroke-width="2.4" marker-end="url(#ab4)"/>
+
+  <!-- ================= r5 : Cross-Attention (new) ================= -->
+  <rect x="520" y="460" width="400" height="80" fill="#1D5C63"/>
+  <rect x="758" y="470" width="152" height="23" rx="5" fill="#0F3439"/>
+  <text x="834" y="486" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#CFE8E6">신규 결합</text>
+  <text x="700" y="510" class="slab" font-size="17" font-weight="600" text-anchor="middle" fill="#fff">Global–Local Cross-Attention</text>
+  <text x="700" y="528" class="slab" font-size="12" text-anchor="middle" fill="#CFE8E6">Q = 종목 패치 · K/V = 매크로 패치</text>
+
+  <rect x="1060" y="460" width="340" height="80" fill="#fff" stroke="#C0392B" stroke-width="1.6" stroke-dasharray="7 4"/>
+  <text x="1230" y="486" class="slab" font-size="15" text-anchor="middle" fill="#A5301F">✕ Masked Multi-head</text>
+  <text x="1230" y="505" class="slab" font-size="15" text-anchor="middle" fill="#A5301F">Self-Attention (시간축)</text>
+  <text x="1230" y="527" class="slab" font-size="11" font-weight="600" text-anchor="middle" fill="#A5301F">제거 — 매크로 크로스어텐션으로 대체</text>
+  <text x="1010" y="491" class="sans" font-size="11.5" text-anchor="middle" fill="#C0392B">제거·대체</text>
+  <line x1="1058" y1="500" x2="922" y2="500" stroke="#C0392B" stroke-width="2.4" stroke-dasharray="7 4" marker-end="url(#ar4)"/>
+
+  <text x="210" y="412" class="serif" font-size="14" text-anchor="middle" fill="#9A9A9A" font-style="italic">PatchTST엔 exogenous 계열·</text>
+  <text x="210" y="432" class="serif" font-size="14" text-anchor="middle" fill="#9A9A9A" font-style="italic">크로스어텐션·static enrichment가 없다</text>
+
+  <!-- ================= r4 : Transformer Encoder ================= -->
+  <rect x="520" y="625" width="400" height="80" fill="#F4B183" stroke="#ED7D31" stroke-width="1.6"/>
+  <rect x="758" y="635" width="152" height="23" rx="5" fill="#FCE2CC" stroke="#C9601C" stroke-width="1"/>
+  <text x="834" y="651" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#8A3E0B">PatchTST 그대로</text>
+  <text x="700" y="675" class="sans" font-size="17" text-anchor="middle" fill="#111">Transformer Encoder</text>
+  <text x="700" y="693" class="sans" font-size="12" text-anchor="middle" fill="#333">종목 패치 시퀀스 위에서 self-attention</text>
+
+  <rect x="40" y="625" width="340" height="80" fill="#FFF9E8" stroke="#9C6F00" stroke-width="1.6"/>
+  <text x="210" y="661" class="sans" font-size="16" text-anchor="middle" fill="#111">Transformer Encoder</text>
+  <text x="210" y="681" class="sans" font-size="12" text-anchor="middle" fill="#555">레이어 수만 축소 (3층→1층)</text>
+  <text x="450" y="658" class="sans" font-size="11.5" text-anchor="middle" fill="#9C6F00">그대로</text>
+  <line x1="380" y1="665" x2="518" y2="665" stroke="#9C6F00" stroke-width="2.4" marker-end="url(#ay4)"/>
+
+  <rect x="1060" y="625" width="340" height="80" fill="#fff" stroke="#C0392B" stroke-width="1.6" stroke-dasharray="7 4"/>
+  <text x="1230" y="656" class="slab" font-size="16" text-anchor="middle" fill="#A5301F">✕ LSTM Encoder / Decoder</text>
+  <text x="1230" y="676" class="slab" font-size="11.5" text-anchor="middle" fill="#A5301F">시간축을 순차(recurrent) 처리</text>
+  <text x="1230" y="694" class="slab" font-size="11.5" font-weight="600" text-anchor="middle" fill="#A5301F">제거 — PatchTST 인코더로 대체</text>
+  <text x="1010" y="656" class="sans" font-size="11.5" text-anchor="middle" fill="#C0392B">제거·대체</text>
+  <line x1="1058" y1="665" x2="922" y2="665" stroke="#C0392B" stroke-width="2.4" stroke-dasharray="7 4" marker-end="url(#ar4)"/>
+
+  <!-- ================= r3 : VSN ================= -->
+  <rect x="520" y="790" width="400" height="80" fill="#1B75BC"/>
+  <rect x="758" y="800" width="152" height="23" rx="5" fill="#0E4A78"/>
+  <text x="834" y="816" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#DCEBF7">TFT · 위치 이동</text>
+  <text x="700" y="840" class="slab" font-size="17" text-anchor="middle" fill="#fff">Variable Selection Network</text>
+  <text x="700" y="858" class="slab" font-size="12" text-anchor="middle" fill="#DCEBF7">패치 임베딩 위에서 채널 30개 가중합</text>
+
+  <rect x="1060" y="790" width="340" height="80" fill="#E7EFF8" stroke="#1B75BC" stroke-width="1.6"/>
+  <text x="1230" y="821" class="slab" font-size="16" text-anchor="middle" fill="#111">Variable Selection Network</text>
+  <text x="1230" y="840" class="slab" font-size="11.5" text-anchor="middle" fill="#555">선택 가중치 계산 방식은 동일</text>
+  <text x="1230" y="857" class="slab" font-size="11.5" font-weight="600" text-anchor="middle" fill="#B8621B">위치 이동: LSTM 앞 → 패치 인코더 앞</text>
+  <text x="1010" y="821" class="sans" font-size="11.5" text-anchor="middle" fill="#1B75BC">위치 이동</text>
+  <line x1="1058" y1="830" x2="922" y2="830" stroke="#1B75BC" stroke-width="2.4" marker-end="url(#ab4)"/>
+
+  <text x="210" y="822" class="serif" font-size="14" text-anchor="middle" fill="#9A9A9A" font-style="italic">PatchTST엔 static covariate ·</text>
+  <text x="210" y="842" class="serif" font-size="14" text-anchor="middle" fill="#9A9A9A" font-style="italic">변수선택망 개념이 없다</text>
+
+  <!-- ================= r2 : Projection ================= -->
+  <rect x="520" y="955" width="400" height="80" fill="#FFD966" stroke="#E6A700" stroke-width="1.6"/>
+  <rect x="758" y="965" width="152" height="23" rx="5" fill="#FFF1CC" stroke="#C99300" stroke-width="1"/>
+  <text x="834" y="981" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#7A5900">PatchTST 그대로</text>
+  <text x="700" y="1005" class="sans" font-size="17" text-anchor="middle" fill="#111">Projection + Position Embedding</text>
+  <text x="700" y="1023" class="sans" font-size="12" text-anchor="middle" fill="#333">Linear(패치길이 P → 은닉차원 D)</text>
+
+  <rect x="40" y="955" width="340" height="80" fill="#FFF9E8" stroke="#9C6F00" stroke-width="1.6"/>
+  <text x="210" y="991" class="sans" font-size="16" text-anchor="middle" fill="#111">Projection + Position</text>
+  <text x="210" y="1011" class="sans" font-size="16" text-anchor="middle" fill="#111">Embedding</text>
+  <text x="450" y="988" class="sans" font-size="11.5" text-anchor="middle" fill="#9C6F00">그대로</text>
+  <line x1="380" y1="995" x2="518" y2="995" stroke="#9C6F00" stroke-width="2.4" marker-end="url(#ay4)"/>
+
+  <text x="1230" y="1035" class="serif" font-size="14" text-anchor="middle" fill="#9A9A9A" font-style="italic">TFT엔 패치·채널독립 개념이 없다</text>
+
+  <!-- ================= r1 : RevIN+Patching — 맨 아래, 입력 ================= -->
+  <rect x="520" y="1120" width="400" height="80" fill="#FFD966" stroke="#E6A700" stroke-width="1.6"/>
+  <rect x="758" y="1130" width="152" height="23" rx="5" fill="#FFF1CC" stroke="#C99300" stroke-width="1"/>
+  <text x="834" y="1146" class="sans" font-size="11" font-weight="600" text-anchor="middle" fill="#7A5900">PatchTST 그대로</text>
+  <text x="700" y="1172" class="sans" font-size="17" text-anchor="middle" fill="#111">RevIN + Patching</text>
+  <text x="700" y="1190" class="sans" font-size="12" text-anchor="middle" fill="#333">채널독립 · 5일 단위 패치(P=5)</text>
+
+  <rect x="40" y="1120" width="340" height="80" fill="#FFF9E8" stroke="#9C6F00" stroke-width="1.6"/>
+  <text x="210" y="1156" class="sans" font-size="16" text-anchor="middle" fill="#111">Instance Norm + Patching</text>
+  <text x="210" y="1176" class="sans" font-size="12" text-anchor="middle" fill="#555">RevIN 방식 그대로</text>
+  <text x="450" y="1153" class="sans" font-size="11.5" text-anchor="middle" fill="#9C6F00">그대로</text>
+  <line x1="380" y1="1160" x2="518" y2="1160" stroke="#9C6F00" stroke-width="2.4" marker-end="url(#ay4)"/>
+
+  <!-- spine connectors — 아래(입력)에서 위(출력)로 -->
+  <line x1="720" y1="1116" x2="720" y2="1039" stroke="#111" stroke-width="1.6" marker-end="url(#ah4)"/>
+  <line x1="720" y1="951" x2="720" y2="874" stroke="#111" stroke-width="1.6" marker-end="url(#ah4)"/>
+  <line x1="720" y1="786" x2="720" y2="709" stroke="#111" stroke-width="1.6" marker-end="url(#ah4)"/>
+  <line x1="720" y1="621" x2="720" y2="544" stroke="#111" stroke-width="1.6" marker-end="url(#ah4)"/>
+  <line x1="720" y1="456" x2="720" y2="379" stroke="#111" stroke-width="1.6" marker-end="url(#ah4)"/>
+  <line x1="720" y1="291" x2="720" y2="214" stroke="#111" stroke-width="1.6" marker-end="url(#ah4)"/>
+
+  <!-- direction guide -->
+  <line x1="475" y1="1205" x2="475" y2="1215" stroke="#777" stroke-width="1.3"/>
+  <line x1="475" y1="1215" x2="475" y2="125" stroke="#777" stroke-width="1.3" stroke-dasharray="2 4" marker-end="url(#ah4)"/>
+  <text x="465" y="670" class="serif" font-size="12.5" text-anchor="middle" fill="#777" font-style="italic" transform="rotate(-90 465 670)">forward pass ↑</text>
+
+  <line x1="20" y1="1240" x2="1420" y2="1240" stroke="#E2E2E2" stroke-width="1"/>
+  <text x="740" y="1266" class="serif" font-size="15" text-anchor="middle" fill="#333">맨 아래(입력)에서 맨 위(출력)로 읽는다 · 청록 박스(크로스어텐션)만 PatchTST·TFT 어디에도 없던 신규 결합이다</text>
+  <text x="740" y="1290" class="serif" font-size="13.5" text-anchor="middle" fill="#777">정적 문맥 주입 지점도 단순화했다 — TFT는 4곳(VSN·LSTM 초기상태·enrichment·attention)에 분배하지만 우리는 2곳(VSN 조건화 + enrichment 직접 합산)</text>
+</svg>

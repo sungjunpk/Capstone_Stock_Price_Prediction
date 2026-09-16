@@ -10,6 +10,12 @@ Quantile 예측 기반 주가 방향 예측 + 모의투자 파이프라인.
 노란·주황·초록 = PatchTST 백본, 파랑·갈색 = TFT 변수선택·정적 문맥, 청록 = 매크로 크로스어텐션(추가).
 설계 판단의 근거는 [`src/models/CLAUDE.md`](src/models/CLAUDE.md).
 
+### 무엇이 바뀌었나 — PatchTST · TFT 대비 차이점
+
+![PatchTST·TFT 대비 비교 구조도](docs/images/phase1_comparison.svg)
+
+박스 우상단 알약 = 그 구성요소의 출처 · 화살표 색 = 근거(주황 PatchTST · 파랑 TFT) · 빨간 점선+✕ = 제거된 원본과 그것을 대체한 지점 · 흐름은 아래(입력)→위(출력).
+
 ## 셋업
 
 ```bash
