@@ -425,10 +425,28 @@ SELL_ORDER = TRSpec(  # VERIFIED 2026-08-26 (mock, 005930 1주 → ord_no=012599
          "실측 확인: 264,750 매수 → 264,000 매도에 수수료·세금 2,368원, 실현손익 -3,118원.",
 )
 
+CANCEL_ORDER = TRSpec(  # VERIFIED 2026-09-22 (mock, 139130 미체결 1주 → 취소주문 0172379)
+    name="cancel_order",
+    path="/api/dostk/ordr",
+    api_id="kt10003",
+    list_key="",
+    schema={
+        "order_no": ("ord_no", "str"),              # 취소주문 자체의 번호
+        "orig_order_no": ("base_orig_ord_no", "str"),
+    },
+    rate_limit_per_sec=1.0,
+    verified=True,
+    note="그리드는 사다리를 내릴 때 미체결 매수를 반드시 거둬야 한다 — 안 그러면 "
+         "기권·종목교체 뒤에도 원치 않는 체결이 난다(2026-09-22 실측에서 드러났다). "
+         "필수: dmst_stex_tp('KRX') orig_ord_no stk_cd cncl_qty. "
+         "cncl_qty '0' = 전량취소(실측 확인). 응답 ord_no 는 **취소주문 자체의 번호**이고 "
+         "원주문 번호가 아니다 — 원주문은 미체결 목록에서 사라지는 것으로 확인한다.",
+)
+
 TRADING_SPECS: dict[str, TRSpec] = {
     spec.name: spec
     for spec in (DEPOSIT, ACCOUNT_BALANCE, QUOTE, UNFILLED_ORDERS, TRADE_DIARY,
-                 BUY_ORDER, SELL_ORDER)
+                 BUY_ORDER, SELL_ORDER, CANCEL_ORDER)
 }
 
 # 레이트 리미터에 등록할 전체 목록. ALL_SPECS 는 '수집' TR 만 담는다 —

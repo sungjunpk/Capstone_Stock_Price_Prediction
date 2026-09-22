@@ -222,6 +222,65 @@ class PaperBroker:
                         len(out), ", ".join(f"{c}({q}주)" for c, q in sorted(out.items())))
         return out
 
+    def fetch_unfilled_detail(self) -> list[dict]:
+        """미체결 주문을 **주문번호까지** 그대로 준다.
+
+        `fetch_unfilled` 은 종목별 합계만 주는데, 취소하려면 주문번호가 필요하다.
+        같은 종목에 칸마다 주문이 걸리는 그리드에서는 합계로는 아무것도 못 한다.
+        """
+        body = {"all_stk_tp": "0", "trde_tp": "0", "stk_cd": "", "stex_tp": "0"}
+        data, _ = self.client.request(ep.UNFILLED_ORDERS, body)
+        df = parse_records(data.get(ep.UNFILLED_ORDERS.list_key) or [],
+                           ep.UNFILLED_ORDERS.schema)
+        out = []
+        for r in df.itertuples():
+            qty = int(r.unfilled_qty or 0)
+            if qty <= 0:
+                continue
+            out.append({
+                "code": _normalize_code(r.code),
+                "name": str(r.name),
+                "order_no": str(r.order_no),
+                "unfilled_qty": qty,
+                "side": SELL if "매도" in str(r.side) else BUY,
+            })
+        return out
+
+    def cancel_order(
+        self, code: str, order_no: str, quantity: int = 0, *, dry_run: bool = True,
+    ) -> OrderResult:
+        """미체결 주문 취소. **기본이 dry_run 이다** (place_order 와 같은 규칙).
+
+        quantity=0 이면 전량 취소.
+
+        그리드에서 이게 없으면 사다리를 못 내린다 — 기권이 걸리거나 종목이 교체돼도
+        아래 칸 매수가 남아 원치 않는 체결이 난다(2026-09-22 실측에서 드러났다).
+        """
+        if not order_no:
+            return OrderResult(code, "cancel", quantity, 0.0, "cancel", dry_run,
+                               error="주문번호가 없다")
+        body = {
+            "dmst_stex_tp": EXCHANGE,
+            "orig_ord_no": str(order_no),
+            "stk_cd": code,
+            "cncl_qty": str(int(quantity)),
+        }
+        if dry_run:
+            log.info("[모의취소] %s 주문 %s %s — 전송하지 않음",
+                     code, order_no, "전량" if quantity == 0 else f"{quantity}주")
+            return OrderResult(code, "cancel", quantity, 0.0, "cancel", True)
+
+        try:
+            data, _ = self.client.request(ep.CANCEL_ORDER, body)
+        except KiwoomAPIError as exc:
+            log.error("[취소실패] %s 주문 %s: %s", code, order_no, exc)
+            return OrderResult(code, "cancel", quantity, 0.0, "cancel", False,
+                               error=str(exc))
+        new_no = str(data.get("ord_no") or "")
+        log.info("[취소] %s 원주문 %s → 취소주문 %s", code, order_no, new_no or "?")
+        return OrderResult(code, "cancel", quantity, 0.0, "cancel", False,
+                           order_no=new_no or None)
+
     def fetch_trade_diary(self, base_dt: str) -> list[dict]:
         """당일매매일지 — 종목별 실현손익. 주문이 아니라 **체결** 기준이다.
 
