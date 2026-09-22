@@ -37,6 +37,7 @@ from src.models.inference import (  # noqa: E402
     predict_recent,
 )
 from src.trading.broker import BUY, PaperBroker  # noqa: E402
+from src.trading.grid import build_ladder, should_relay  # noqa: E402
 from src.trading.paper_trader import (  # noqa: E402
     TraderState,
     build_plan,
@@ -44,6 +45,9 @@ from src.trading.paper_trader import (  # noqa: E402
     execute_plan,
     is_rebalance_day,
     save_run,
+)
+from src.trading.signal import (  # noqa: E402
+    prediction_from_row,
 )
 from src.utils.config import PROJECT_ROOT, load_config  # noqa: E402
 from src.utils.logging import get_logger, setup_logging  # noqa: E402
@@ -144,6 +148,133 @@ def _print_holdings(account) -> None:
               f"{h.current_price:>12,.0f}{h.eval_amount:>14,.0f}{h.pnl_rate:>9.2f}%")
 
 
+
+def _busdays(start_iso: str, today: date) -> int:
+    """사이클이 며칠째인가. 영업일 기준 — 주말에 사이클이 끝나면 안 된다."""
+    return int(np.busday_count(np.datetime64(start_iso, "D"), np.datetime64(today, "D")))
+
+
+def run_grid(args, cfg, recent, broker, state, today, dry_run: bool) -> int:
+    """그리드 모드 — 목표 비중 대신 **지정가 사다리**를 건다.
+
+    선별은 기존 경로를 그대로 쓴다(q50 상위 top_n). 이 함수가 하는 일은
+    "고른 종목에 사다리를 어떻게 거느냐" 하나뿐이다 — 절대 규칙 7.
+
+    **사이클 안에서도 폭은 모델이 다시 잡는다.** 매일 새 예측으로 간격을 계산하고,
+    `grid.relay_band` 를 넘게 바뀌었으면 미체결 칸을 **취소하고 새 폭으로 다시 건다**.
+    기준가는 사이클 시작값을 유지한다(`state.grids`) — 매일 옮기면 매일 재시작이다.
+    밴드 안이면 이미 걸린 칸은 그대로 둔다. 같은 칸에 두 번 걸면 두 배를 산다.
+    """
+    gcfg = cfg["grid"]
+    costs = cfg["trading"]["costs"]
+    n_stocks = args.grid_stocks or int(cfg["trading"]["direction"]["top_n"])
+    cycle_days = int(gcfg.get("cycle_days", 5))
+
+    latest = recent[recent["date"] == recent["date"].max()]
+    preds = []
+    for r in latest.itertuples():
+        try:
+            preds.append(prediction_from_row(r))
+        except ValueError as exc:
+            log.warning("분위 교차 무시: %s", exc)
+    # q50 상위 = 모델이 오를 것으로 본 종목
+    picked = sorted(preds, key=lambda p: -p.q50)[:n_stocks]
+    codes = [p.code for p in picked]
+    log.info("그리드 대상 %d종목: %s", len(codes), ", ".join(codes))
+
+    prices = broker.fetch_prices(codes)
+    deposit = broker.fetch_deposit()
+    budget_total = args.grid_budget or float(deposit.get("orderable", 0))
+    per_stock = budget_total / max(len(codes), 1)
+
+    # 무엇이 이미 걸려 있나 — 계좌가 진실이다
+    live = broker.fetch_unfilled_detail()
+    live_buys: dict[str, list[dict]] = {}
+    for d in live:
+        if d["side"] == BUY:
+            live_buys.setdefault(d["code"], []).append(d)
+    if live:
+        log.warning("미체결 %d건", len(live))
+
+    print("\n" + "=" * 74)
+    print(f"그리드 플로우 — {len(codes)}종목 × {per_stock:,.0f}원"
+          + ("   [dry-run — 전송하지 않음]" if dry_run else "   [실주문]"))
+    print("=" * 74)
+    new_grids: dict[str, dict] = {}
+    print(f"  주문가능 {budget_total:,.0f}원 · 간격 = clip(q90−q10 × {gcfg['width_alpha']}, "
+          f"왕복비용×{gcfg['floor_mult']}, {gcfg['max_spacing']:.0%})")
+
+    orders, skipped, to_cancel = [], [], []
+    for p in picked:
+        px = prices.get(p.code)
+        if not px:
+            skipped.append((p.code, "현재가 조회 실패"))
+            continue
+        # 사이클 기준가: 진행 중이면 유지, 아니면 오늘 현재가로 새로 연다
+        cyc = state.grids.get(p.code)
+        if cyc and _busdays(cyc["date"], today) < cycle_days:
+            center, old_spacing = float(cyc["center"]), float(cyc["spacing"])
+        else:
+            center, old_spacing = px, 0.0
+        lad = build_ladder(p, center, per_stock, costs, gcfg)
+        if lad.skipped:
+            skipped.append((p.code, lad.skipped))
+            continue
+        mine = live_buys.get(p.code, [])
+        relay = should_relay(old_spacing, lad.spacing, gcfg)
+        print(f"\n  {p.code}  현재가 {px:>10,.0f}원  기준가 {center:>10,.0f}원  "
+              f"폭 {p.interval_width*100:5.2f}% → 간격 {lad.spacing*100:4.2f}%"
+              + (f"  (직전 {old_spacing*100:.2f}% → {'재배치' if relay else '유지'})"
+                 if old_spacing else "  (새 사이클)"))
+        for o in reversed(lad.sells):
+            print(f"      매도 +{o.level}  {o.price:>10,}원 {o.quantity:>4}주")
+        print(f"      ──기준──  {px:>10,.0f}원")
+        for o in lad.buys:
+            print(f"      매수 −{o.level}  {o.price:>10,}원 {o.quantity:>4}주")
+        # 매수 칸만 건다. 매도 칸은 보유분이 생긴 뒤 짝으로 거는 것이 순서다.
+        if mine and not relay:
+            print(f"      ⏭  미체결 매수 {len(mine)}건 유지 (폭 변화가 밴드 안)")
+            continue
+        if mine:
+            print(f"      ♻  미체결 매수 {len(mine)}건 취소 후 새 폭으로 재배치")
+            to_cancel.extend(mine)
+        orders.extend(lad.buys)
+        new_grids[p.code] = {"center": center, "spacing": lad.spacing,
+                             "date": (cyc["date"] if old_spacing else today.isoformat())}
+
+    if skipped:
+        print("\n  제외:")
+        for code, why in skipped:
+            print(f"    {code}  {why}")
+
+    print(f"\n  취소 {len(to_cancel)}건 · 걸 주문 {len(orders)}건"
+          f" · 합계 {sum(o.price * o.quantity for o in orders):,}원")
+    if dry_run:
+        print("  (dry-run — --execute 를 붙여야 실제로 나간다)")
+        return 0
+
+    # 취소가 먼저다 — 새 칸을 먼저 걸면 같은 종목에 두 벌이 걸려 있는 순간이 생긴다
+    for d in to_cancel:
+        r = broker.cancel_order(d["code"], d["order_no"], d["quantity"], dry_run=False)
+        if not r.ok:
+            log.error("취소 실패 %s %s: %s — 이 종목 재배치를 접는다",
+                      d["code"], d["order_no"], r.error)
+            orders = [o for o in orders if o.code != d["code"]]
+            new_grids.pop(d["code"], None)
+
+    ok = 0
+    for o in orders:
+        r = broker.place_order(o.code, o.side, o.quantity,
+                               price=o.price, order_type="limit", dry_run=False)
+        ok += bool(r.ok)
+        if not r.ok:
+            log.error("주문 실패 %s %s %d주 @%s: %s", o.code, o.side, o.quantity, o.price, r.error)
+    print(f"  전송 완료 {ok}/{len(orders)}건")
+    state.grids.update(new_grids)
+    state.save()
+    return 0 if ok == len(orders) else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint")
@@ -156,6 +287,12 @@ def main() -> int:
     ap.add_argument("--recent-days", type=int,
                     help="기권 임계값을 잡을 예측 폭 분포의 관측 구간(일). 기본은 "
                          "trading.abstain.recent_days — 백테스트와 같은 값")
+    ap.add_argument("--grid", action="store_true",
+                    help="그리드 플로우 모드 — 목표 비중 대신 지정가 사다리를 건다")
+    ap.add_argument("--grid-stocks", type=int,
+                    help="사다리를 깔 종목 수 (기본: trading.direction.top_n)")
+    ap.add_argument("--grid-budget", type=float,
+                    help="그리드에 쓸 총 예산(원). 기본은 주문가능금액 전액")
     ap.add_argument("--ignore-stale", action="store_true",
                     help="데이터가 오래돼도 진행한다 — 리밸런싱 차단까지 푼다 (권장하지 않음)")
     args = ap.parse_args()
@@ -186,6 +323,10 @@ def main() -> int:
         unfilled = broker.fetch_unfilled()
         state = TraderState.load()
         state.sync_entries(set(account.holdings), today)
+
+        if args.grid:
+            _print_holdings(account)
+            return run_grid(args, cfg, recent, broker, state, today, dry_run)
 
         rebalancing = args.force_rebalance or is_rebalance_day(
             state, today, int(cfg["backtest"].get("rebalance_days", 5))

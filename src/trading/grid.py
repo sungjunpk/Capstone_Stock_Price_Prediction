@@ -22,11 +22,32 @@ cross_sectional` 과 `top_n` 이 이미 q50 순위로 고르고 있고, 그리�
 alpha 의 실측 근거는 `docs/REFERENCES.md` 7.5 절. 일봉 198종목 x 90사이클에서
 alpha=0.20(평균 간격 3.1%)이 고정 간격 대비 test 고유분 +0.17 -> +0.30%p 였다.
 
+## 모델이 정하는 것 2 — 위아래 비대칭 (skew)
+
+`skew="quantile"` 이면 **사다리가 모델이 본 분포 모양을 따라간다.**
+`q90-q50` 이 `q50-q10` 보다 크면 위쪽 꼬리가 길다는 뜻이고, 그만큼 매도 칸을 위로 민다.
+두 쪽 합은 대칭일 때와 같다 — 전체 범위는 그대로고 **배분만** 바뀐다.
+
+⚠️ **기본값은 `none` 이다 — 재보니 효과가 없었다.** 일봉 198종목에서 대칭과
+사이클마다 짝지어 비교했을 때 5거래일 test 는 절반도 못 이겼다(+0.008%p, p=0.47).
+모델의 분위가 거의 대칭이라(평균 기울기 +0.083) 사다리가 실질적으로 안 기운다.
+표는 `docs/REFERENCES.md` 7.6.
+
+## 모델이 정하는 것 3 — 사이클 중간의 폭 재조정
+
+폭을 사이클 시작에 한 번 정하고 끝내면, 그 사이 시장이 바뀌어도 사다리가 안 따라간다.
+모델은 **매일** 새 예측을 내므로 매일 폭을 다시 계산하고, 변화가 `relay_band` 를
+넘을 때만 **미체결 칸을 취소하고 다시 건다**. 기준가는 안 옮긴다 — 옮기면 그리드가
+아니라 매일 재시작이다.
+
+실측(일봉 198종목, 5거래일 사이클, 사이클마다 짝지어 비교): 고정 대비
+val **+0.049%p (p=0.000)** · test **+0.037%p (p=0.001)**. `docs/REFERENCES.md` 7.7.
+
 ## 사다리 모양 — ratio
 
 `ratio=1.0` 이면 등간격, `0<ratio<1` 이면 중심에서 멀어질수록 칸이 촘촘해진다
 (Yeh et al., arXiv:2211.12839 의 flexible grid). 실측에서는 등간격이 근소하게
-나았으므로 기본값은 1.0 이고, 가변은 비교 실험용으로 열어둔다.
+나았으므로 실측 기준 최적은 1.0 이지만, 기본값은 사용자 결정으로 0.6(가변)이다.
 """
 
 from __future__ import annotations
@@ -77,6 +98,37 @@ def spacing_from_quantiles(
     return min(max(pred.interval_width * alpha, floor), cap)
 
 
+def spans_from_quantiles(
+    pred: QuantilePrediction, costs: dict, grid_cfg: dict,
+) -> tuple[float, float]:
+    """(위쪽 총범위, 아래쪽 총범위). `skew` 가 정한다.
+
+    `skew="none"`      위아래 같다 — 폭만 모델이 정한다
+    `skew="quantile"`  **모델이 본 분포 모양을 사다리가 따라간다.**
+        q90-q50 이 q50-q10 보다 크면 위쪽 꼬리가 길다는 뜻이고,
+        그만큼 매도 칸을 위로 민다. 두 쪽 합은 대칭일 때와 같다 —
+        전체 범위는 그대로 두고 **배분만** 바꾼다.
+
+    하한은 **쪽마다** 건다. 한쪽이 극단적으로 눌려 칸이 비용보다 좁아지면
+    그쪽 체결은 볼 때마다 손해이기 때문이다.
+    """
+    n = int(grid_cfg.get("levels", 5))
+    base = spacing_from_quantiles(pred, costs, grid_cfg) * n   # 대칭일 때 한쪽 범위
+    if str(grid_cfg.get("skew", "none")) != "quantile":
+        return base, base
+
+    up_raw = max(pred.q90 - pred.q50, 0.0)
+    dn_raw = max(pred.q50 - pred.q10, 0.0)
+    total = up_raw + dn_raw
+    if total <= 0:
+        return base, base
+    # 합을 2*base 로 고정하고 분포 모양대로 나눈다
+    up, dn = 2 * base * up_raw / total, 2 * base * dn_raw / total
+    floor = round_trip_cost(costs) * float(grid_cfg.get("floor_mult", 2.0)) * n
+    cap = float(grid_cfg.get("max_spacing", 0.10)) * n
+    return min(max(up, floor), cap), min(max(dn, floor), cap)
+
+
 def grid_offsets(n_levels: int, spacing: float, ratio: float = 1.0) -> list[float]:
     """중심에서의 누적 오프셋(비율). 길이 `n_levels`, 마지막이 전체 범위.
 
@@ -100,6 +152,17 @@ def grid_offsets(n_levels: int, spacing: float, ratio: float = 1.0) -> list[floa
         acc += g
         out.append(acc)
     return out
+
+
+def should_relay(old_spacing: float, new_spacing: float, grid_cfg: dict) -> bool:
+    """폭이 충분히 바뀌었나 — 사다리를 다시 깔지 판단한다.
+
+    밴드가 없으면 예측의 잡음만큼 매일 취소·재주문이 나간다. 실측에서 밴드 10% 는
+    무밴드와 성과가 같은데 재배치는 4분의 1이었다(사이클당 4.0회 -> 1.1회).
+    """
+    if old_spacing <= 0:
+        return True
+    return abs(new_spacing / old_spacing - 1) > float(grid_cfg.get("relay_band", 0.10))
 
 
 @dataclass(frozen=True)
@@ -146,6 +209,7 @@ def build_ladder(
     n = int(grid_cfg.get("levels", 5))
     ratio = float(grid_cfg.get("ratio", 1.0))
     spacing = spacing_from_quantiles(pred, costs, grid_cfg)
+    up_span, dn_span = spans_from_quantiles(pred, costs, grid_cfg)
     per_level = (budget / 2) / n
 
     def empty(reason: str) -> Ladder:
@@ -157,11 +221,12 @@ def build_ladder(
     if per_level < price:
         return empty(f"칸당 예산 {per_level:,.0f}원 < 1주 {price:,.0f}원")
 
-    offsets = grid_offsets(n, spacing, ratio)
+    up_off = grid_offsets(n, up_span / n, ratio)
+    dn_off = grid_offsets(n, dn_span / n, ratio)
     buys, sells = [], []
-    for i, off in enumerate(offsets, start=1):
-        bp = round_to_tick(price * (1 - off))            # 매수는 내림
-        sp = round_to_tick(price * (1 + off), up=True)   # 매도는 올림
+    for i, (uo, do) in enumerate(zip(up_off, dn_off, strict=True), start=1):
+        bp = round_to_tick(price * (1 - do))            # 매수는 내림
+        sp = round_to_tick(price * (1 + uo), up=True)   # 매도는 올림
         if bp > 0 and (q := int(per_level // bp)) > 0:
             buys.append(GridOrder(pred.code, "buy", bp, q, i))
         if sp > 0 and (q := int(per_level // sp)) > 0:
@@ -171,15 +236,26 @@ def build_ladder(
     return Ladder(pred.code, price, spacing, budget, per_level, init_qty, buys, sells)
 
 
-def paired_sell_price(ladder: Ladder, level: int) -> int:
+def paired_sell_price(
+    ladder: Ladder, level: int,
+    fill_price: float | None = None, costs: dict | None = None,
+) -> int:
     """`level` 번 매수 칸이 체결됐을 때 **한 칸 위**에 걸 매도 가격.
 
     `price x (1 + spacing)` 이 아니라 실제 윗칸을 쓴다 — 가변 사다리(ratio<1)에서는
     칸마다 간격이 달라 그 근사가 어긋나고, 등간격에서도 호가 반올림 때문에 미세하게 틀린다.
+
+    `fill_price`+`costs` 를 주면 **매입가 + 왕복비용** 아래로는 안 내려간다.
+    폭 재조정(`should_relay`)으로 사다리가 좁아지면 윗칸이 매입가 밑으로 내려올 수
+    있는데, 그 자리에 매도를 걸면 체결될 때마다 확정 손해다.
     """
     if level <= 1:
-        return round_to_tick(ladder.center, up=True)
-    for o in ladder.buys:
-        if o.level == level - 1:
-            return o.price
-    raise ValueError(f"{ladder.code}: {level - 1}번 매수 칸이 없다")
+        base = round_to_tick(ladder.center, up=True)
+    else:
+        rung = next((o.price for o in ladder.buys if o.level == level - 1), None)
+        if rung is None:
+            raise ValueError(f"{ladder.code}: {level - 1}번 매수 칸이 없다")
+        base = rung
+    if fill_price and costs:
+        base = max(base, round_to_tick(fill_price * (1 + round_trip_cost(costs)), up=True))
+    return base

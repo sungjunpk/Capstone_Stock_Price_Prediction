@@ -11,7 +11,9 @@ from src.trading.grid import (
     grid_offsets,
     paired_sell_price,
     round_to_tick,
+    should_relay,
     spacing_from_quantiles,
+    spans_from_quantiles,
     tick_size,
 )
 from src.trading.signal import QuantilePrediction, round_trip_cost
@@ -59,6 +61,48 @@ class TestSpacing:
 
     def test_상한이_있다(self):
         assert spacing_from_quantiles(pred(5.0), COSTS, CFG) == CFG["max_spacing"]
+
+
+class TestSkew:
+    """모델의 분위 비대칭 -> 사다리 위아래 배분."""
+
+    def pred_skew(self, lo: float, hi: float) -> QuantilePrediction:
+        return QuantilePrediction(code="005930", q10=-lo, q50=0.0, q90=hi)
+
+    def test_기본은_대칭이다(self):
+        up, dn = spans_from_quantiles(pred(0.12), COSTS, CFG)
+        assert up == pytest.approx(dn)
+
+    def test_위쪽_꼬리가_길면_매도칸이_멀어진다(self):
+        cfg = CFG | {"skew": "quantile"}
+        up, dn = spans_from_quantiles(self.pred_skew(0.04, 0.12), COSTS, cfg)
+        assert up > dn
+
+    def test_아래쪽_꼬리가_길면_매수칸이_멀어진다(self):
+        cfg = CFG | {"skew": "quantile"}
+        up, dn = spans_from_quantiles(self.pred_skew(0.12, 0.04), COSTS, cfg)
+        assert dn > up
+
+    def test_합은_대칭일_때와_같다(self):
+        """전체 범위는 그대로 두고 배분만 바꾼다 — 그래야 비대칭 효과만 비교된다."""
+        p = self.pred_skew(0.04, 0.12)
+        sym = sum(spans_from_quantiles(p, COSTS, CFG))
+        skew = sum(spans_from_quantiles(p, COSTS, CFG | {"skew": "quantile"}))
+        assert skew == pytest.approx(sym)
+
+    def test_한쪽이_눌려도_비용_하한은_지킨다(self):
+        cfg = CFG | {"skew": "quantile"}
+        up, dn = spans_from_quantiles(self.pred_skew(0.001, 0.30), COSTS, cfg)
+        floor = round_trip_cost(COSTS) * CFG["floor_mult"] * CFG["levels"]
+        assert dn >= floor
+
+    def test_사다리에_실제로_반영된다(self):
+        cfg = CFG | {"skew": "quantile"}
+        p = self.pred_skew(0.04, 0.12)
+        lad = build_ladder(p, 70_000, 10_000_000, COSTS, cfg)
+        up_gap = lad.sells[-1].price - 70_000
+        dn_gap = 70_000 - lad.buys[-1].price
+        assert up_gap > dn_gap
 
 
 class TestOffsets:
@@ -109,6 +153,23 @@ class TestLadder:
         assert build_ladder(pred(0.12), 0, 10_000_000, COSTS, CFG).skipped is not None
 
 
+class TestRelay:
+    """사이클 중간의 폭 재조정 — 매일 새 예측으로 다시 계산한다."""
+
+    def test_밴드_안이면_그냥_둔다(self):
+        assert not should_relay(0.030, 0.032, CFG)      # +6.7%
+
+    def test_밴드를_넘으면_다시_깐다(self):
+        assert should_relay(0.030, 0.035, CFG)          # +16.7%
+        assert should_relay(0.030, 0.026, CFG)          # −13.3%
+
+    def test_처음이면_무조건_깐다(self):
+        assert should_relay(0.0, 0.030, CFG)
+
+    def test_밴드는_설정이_정한다(self):
+        assert should_relay(0.030, 0.032, CFG | {"relay_band": 0.02})
+
+
 class TestPairedSell:
     def test_한_칸_위_레벨을_쓴다(self):
         """px x (1+spacing) 근사가 아니라 실제 윗칸이어야 한다 — 가변에서 어긋난다."""
@@ -119,3 +180,17 @@ class TestPairedSell:
     def test_첫_칸의_짝은_기준가다(self):
         lad = build_ladder(pred(0.12), 70_000, 10_000_000, COSTS, CFG)
         assert paired_sell_price(lad, 1) == round_to_tick(70_000, up=True)
+
+    def test_매입가_아래로는_안_내려간다(self):
+        """폭이 좁아지면 윗칸이 매입가 밑으로 온다 — 그 자리는 확정 손해다."""
+        narrow = build_ladder(pred(0.02), 70_000, 10_000_000, COSTS, CFG)
+        fill = 69_000                      # 넓던 시절 −2칸에서 체결된 가격
+        p = paired_sell_price(narrow, 3, fill_price=fill, costs=COSTS)
+        assert p >= fill * (1 + round_trip_cost(COSTS))
+
+    def test_바닥이_필요없으면_윗칸_그대로다(self):
+        """칸 간격이 왕복비용보다 넓으면(하한이 강제한다) 바닥은 안 문다."""
+        lad = build_ladder(pred(0.12), 70_000, 10_000_000, COSTS, CFG)
+        fill = next(o.price for o in lad.buys if o.level == 3)     # 3번 칸은 3번 가격에 체결된다
+        upper = next(o.price for o in lad.buys if o.level == 2)
+        assert paired_sell_price(lad, 3, fill_price=fill, costs=COSTS) == upper

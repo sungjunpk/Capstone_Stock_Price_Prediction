@@ -55,7 +55,7 @@ def _trading_indices(quantiles) -> list[int]:
 
 @dataclass
 class LoadedModel:
-    model: Phase1Model
+    model: Phase1Model | torch.nn.Module   # 대조군은 baselines.py 의 모델이 온다
     meta: dict
     device: torch.device
     path: Path
@@ -94,8 +94,24 @@ def load_model(ckpt_path: str | Path, *, device: torch.device | None = None) -> 
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     meta = ckpt["meta"]
 
-    mcfg = Phase1Config(**{**ckpt["config"], "static_vocab": meta["vocab_sizes"]})
-    model = Phase1Model(mcfg).to(device).eval()
+    # 어느 아키텍처인가. 옛 체크포인트에는 이 키가 없다 → phase1 (기존 동작 그대로).
+    # 대조군(원본 PatchTST/TFT)도 **이 경로로 세운다** — 정규화·윈도우 구성·매매까지
+    # 전부 공유해야 비교가 성립한다 (절대 규칙 7).
+    arch = str(meta.get("arch", "phase1"))
+    cfg_kwargs = {**ckpt["config"], "static_vocab": meta["vocab_sizes"]}
+    from src.models.baselines import VARIANT_ARCHS, build_variant
+
+    if arch == "phase1" or arch in VARIANT_ARCHS:
+        # 모듈 교체 변형(itrans/timexer)도 Phase1Config 로 저장돼 있다 — 우리 모델에서
+        # 모듈 하나만 바뀐 것이라 설정 필드가 같다.
+        mcfg = Phase1Config(**cfg_kwargs)
+        model = build_variant(arch, mcfg)
+    else:
+        from src.models.baselines import BaselineConfig, build_baseline
+
+        mcfg = BaselineConfig(**cfg_kwargs)
+        model = build_baseline(mcfg)
+    model = model.to(device).eval()
     model.load_state_dict(ckpt["model"])
 
     log.info(

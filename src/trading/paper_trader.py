@@ -63,12 +63,16 @@ class TraderState:
 
     **보유수량·매입가는 여기 두지 않는다** — 브로커가 정본이다.
     로컬에 복제하면 언젠가 어긋나고, 어긋난 쪽으로 주문이 나간다.
-    여기 있는 건 브로커가 안 알려주는 두 가지뿐이다: 진입일과 마지막 리밸런싱일.
+    여기 있는 건 브로커가 안 알려주는 것뿐이다: 진입일, 마지막 리밸런싱일,
+    그리고 그리드 사이클의 기준가(계좌는 "이 사다리의 중심이 얼마였나"를 모른다).
     """
 
     last_rebalance: str | None = None
     entry_dates: dict[str, str] = field(default_factory=dict)
     runs: int = 0
+    # 그리드 사이클: {종목: {"center": 기준가, "spacing": 간격, "date": 사이클 시작일}}
+    # 기준가는 사이클 안에서 **안 움직인다** — 매일 옮기면 그리드가 아니라 매일 재시작이다.
+    grids: dict[str, dict] = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path = STATE_PATH) -> TraderState:

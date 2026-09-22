@@ -22,7 +22,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from src.models.phase1 import Phase1Config, Phase1Model
+from src.models.phase1 import Phase1Config
 from src.training.dataset import (
     StaticVocab,
     WindowDataset,
@@ -171,6 +171,64 @@ def build_loaders(cfg: dict, *, smoke: bool = False):
     return loaders, meta
 
 
+# ------------------------------------------------------------ 모델·손실 선택
+def _build_model(cfg: dict, meta: dict, init_quantiles: tuple[float, ...]):
+    """`model.arch` 가 고르는 아키텍처. 기본값 phase1 — **기존 경로는 안 바뀐다.**
+
+    베이스라인(원본 PatchTST/TFT)은 대조군이다. 같은 학습 루프를 타야 비교가
+    성립하므로 여기서만 갈라지고, 이후 경로는 전부 공유한다.
+    """
+    arch = str(cfg["model"].get("arch", "phase1"))
+    common = {
+        "n_dynamic": len(meta["feature_cols"]),
+        "n_macro": len(meta["macro_cols"]),
+        "static_vocab": meta["vocab_sizes"],
+    }
+    from src.models.baselines import VARIANT_ARCHS, build_variant
+
+    if arch == "phase1" or arch in VARIANT_ARCHS:
+        # 모듈 교체 변형(itrans/timexer)은 우리 모델에서 모듈 하나만 바뀐 것이라
+        # Phase1Config 를 그대로 쓴다 — 나머지 설정이 전부 같아야 비교가 성립한다.
+        mcfg = Phase1Config.from_config(
+            cfg, n_passthrough=n_passthrough_columns(meta["feature_cols"]), **common
+        )
+        mcfg.init_quantiles = init_quantiles
+        return arch, mcfg, build_variant(arch, mcfg)
+
+    from src.models.baselines import BaselineConfig, build_baseline
+
+    mcfg = BaselineConfig.from_config(cfg, arch=arch, **common)
+    mcfg.init_quantiles = init_quantiles
+    return arch, mcfg, build_baseline(mcfg)
+
+
+def _weight_names(meta: dict, n: int) -> list[str]:
+    """채널 가중치 벡터에 붙일 이름.
+
+    TFT 대조군은 매크로를 관측입력으로 dynamic 에 concat 하므로(원본 방식) 변수선택
+    축이 `dynamic + macro` 다. 우리 모델은 매크로가 별도 크로스어텐션 경로라 dynamic 뿐이다.
+    """
+    names = list(meta["feature_cols"])
+    if n == len(names) + len(meta["macro_cols"]):
+        return names + list(meta["macro_cols"])
+    return names
+
+
+class _MedianMSE(torch.nn.Module):
+    """점 예측 모델(PatchTST 원본)의 손실. 분위 축에서 중앙값 하나만 본다.
+
+    원본은 MSE 로 학습한다 — 그래서 불확실성이 없고 기권 판정이 성립하지 않는다.
+    그 사실을 재현하는 것이 이 대조군의 목적이므로 손실도 원본대로 둔다.
+    """
+
+    def __init__(self, n_quantiles: int):
+        super().__init__()
+        self.mid = n_quantiles // 2
+
+    def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.mse_loss(pred[..., self.mid], target)
+
+
 # ------------------------------------------------------------ 학습
 def _lr_at(step: int, total: int, warmup: int, base_lr: float) -> float:
     if step < warmup:
@@ -205,10 +263,19 @@ def _split_y(y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor | None]:
 
 
 @torch.no_grad()
-def evaluate(model, loader, criterion, device) -> tuple[float, np.ndarray]:
+def evaluate(model, loader, criterion, device,
+             quantiles=None) -> tuple[float, float, np.ndarray]:
+    """(감시 손실, val pinball, 채널 가중치 평균).
+
+    감시 손실은 early stopping 과 체크포인트 선택에 쓴다 — 점 예측 모델이면 MSE 다.
+    **pinball 은 어느 아키텍처든 항상 같이 잰다.** 무조건부 분위수 기준선과 여태
+    기록한 모든 실험 수치가 pinball 축이라, 이걸 빼면 대조군을 표에 못 올린다.
+    """
     model.eval()
-    total, n = 0.0, 0
+    total, pin_total, n = 0.0, 0.0, 0
     weight_sum = None
+    qs = None if quantiles is None else torch.tensor(
+        [float(q) for q in quantiles], dtype=torch.float32, device=device)
     for dyn, mac, stat, y in loader:
         dyn, mac, stat, y = (t.to(device, non_blocking=True) for t in (dyn, mac, stat, y))
         out = model(dyn, mac, stat)
@@ -218,10 +285,14 @@ def evaluate(model, loader, criterion, device) -> tuple[float, np.ndarray]:
         loss = criterion(out.quantiles, y_main)
         bs = y.size(0)
         total += loss.item() * bs
+        pin_total += (
+            loss.item() if qs is None
+            else pinball_loss(out.quantiles, y_main, qs).item()
+        ) * bs
         n += bs
         w = out.dynamic_weights.mean(dim=(0, 1)).float().cpu().numpy()
         weight_sum = w * bs if weight_sum is None else weight_sum + w * bs
-    return total / max(n, 1), (weight_sum / max(n, 1))
+    return total / max(n, 1), pin_total / max(n, 1), (weight_sum / max(n, 1))
 
 
 def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> dict:
@@ -232,18 +303,20 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     loaders, meta = build_loaders(cfg, smoke=smoke)
     log.info("샘플 수: %s", meta["sizes"])
 
-    mcfg = Phase1Config.from_config(
-        cfg, n_passthrough=n_passthrough_columns(meta["feature_cols"]),
-        n_dynamic=len(meta["feature_cols"]),
-        n_macro=len(meta["macro_cols"]), static_vocab=meta["vocab_sizes"],
-    )
-    mcfg.init_quantiles = tuple(meta["baseline_quantiles"])
-    model = Phase1Model(mcfg).to(device)
+    arch, mcfg, model = _build_model(cfg, meta, tuple(meta["baseline_quantiles"]))
+    model = model.to(device)
+    meta["arch"] = arch          # 추론이 어느 클래스를 세울지 여기서만 알 수 있다
     n_params = sum(p.numel() for p in model.parameters())
-    log.info("파라미터 %.2fM", n_params / 1e6)
+    log.info("아키텍처 %s | 파라미터 %.2fM", arch, n_params / 1e6)
 
     t = cfg["training"]
-    criterion = QuantileLoss(mcfg.quantiles, crossing_weight=0.01).to(device)
+    loss_name = str(t.get("loss", "pinball"))
+    if loss_name == "mse":
+        criterion = _MedianMSE(len(mcfg.quantiles)).to(device)
+    elif loss_name == "pinball":
+        criterion = QuantileLoss(mcfg.quantiles, crossing_weight=0.01).to(device)
+    else:
+        raise ValueError(f"training.loss 는 pinball|mse 다: {loss_name!r}")
     # 보조 지평 손실의 비중. 주 과제를 밀어내지 않을 정도로만 준다.
     aux_weight = float(cfg["training"].get("aux_weight", 0.3))
 
@@ -272,6 +345,7 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     # 나중에 승자 체크포인트를 골라 쓸 수 있다 (CLAUDE.md: 결과를 덮어쓰지 않는다).
     cfg_hash = _config_hash(cfg)
     best, best_epoch, bad, step = float("inf"), -1, 0, 0
+    best_pinball = float("nan")
     CKPT_DIR.mkdir(parents=True, exist_ok=True)
     # 트랙 태그를 이름에 넣는다. 해시만으로는 부족하다 — 학습 당시 설정과
     # 지금 설정의 해시가 어긋나면(캐글에서 받은 체크포인트 등) 자동 선택이
@@ -317,17 +391,21 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
             step += 1
 
         tr_loss = run / max(seen, 1)
-        val_loss, val_w = evaluate(model, loaders["val"], criterion, device)
+        val_loss, val_pinball, val_w = evaluate(
+            model, loaders["val"], criterion, device, quantiles=mcfg.quantiles
+        )
         dt = time.time() - t0
         log.info(
-            "epoch %2d/%d | train %.6f | val %.6f | %.0fs | lr %.2e",
-            epoch + 1, epochs, tr_loss, val_loss, dt, opt.param_groups[0]["lr"],
+            "epoch %2d/%d | train %.6f | val %.6f | pinball %.6f | %.0fs | lr %.2e",
+            epoch + 1, epochs, tr_loss, val_loss, val_pinball, dt,
+            opt.param_groups[0]["lr"],
         )
         history.append({"epoch": epoch + 1, "train": tr_loss, "val": val_loss,
-                        "sec": round(dt, 1)})
+                        "val_pinball": val_pinball, "sec": round(dt, 1)})
 
         if val_loss < best - min_delta:
             best, best_epoch, bad = val_loss, epoch + 1, 0
+            best_pinball = val_pinball
             torch.save(
                 {"model": model.state_dict(), "config": asdict(mcfg), "meta": meta,
                  "val_loss": best, "epoch": best_epoch},
@@ -343,16 +421,21 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     report = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "config_hash": cfg_hash, "device": str(device), "smoke": smoke,
+        "arch": arch, "loss": loss_name,
         "n_params": n_params, "sizes": meta["sizes"],
         "universe": meta["universe"],
         "best_val_loss": best, "best_epoch": best_epoch,
+        # 감시 손실이 MSE 면 best 와 척도가 다르다. 비교표는 **항상 이 pinball** 을 쓴다.
+        "best_val_pinball": best_pinball,
         "baseline_val_loss": baseline_loss,
-        "improvement_vs_baseline_pct": round(100 * (baseline_loss - best) / baseline_loss, 3),
-        "beats_baseline": bool(best < baseline_loss),
+        "improvement_vs_baseline_pct": round(
+            100 * (baseline_loss - best_pinball) / baseline_loss, 3),
+        "beats_baseline": bool(best_pinball < baseline_loss),
         "history": history,
         # VSN 채널 가중치 = 해석가능성 리포트의 근거
         "feature_importance": dict(
-            sorted(zip(meta["feature_cols"], [float(x) for x in val_w], strict=True),
+            sorted(zip(_weight_names(meta, len(val_w)), [float(x) for x in val_w],
+                       strict=True),
                    key=lambda kv: -kv[1])
         ),
         "checkpoint": str(ckpt_path.relative_to(PROJECT_ROOT)),
@@ -365,7 +448,7 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     log.info("리포트: outputs/reports/%s", name)
 
     imp = report["improvement_vs_baseline_pct"]
-    if best >= baseline_loss:
+    if best_pinball >= baseline_loss:
         log.warning(
             "❌ 기준선(%.6f)을 못 이겼다 (%.2f%%). 조건부 신호를 못 찾았다는 뜻 — "
             "하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.", baseline_loss, imp,
