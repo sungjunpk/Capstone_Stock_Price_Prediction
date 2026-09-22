@@ -8,6 +8,7 @@ import pytest
 
 from src.trading.grid import (
     build_ladder,
+    center_from_quantiles,
     grid_offsets,
     paired_sell_price,
     round_to_tick,
@@ -61,6 +62,36 @@ class TestSpacing:
 
     def test_상한이_있다(self):
         assert spacing_from_quantiles(pred(5.0), COSTS, CFG) == CFG["max_spacing"]
+
+
+class TestCenter:
+    """조건 02 — 사다리 중심을 모델의 q50 이 옮긴다."""
+
+    def at(self, q50: float) -> QuantilePrediction:
+        return QuantilePrediction(code="005930", q10=q50 - 0.06, q50=q50, q90=q50 + 0.06)
+
+    def test_기본은_현재가다(self):
+        assert center_from_quantiles(self.at(0.03), 70_000, CFG) == 70_000
+
+    def test_오를_것으로_보면_위로_올린다(self):
+        cfg = CFG | {"center_k": 1.0}
+        assert center_from_quantiles(self.at(0.02), 70_000, cfg) == pytest.approx(71_400)
+
+    def test_내릴_것으로_보면_아래로_내린다(self):
+        cfg = CFG | {"center_k": 1.0}
+        assert center_from_quantiles(self.at(-0.02), 70_000, cfg) == pytest.approx(68_600)
+
+    def test_상한이_사다리를_붙잡는다(self):
+        """예측이 튀는 날 사다리가 통째로 떨어지면 한쪽이 전부 즉시 체결된다."""
+        cfg = CFG | {"center_k": 5.0, "center_cap": 0.05}
+        assert center_from_quantiles(self.at(0.30), 70_000, cfg) == pytest.approx(73_500)
+
+    def test_초기매수는_현재가로_센다(self):
+        """중심은 사다리를 놓는 자리일 뿐 — 시장가 매수는 현재가에 나간다."""
+        cfg = CFG | {"center_k": 1.0}
+        lad = build_ladder(self.at(0.02), 70_000, 10_000_000, COSTS, cfg)
+        assert lad.init_quantity == int(5_000_000 // 70_000)
+        assert lad.center == pytest.approx(71_400)
 
 
 class TestSkew:

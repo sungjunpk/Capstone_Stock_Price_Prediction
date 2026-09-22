@@ -51,8 +51,10 @@ grid:
   width_alpha: 0.20
   floor_mult: 2.0            # 왕복비용의 2배가 바닥 — 그보다 좁은 칸은 체결될수록 손해다
   max_spacing: 0.10
+  center_k: 1.0              # 조건 02 — 사다리 중심 = 현재가 × (1 + q50 × k). 0 이면 현재가
+  center_cap: 0.05           # 중심 이동 상한. 예측이 튀어도 사다리가 통째로 떨어지지 않게
   relay_band: 0.10           # 폭이 이만큼 바뀌면 미체결 칸을 다시 건다 (REFERENCES 7.7)
-  skew: none                 # 분위 비대칭 배분. 재보니 효과 없음(REFERENCES 7.6) — quantile 로 켤 수 있다
+  skew: quantile             # 조건 03 — 분위 비대칭으로 위/아래 배분. 실측 개선 없음(7.6), 사용자 결정으로 켬
   stop_loss_pct: -0.15       # 사이클 시작 자산 대비. 10% 이하는 수익이 반토막 났다
   # 사이클 = 기준가를 다시 잡고 종목을 다시 고르는 주기.
   # ⚠️ 모델의 예측 지평(`features.return_horizon`)과 **같아야 한다.**

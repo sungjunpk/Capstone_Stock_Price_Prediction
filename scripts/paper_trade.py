@@ -211,18 +211,21 @@ def run_grid(args, cfg, recent, broker, state, today, dry_run: bool) -> int:
             skipped.append((p.code, "현재가 조회 실패"))
             continue
         # 사이클 기준가: 진행 중이면 유지, 아니면 오늘 현재가로 새로 연다
+        # 중심(조건 02)은 **사이클당 한 번만** 정한다. 진행 중이면 그때 값을 그대로 쓴다 —
+        # 매일 다시 옮기면 사다리가 가격을 따라다니고, 그건 그리드가 아니라 매일 재시작이다.
         cyc = state.grids.get(p.code)
         if cyc and _busdays(cyc["date"], today) < cycle_days:
             center, old_spacing = float(cyc["center"]), float(cyc["spacing"])
+            lcfg = gcfg | {"center_k": 0.0}
         else:
-            center, old_spacing = px, 0.0
-        lad = build_ladder(p, center, per_stock, costs, gcfg)
+            center, old_spacing, lcfg = px, 0.0, gcfg
+        lad = build_ladder(p, center, per_stock, costs, lcfg)
         if lad.skipped:
             skipped.append((p.code, lad.skipped))
             continue
         mine = live_buys.get(p.code, [])
         relay = should_relay(old_spacing, lad.spacing, gcfg)
-        print(f"\n  {p.code}  현재가 {px:>10,.0f}원  기준가 {center:>10,.0f}원  "
+        print(f"\n  {p.code}  현재가 {px:>10,.0f}원  기준가 {lad.center:>10,.0f}원  "
               f"폭 {p.interval_width*100:5.2f}% → 간격 {lad.spacing*100:4.2f}%"
               + (f"  (직전 {old_spacing*100:.2f}% → {'재배치' if relay else '유지'})"
                  if old_spacing else "  (새 사이클)"))
@@ -239,7 +242,7 @@ def run_grid(args, cfg, recent, broker, state, today, dry_run: bool) -> int:
             print(f"      ♻  미체결 매수 {len(mine)}건 취소 후 새 폭으로 재배치")
             to_cancel.extend(mine)
         orders.extend(lad.buys)
-        new_grids[p.code] = {"center": center, "spacing": lad.spacing,
+        new_grids[p.code] = {"center": lad.center, "spacing": lad.spacing,
                              "date": (cyc["date"] if old_spacing else today.isoformat())}
 
     if skipped:

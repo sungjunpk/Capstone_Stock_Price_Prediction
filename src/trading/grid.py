@@ -9,6 +9,21 @@
 어떻게 도달할지*만 답한다. 그래서 종목 선별은 여기 없다. `trading.direction.mode =
 cross_sectional` 과 `top_n` 이 이미 q50 순위로 고르고 있고, 그리드는 그 결과를 받는다.
 
+## 네 가지 조건을 전부 모델이 판단한다 (사용자 결정 2026-09-22)
+
+발표 자료의 "그리드 간격 변경을 유발하는 조건" 네 가지를 그대로 모델 출력에 맵핑한다.
+
+| 조건 | 모델이 쓰는 값 | 설정 | 함수 |
+|---|---|---|---|
+| 01 최근 가격 변동성 | `q90-q10` (예측 불확실성 폭) | `width_alpha` | `spacing_from_quantiles` |
+| 02 현재 주가 위치 | `q50` (예측 중앙값) → 사다리 중심 이동 | `center_k` | `center_from_quantiles` |
+| 03 추세 지표 | `q90-q50` vs `q50-q10` (분위 비대칭) | `skew` | `spans_from_quantiles` |
+| 04 거래비용·리스크 | 왕복비용·손절 (모델 아님, 제약) | `floor_mult`/`max_spacing`/`stop_loss_pct` | `round_trip_cost` |
+
+⚠️ **02·03 은 실측에서 개선이 확인되지 않았다**(`docs/REFERENCES.md` 7.6·7.8).
+그럼에도 켜 두는 것은 사용자 결정이다 — "네 조건 전부 모델이 판단하게 한다".
+값어치가 숫자로 확인된 것은 01 하나이고, 그 표를 발표에서 빼지 않는다.
+
 ## 모델이 정하는 것 — 간격
 
 `q90 - q10` 은 모델이 본 **불확실성 폭**이고, 그게 곧 변동성 예측이다.
@@ -98,6 +113,28 @@ def spacing_from_quantiles(
     return min(max(pred.interval_width * alpha, floor), cap)
 
 
+def center_from_quantiles(
+    pred: QuantilePrediction, price: float, grid_cfg: dict,
+) -> float:
+    """조건 02 — 사다리 **중심**을 모델이 본 중앙값 자리로 옮긴다.
+
+    `center_k=0` 이면 현재가 그대로. 1 이면 `현재가 x (1 + q50)` —
+    모델이 오를 것으로 보면 사다리가 위로 올라가 매도 칸이 멀어지고,
+    내릴 것으로 보면 아래로 내려가 매수 칸이 벌어진다.
+
+    `center_cap` 으로 조인다. 예측이 튀는 날 사다리가 현재가에서 통째로
+    떨어져 **한쪽이 전부 즉시 체결되는** 일을 막는다.
+
+    초기 매수는 이 중심이 아니라 **실제 현재가**에 나간다 — 중심은 사다리를
+    놓는 자리일 뿐이다.
+    """
+    k = float(grid_cfg.get("center_k", 0.0))
+    if k == 0.0:
+        return price
+    cap = float(grid_cfg.get("center_cap", 0.05))
+    return price * (1 + min(max(pred.q50 * k, -cap), cap))
+
+
 def spans_from_quantiles(
     pred: QuantilePrediction, costs: dict, grid_cfg: dict,
 ) -> tuple[float, float]:
@@ -181,7 +218,7 @@ class Ladder:
     """한 종목의 사다리 전체."""
 
     code: str
-    center: float
+    center: float               # 사다리 중심. `center_k`>0 이면 현재가와 다르다
     spacing: float
     budget: float
     per_level: float
@@ -210,6 +247,7 @@ def build_ladder(
     ratio = float(grid_cfg.get("ratio", 1.0))
     spacing = spacing_from_quantiles(pred, costs, grid_cfg)
     up_span, dn_span = spans_from_quantiles(pred, costs, grid_cfg)
+    center = center_from_quantiles(pred, price, grid_cfg)
     per_level = (budget / 2) / n
 
     def empty(reason: str) -> Ladder:
@@ -225,15 +263,16 @@ def build_ladder(
     dn_off = grid_offsets(n, dn_span / n, ratio)
     buys, sells = [], []
     for i, (uo, do) in enumerate(zip(up_off, dn_off, strict=True), start=1):
-        bp = round_to_tick(price * (1 - do))            # 매수는 내림
-        sp = round_to_tick(price * (1 + uo), up=True)   # 매도는 올림
+        bp = round_to_tick(center * (1 - do))            # 매수는 내림
+        sp = round_to_tick(center * (1 + uo), up=True)   # 매도는 올림
         if bp > 0 and (q := int(per_level // bp)) > 0:
             buys.append(GridOrder(pred.code, "buy", bp, q, i))
         if sp > 0 and (q := int(per_level // sp)) > 0:
             sells.append(GridOrder(pred.code, "sell", sp, q, i))
 
+    # 초기 매수는 **현재가**로 나간다 — 중심은 사다리를 놓는 자리일 뿐이다
     init_qty = int((budget / 2) // price)
-    return Ladder(pred.code, price, spacing, budget, per_level, init_qty, buys, sells)
+    return Ladder(pred.code, center, spacing, budget, per_level, init_qty, buys, sells)
 
 
 def paired_sell_price(
