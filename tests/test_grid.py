@@ -10,6 +10,7 @@ from src.trading.grid import (
     build_ladder,
     center_from_quantiles,
     grid_offsets,
+    outside_ladder,
     paired_sell_price,
     round_to_tick,
     should_relay,
@@ -199,6 +200,21 @@ class TestRelay:
 
     def test_밴드는_설정이_정한다(self):
         assert should_relay(0.030, 0.032, CFG | {"relay_band": 0.02})
+
+
+class TestOutsideLadder:
+    """사이클 중간에 기준가를 다시 잡는 유일한 조건 — 사다리 이탈."""
+
+    def test_범위_안이면_기준가를_안_옮긴다(self):
+        lad = build_ladder(pred(0.12), 70_000, 10_000_000, COSTS, CFG)
+        top, bot = max(o.price for o in lad.sells), min(o.price for o in lad.buys)
+        assert not outside_ladder(lad, 70_000)
+        assert not outside_ladder(lad, top) and not outside_ladder(lad, bot)
+
+    def test_위아래로_벗어나면_다시_잡는다(self):
+        lad = build_ladder(pred(0.12), 70_000, 10_000_000, COSTS, CFG)
+        top, bot = max(o.price for o in lad.sells), min(o.price for o in lad.buys)
+        assert outside_ladder(lad, top + 100) and outside_ladder(lad, bot - 100)
 
 
 class TestPairedSell:

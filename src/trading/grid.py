@@ -53,7 +53,8 @@ alpha=0.20(평균 간격 3.1%)이 고정 간격 대비 test 고유분 +0.17 -> +
 폭을 사이클 시작에 한 번 정하고 끝내면, 그 사이 시장이 바뀌어도 사다리가 안 따라간다.
 모델은 **매일** 새 예측을 내므로 매일 폭을 다시 계산하고, 변화가 `relay_band` 를
 넘을 때만 **미체결 칸을 취소하고 다시 건다**. 기준가는 안 옮긴다 — 옮기면 그리드가
-아니라 매일 재시작이다.
+아니라 매일 재시작이다. 예외는 가격이 사다리 **바깥**으로 나갔을 때 하나다
+(`outside_ladder`) — 그때는 체결될 칸이 없으므로 현재가로 사이클을 새로 연다.
 
 실측(일봉 198종목, 5거래일 사이클, 사이클마다 짝지어 비교): 고정 대비
 val **+0.049%p (p=0.000)** · test **+0.037%p (p=0.001)**. `docs/REFERENCES.md` 7.7.
@@ -200,6 +201,17 @@ def should_relay(old_spacing: float, new_spacing: float, grid_cfg: dict) -> bool
     if old_spacing <= 0:
         return True
     return abs(new_spacing / old_spacing - 1) > float(grid_cfg.get("relay_band", 0.10))
+
+
+def outside_ladder(ladder: Ladder, price: float) -> bool:
+    """가격이 사다리 맨 위·맨 아래 칸 바깥인가 — 사이클 중간에 기준가를 다시 잡는 유일한 조건.
+
+    벗어나면 그 사다리에는 더 체결될 칸이 없다. 사이클 끝까지 기다리면 그동안
+    그리드가 멈춰 있으므로, 그때만 현재가로 사이클을 새로 연다. 범위 **안**에서는
+    기준가를 옮기지 않는다 — 옮기면 사다리가 가격을 따라다녀 왕복이 성립하지 않는다.
+    """
+    rungs = [o.price for o in ladder.buys + ladder.sells]
+    return bool(rungs) and not min(rungs) <= price <= max(rungs)
 
 
 @dataclass(frozen=True)

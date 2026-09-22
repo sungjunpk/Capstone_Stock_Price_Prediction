@@ -37,7 +37,7 @@ from src.models.inference import (  # noqa: E402
     predict_recent,
 )
 from src.trading.broker import BUY, PaperBroker  # noqa: E402
-from src.trading.grid import build_ladder, should_relay  # noqa: E402
+from src.trading.grid import build_ladder, outside_ladder, should_relay  # noqa: E402
 from src.trading.paper_trader import (  # noqa: E402
     TraderState,
     build_plan,
@@ -163,6 +163,7 @@ def run_grid(args, cfg, recent, broker, state, today, dry_run: bool) -> int:
     **사이클 안에서도 폭은 모델이 다시 잡는다.** 매일 새 예측으로 간격을 계산하고,
     `grid.relay_band` 를 넘게 바뀌었으면 미체결 칸을 **취소하고 새 폭으로 다시 건다**.
     기준가는 사이클 시작값을 유지한다(`state.grids`) — 매일 옮기면 매일 재시작이다.
+    단, 가격이 사다리 바깥이면(`grid.outside_ladder`) 현재가로 사이클을 새로 연다.
     밴드 안이면 이미 걸린 칸은 그대로 둔다. 같은 칸에 두 번 걸면 두 배를 산다.
     """
     gcfg = cfg["grid"]
@@ -220,6 +221,11 @@ def run_grid(args, cfg, recent, broker, state, today, dry_run: bool) -> int:
         else:
             center, old_spacing, lcfg = px, 0.0, gcfg
         lad = build_ladder(p, center, per_stock, costs, lcfg)
+        # 예외 하나 — 가격이 사다리 바깥이면 더 체결될 칸이 없다. 현재가로 사이클을 새로 연다
+        if old_spacing and not lad.skipped and outside_ladder(lad, px):
+            log.info("%s 사다리 이탈(현재가 %.0f원) — 사이클을 새로 연다", p.code, px)
+            old_spacing = 0.0
+            lad = build_ladder(p, px, per_stock, costs, gcfg)
         if lad.skipped:
             skipped.append((p.code, lad.skipped))
             continue
