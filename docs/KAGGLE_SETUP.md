@@ -153,6 +153,87 @@ python scripts/package_data.py
 | `체크포인트가 학습된 범주 구성과 현재 데이터가 다르다` | 유니버스가 바뀐 뒤 **옛 체크포인트**로 추론했다. 현재 유니버스로 재학습해야 한다 — 이 문서 절차 그대로 |
 | 학습은 됐는데 `paper_trade.py` 가 옛 모델을 쓴다 | `PROFILE` 이 `''` 이 아니었다. 태그 붙은 체크포인트는 실주문 경로가 안 받는다 |
 
+## 시드 민감도 측정 (2026-10-16 추가)
+
+논문 5.2절의 검증구간 격차가 0.000006 이라 **시드만 바꿔도 뒤집힐 수 있는 크기**다.
+심사에서 가장 먼저 요청될 항목이고(6.1절 "다중 시드 반복은 남은 과제"), 로컬 MPS 로는
+제안 모형 1시드에 14~25분이라 노트북이 과열된다. 캐글에서는 1시드 5분이다.
+
+`scripts/train.py` 와 `scripts/arch_compare.py` 에 `--seed` 가 있다. **체크포인트에
+`_seedN` 태그가 자동으로 붙는다** — `_config_hash` 에 seed 가 들어가지 않아, 태그가
+없으면 ① 시드끼리 같은 파일명으로 서로를 덮어쓰고 ② 무태그라 `paper_trade.py` 의
+실주문 경로(`^phase1_[0-9a-f]{8}\.pt$`)가 실험 체크포인트를 집어간다.
+
+### 추가할 셀 (노트북 4번 셀 "학습" 다음에 붙인다)
+
+```python
+# ── 시드 민감도: 제안 모형 5시드 + TFT 3시드 ─────────────────────
+# batch-size 는 넘기지 않는다 — config 기본값(256)으로 전 시드를 동일하게 둔다.
+import subprocess
+
+for s in [42, 43, 44, 45, 46]:
+    print(f"\n===== ours seed {s} " + "=" * 46, flush=True)
+    subprocess.run(f"python scripts/train.py --seed {s}", shell=True, check=True)
+
+for s in [42, 43, 44]:
+    print(f"\n===== tft seed {s} " + "=" * 48, flush=True)
+    subprocess.run(f"python scripts/arch_compare.py --train tft --seed {s}",
+                   shell=True, check=True)
+```
+
+### 요약 셀 (그 다음에 붙인다)
+
+```python
+import glob, json, re, statistics as st
+
+rows = []
+for f in glob.glob("outputs/reports/2*.json"):
+    r = json.load(open(f))
+    ck = r.get("checkpoint", "")
+    m = re.search(r"_seed(\d+)\.pt$", ck)
+    if not m or r.get("smoke"):
+        continue
+    rows.append(("tft" if "_tft_" in ck else "ours", int(m.group(1)),
+                 r["best_val_pinball"], r["improvement_vs_baseline_pct"], r["best_epoch"]))
+
+for arch in ("ours", "tft"):
+    v = sorted(x for x in rows if x[0] == arch)
+    if not v:
+        continue
+    pin = [x[2] for x in v]
+    print(f"\n{arch}  시드 {len(v)}개")
+    for _, sd, p_, imp, ep in v:
+        print(f"   seed {sd}: pinball {p_:.6f}  개선 {imp:+.2f}%  best epoch {ep}")
+    print(f"   평균 {st.mean(pin):.6f}  표준편차 {st.pstdev(pin):.6f}  "
+          f"폭 {max(pin) - min(pin):.6f}")
+```
+
+### 걸리는 시간
+
+| | 1시드 | 시드 수 | 합계 |
+|---|---|---|---|
+| 제안 모형 | 약 5분 (29.3 s/epoch × ~10 epoch) | 5 | **25분** |
+| TFT 원본 | 약 45분 (로컬 1,452 s/epoch ÷ 3.8) | 3 | **2시간 15분** |
+
+세션 한도(12시간 / 주당 30시간) 안이다. 시간이 부족하면 **제안 모형 5시드만** 돌려도
+지적의 대부분은 닫힌다 — 다만 그 경우 "대조군의 시드 변동은 측정하지 못했다"를
+6.1절에 남겨야 한다.
+
+### 가져온 뒤 (로컬)
+
+`phase1_result.zip` 을 풀면 `outputs/checkpoints/phase1_*_seed*.pt` 와 리포트가 들어온다.
+그 다음 시드별로 TFT 대비 DM 검정을 돌린다.
+
+```bash
+for s in 42 43 44 45 46; do
+  CK=$(ls outputs/checkpoints/phase1_*_seed${s}.pt | grep -v tft | grep -v smoke | head -1)
+  python scripts/dm_test.py --a "$CK" --b outputs/checkpoints/phase1_f5e8f4e4_tft.pt
+done
+```
+
+검증·검정 양 구간의 핀볼 손실과 DM 통계·p값이 시드마다 나온다. 이걸로 5.2절의
+"단일 시드에서 얻은 것" 문장을 실측으로 바꾼다.
+
 ## 노트북은 하나만 쓴다
 
 예전에 있던 `train_kaggle.ipynb` / `train_colab.ipynb` 는 삭제했다.

@@ -32,6 +32,7 @@ def main() -> int:
     ap.add_argument("--batch-size", type=int, help="config 의 batch_size 를 덮어쓴다")
     ap.add_argument("--lr", type=float)
     ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: intraday)")
+    ap.add_argument("--seed", type=int, help="config 의 seed 를 덮어쓴다 (시드 민감도 측정용)")
     args = ap.parse_args()
 
     setup_logging(run_name="train")
@@ -41,6 +42,15 @@ def main() -> int:
         cfg["training"]["batch_size"] = args.batch_size
     if args.lr:
         cfg["training"]["lr"] = args.lr
+    if args.seed is not None:
+        cfg["project"]["seed"] = args.seed
+        # ⚠️ _config_hash 에 seed 가 안 들어간다. 태그를 안 붙이면 세 시드가 같은
+        #    파일명으로 서로를 덮어쓰고, 무태그라 paper_trade.py 의 실주문 경로
+        #    (`^phase1_[0-9a-f]{8}\.pt$`)가 실험 체크포인트를 집어간다.
+        cfg["data"]["checkpoint_suffix"] = (
+            cfg["data"].get("processed_suffix", "") + f"_seed{args.seed}")
+        log.info("seed %d — 체크포인트에 _seed%d 태그를 붙인다 (실주문 경로 격리)",
+                 args.seed, args.seed)
 
     report = train(cfg, smoke=args.smoke, max_epochs=args.epochs)
 

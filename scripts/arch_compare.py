@@ -80,15 +80,22 @@ ARCHS: dict[str, dict] = {
 }
 
 
-def arch_config(base: dict, arch: str, *, batch_size: int | None) -> dict:
-    """base 설정에서 **아키텍처와 손실만** 바꾼다. 나머지는 전부 고정 — 그게 통제다."""
+def arch_config(base: dict, arch: str, *, batch_size: int | None,
+                seed: int | None = None) -> dict:
+    """base 설정에서 **아키텍처와 손실만** 바꾼다. 나머지는 전부 고정 — 그게 통제다.
+
+    `seed` 를 주면 시드 민감도 측정용이다. _config_hash 에 seed 가 들어가지 않으므로
+    태그에 함께 박지 않으면 시드끼리 같은 파일명으로 서로를 덮어쓴다.
+    """
     c = copy.deepcopy(base)
     c["model"]["arch"] = arch
     c["training"]["loss"] = ARCHS[arch]["loss"]
     # 실험 산출물임을 파일명에 박는다. 무태그로 떨어지면 실주문 경로가 집어간다.
-    c["data"]["checkpoint_suffix"] = (
-        c["data"].get("processed_suffix", "") + f"_{arch}"
-    )
+    tag = c["data"].get("processed_suffix", "") + f"_{arch}"
+    if seed is not None:
+        c["project"]["seed"] = seed
+        tag += f"_seed{seed}"
+    c["data"]["checkpoint_suffix"] = tag
     if batch_size:
         c["training"]["batch_size"] = batch_size
     return c
@@ -110,12 +117,12 @@ def find_checkpoint(arch: str, base: dict, *, smoke: bool) -> Path | None:
 
 # --------------------------------------------------------------------- 학습
 def do_train(names: list[str], base: dict, *, smoke: bool, epochs: int | None,
-             batch_size: int | None) -> None:
+             batch_size: int | None, seed: int | None = None) -> None:
     for i, arch in enumerate(names, 1):
         log.info("=" * 66)
         log.info("[%d/%d] %s — %s", i, len(names), arch, ARCHS[arch]["label"])
         log.info("=" * 66)
-        cfg = arch_config(base, arch, batch_size=batch_size)
+        cfg = arch_config(base, arch, batch_size=batch_size, seed=seed)
         t0 = time.time()
         r = train(cfg, smoke=smoke, max_epochs=epochs)
         log.info(
@@ -284,6 +291,8 @@ def main() -> int:
     ap.add_argument("--epochs", type=int)
     ap.add_argument("--batch-size", type=int)
     ap.add_argument("--months", type=int, default=24, help="백테스트 구간 (기본 최근 2년)")
+    ap.add_argument("--seed", type=int,
+                    help="config 의 seed 를 덮어쓴다. 체크포인트에 _seedN 태그가 붙는다")
     args = ap.parse_args()
 
     setup_logging(run_name="arch_compare")
@@ -302,7 +311,7 @@ def main() -> int:
             log.error("모르는 아키텍처: %s (가능: %s)", unknown, list(ARCHS))
             return 1
         do_train(names, base, smoke=args.smoke,
-                 epochs=args.epochs, batch_size=args.batch_size)
+                 epochs=args.epochs, batch_size=args.batch_size, seed=args.seed)
 
     if args.eval is not None:
         names = args.eval or [*ARCHS, "ours"]
