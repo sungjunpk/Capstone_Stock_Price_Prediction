@@ -56,8 +56,31 @@ alpha=0.20(평균 간격 3.1%)이 고정 간격 대비 test 고유분 +0.17 -> +
 아니라 매일 재시작이다. 예외는 가격이 사다리 **바깥**으로 나갔을 때 하나다
 (`outside_ladder`) — 그때는 체결될 칸이 없으므로 현재가로 사이클을 새로 연다.
 
+두 가지를 덧붙인다. (1) `relay_band` 가 갈라주는 것은 **백테스트**다 — 실거래는
+지정가가 장 마감에 소멸하므로 아침마다 어차피 전부 다시 깔린다(`paper_trade.py` 는
+출력 문구로만 쓴다). (2) 이탈 예외는 **장중 회차에서도 본다**(2026-10-01). 아침에만
+보면 장중에 벗어난 종목이 다음 아침까지 멈춘다. 폭은 장중에 다시 잡지 않는다 —
+입력이 일봉 예측이라 값이 안 바뀌고, 가격으로 바꾸면 모델 밖으로 나간다.
+
 실측(일봉 198종목, 5거래일 사이클, 사이클마다 짝지어 비교): 고정 대비
 val **+0.049%p (p=0.000)** · test **+0.037%p (p=0.001)**. `docs/REFERENCES.md` 7.7.
+
+## 사다리는 하루밖에 못 산다 (2026-09-27)
+
+**미체결 지정가는 장 마감에 자동 소멸한다** — 한국 주식에 GTC 가 없다
+(`docs/KIWOOM_VERIFY.md` 지정가 검증에서 실측으로 드러났다). 그래서 그리드는
+**장중 30분 간격**으로 돌고, 매일 아침 사다리를 새로 깐다. 기준가는 그대로 유지하므로
+사이클 개념은 살아 있다 — 다시 깔리는 것은 칸이고 중심이 아니다.
+
+체결 감지가 회차별로 갈린다:
+
+| 회차 | 체결 감지 | 왜 |
+|---|---|---|
+| 아침 첫 회차 | **안 한다.** `sell_ladder_for_holding` 으로 보유분을 매도 칸에 덮는다 | 전날 칸이 소멸했으니 역산할 게 없다. 보유수량이 진실이다 |
+| 장중 회차 | `detect_fills` — 주문번호 대조 | 주문이 살아 있으므로 사라짐 = 진짜 체결 |
+
+⚠️ `detect_fills` 를 날 넘겨 부르면 **소멸을 체결로 오인해** 사지도 않은 수량에
+매도를 건다. 호출자가 회차를 구분해야 한다(`TraderState.grid_session`).
 
 ## 사다리 모양 — ratio
 
@@ -69,6 +92,8 @@ val **+0.049%p (p=0.000)** · test **+0.037%p (p=0.001)**. `docs/REFERENCES.md` 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import log, sqrt
+from statistics import stdev
 
 from src.trading.signal import QuantilePrediction, round_trip_cost
 
@@ -138,6 +163,7 @@ def center_from_quantiles(
 
 def spans_from_quantiles(
     pred: QuantilePrediction, costs: dict, grid_cfg: dict,
+    spacing: float | None = None,
 ) -> tuple[float, float]:
     """(위쪽 총범위, 아래쪽 총범위). `skew` 가 정한다.
 
@@ -151,7 +177,8 @@ def spans_from_quantiles(
     그쪽 체결은 볼 때마다 손해이기 때문이다.
     """
     n = int(grid_cfg.get("levels", 5))
-    base = spacing_from_quantiles(pred, costs, grid_cfg) * n   # 대칭일 때 한쪽 범위
+    sp = spacing_from_quantiles(pred, costs, grid_cfg) if spacing is None else spacing
+    base = sp * n                                              # 대칭일 때 한쪽 범위
     if str(grid_cfg.get("skew", "none")) != "quantile":
         return base, base
 
@@ -165,6 +192,46 @@ def spans_from_quantiles(
     floor = round_trip_cost(costs) * float(grid_cfg.get("floor_mult", 2.0)) * n
     cap = float(grid_cfg.get("max_spacing", 0.10)) * n
     return min(max(up, floor), cap), min(max(dn, floor), cap)
+
+
+# 정규장 10분봉 개수. 분봉 표준편차를 하루 변동성으로 환산하는 데 쓴다
+# (격자가 고정이 아니라 날마다 ±1 봉 차이가 나지만, alpha 가 흡수한다).
+_BARS_PER_SESSION = 39
+
+
+def realized_vol(closes: list[float]) -> float | None:
+    """최근 분봉 종가 -> 하루 변동성. 종가가 모자라면 `None`.
+
+    **못 재는 것과 '0 이다'는 다르다** — None 을 돌려 호출자가 폭을 그대로 두게 한다.
+    """
+    if len(closes) < 12:
+        return None
+    rets = [log(b / a) for a, b in zip(closes, closes[1:], strict=False) if a > 0 and b > 0]
+    if len(rets) < 2:
+        return None
+    return stdev(rets) * sqrt(_BARS_PER_SESSION)
+
+
+def relay_spacing(
+    base_spacing: float, vol_open: float, vol_now: float,
+    costs: dict, grid_cfg: dict,
+) -> float | None:
+    """아침 사다리 폭 x (지금 변동성 / 아침 변동성). 장중 간격 재조정의 전부다.
+
+    **수준은 모델이, 변화분만 가격이 정한다.** 절대 공식(`변동성 x alpha`)으로 두면
+    켜는 순간 수준까지 갈아치운다 — 모델 폭은 5일 지평이라 평균 3.1%/칸인데
+    하루 변동성 기반은 1%대라 사다리가 3분의 1로 쪼그라든다(2026-10-01 실호출 확인).
+    비율로 두면 조건 01 의 **수준 결정권이 모델에 남고**, 장중에는 시장이 얼마나
+    더/덜 흔들리는지만 반영된다.
+
+    하한·상한은 `spacing_from_quantiles` 와 같다 — 왕복비용보다 좁은 칸은 아침에
+    깔든 장중에 깔든 체결될 때마다 손해다.
+    """
+    if base_spacing <= 0 or not vol_open or vol_open <= 0 or not vol_now:
+        return None
+    floor = round_trip_cost(costs) * float(grid_cfg.get("floor_mult", 2.0))
+    cap = float(grid_cfg.get("max_spacing", 0.10))
+    return min(max(base_spacing * vol_now / vol_open, floor), cap)
 
 
 def grid_offsets(n_levels: int, spacing: float, ratio: float = 1.0) -> list[float]:
@@ -222,7 +289,10 @@ class GridOrder:
     side: str          # signal.BUY / SELL 과 같은 문자열을 쓴다
     price: int         # 호가단위에 맞춘 값
     quantity: int
-    level: int         # 중심에서 몇 칸 떨어졌나 (1부터)
+    # 중심에서 몇 칸 떨어졌나 (1부터). **음수는 중심 아래**를 뜻하고, 매수 칸의
+    # 짝으로 걸리는 매도에만 쓴다 — 상단 매도 칸과 다른 축이다
+    # (`reactions_to_fills` 의 경고 참조).
+    level: int
 
 
 @dataclass(frozen=True)
@@ -246,6 +316,7 @@ def build_ladder(
     budget: float,
     costs: dict,
     grid_cfg: dict,
+    spacing: float | None = None,
 ) -> Ladder:
     """목표 예산과 모델 예측 -> 지정가 사다리. **API 를 호출하지 않는다.**
 
@@ -257,8 +328,9 @@ def build_ladder(
     """
     n = int(grid_cfg.get("levels", 5))
     ratio = float(grid_cfg.get("ratio", 1.0))
-    spacing = spacing_from_quantiles(pred, costs, grid_cfg)
-    up_span, dn_span = spans_from_quantiles(pred, costs, grid_cfg)
+    if spacing is None:
+        spacing = spacing_from_quantiles(pred, costs, grid_cfg)
+    up_span, dn_span = spans_from_quantiles(pred, costs, grid_cfg, spacing)
     center = center_from_quantiles(pred, price, grid_cfg)
     per_level = (budget / 2) / n
 
@@ -285,6 +357,112 @@ def build_ladder(
     # 초기 매수는 **현재가**로 나간다 — 중심은 사다리를 놓는 자리일 뿐이다
     init_qty = int((budget / 2) // price)
     return Ladder(pred.code, center, spacing, budget, per_level, init_qty, buys, sells)
+
+
+@dataclass(frozen=True)
+class Fill:
+    """직전 회차 이후 **새로 체결된** 칸. 누적이 아니라 증분이다."""
+
+    order_no: str
+    side: str
+    level: int
+    price: int         # 걸었던 지정가. 실제 체결가는 이보다 유리하다(KIWOOM_VERIFY 지정가 검증)
+    quantity: int
+
+
+def detect_fills(rungs: dict[str, dict], live: list[dict]) -> list[Fill]:
+    """걸어둔 칸 vs 미체결 목록 -> 새로 체결된 수량.
+
+    **장이 열려 있는 동안에만 옳다.** 지정가는 장 마감에 자동 소멸하므로
+    (`docs/KIWOOM_VERIFY.md` 지정가 검증) 날을 넘겨 부르면 소멸을 체결로 오인해
+    사지도 않은 수량에 매도를 건다. 아침 첫 회차는 `rungs` 를 버리고 다시 깐다.
+
+    `ord_stt` 문자열이 아니라 수량으로 판단한다 — '체결'로 와도 남은 수량이 있다.
+
+    ponytail: 30분 간격 폴링이라 같은 칸이 그 안에 왕복하면 한 번만 잡는다.
+    체결통보 웹소켓이 필요해지면 그때 올린다.
+    """
+    by_no = {str(d["order_no"]): d for d in live}
+    fills = []
+    for no, r in rungs.items():
+        seen = int(r.get("filled", 0))
+        d = by_no.get(str(no))
+        # 목록에서 사라졌다 = 전량 체결. 우리가 취소한 칸은 즉시 rungs 에서 지우므로 안 섞인다
+        total = int(r["qty"]) if d is None else int(d.get("filled_qty", 0))
+        if total > seen:
+            fills.append(Fill(str(no), str(r["side"]), int(r["level"]),
+                              int(r["price"]), total - seen))
+    return fills
+
+
+def reactions_to_fills(
+    fills: list[Fill], ladder: Ladder, costs: dict,
+) -> list[GridOrder]:
+    """체결 -> 반대쪽 칸. 이게 그리드가 '흐르는' 지점이다.
+
+    매수 체결 -> 한 칸 위에 매도 (`paired_sell_price` — 매입가+왕복비용 바닥이 걸린다)
+    매도 체결 -> 같은 칸에 매수 **재장전**. 수량은 받은 대금으로 다시 센다.
+        원래 칸 수량을 그대로 쓰면 부분체결일 때 예산을 넘긴다.
+
+    ⚠️ 짝 매도의 `level` 은 **음수**다. 그 매도는 중심 *아래*(매수 칸 사이)에 걸리므로
+    `ladder.sells` 의 level(중심 위 오프셋)과 **다른 축**이다. 같은 정수로 쓰면
+    `sell_ladder_for_holding` 의 `busy_levels` 가 엉뚱한 상단 칸을 '사용 중'으로 읽고
+    건너뛴다 — 초과매도는 아니지만 사다리 커버리지가 조용히 비는 결함이다
+    (2026-09-27 감사에서 발견).
+    """
+    out = []
+    for f in fills:
+        if f.side == "buy":
+            price = paired_sell_price(ladder, f.level, fill_price=f.price, costs=costs)
+            if price > 0 and f.quantity > 0:
+                out.append(GridOrder(ladder.code, "sell", price, f.quantity, -f.level))
+            continue
+        rung = next((o for o in ladder.buys if o.level == f.level), None)
+        if rung is None:
+            continue
+        if (q := int(f.quantity * f.price // rung.price)) > 0:
+            out.append(GridOrder(ladder.code, "buy", rung.price, q, f.level))
+    return out
+
+
+def sell_ladder_for_holding(
+    ladder: Ladder, sellable: int, busy_levels: frozenset[int] = frozenset(),
+) -> list[GridOrder]:
+    """보유분을 **비어 있는** 매도 칸에 가까운 쪽부터 얹는다.
+
+    어느 매수 칸이 체결됐는지 역산하지 않는다 — 지금 팔 수 있는 수량이 진실이고
+    (브로커가 정본), 그걸 덮으면 된다. 그래서 전날 칸이 소멸한 아침에도,
+    초기 시장가 매수가 뒤늦게 체결된 장중 회차에도 같은 함수로 자기치유된다.
+
+    `sellable` 을 쓰는 이유가 둘이다: D+2 미결제분으로 매도를 내면 거부되고,
+    이미 걸어둔 매도 주문만큼은 키움이 매도가능수량에서 빼주므로 이중으로 걸리지 않는다.
+    `busy_levels` 는 칸이 겹치는 것을 막는다.
+
+    ponytail: 사다리 정의 수량이 상한이라 그보다 많이 들고 있으면 남는다
+    (하락장에서 매수 칸이 다 체결된 경우). 다음 사이클에서 정리된다.
+    """
+    out, left = [], int(sellable)
+    for o in ladder.sells:
+        if left <= 0:
+            break
+        if o.level in busy_levels:
+            continue
+        q = min(o.quantity, left)
+        out.append(GridOrder(o.code, "sell", o.price, q, o.level))
+        left -= q
+    return out
+
+
+def stop_loss_hit(unrealized_pnl: float, budget: float, grid_cfg: dict) -> bool:
+    """사이클 배정액 대비 미실현손실이 한도를 넘었나 (조건 04 — 모델이 아니라 제약).
+
+    분모가 **배정액**이지 매입금액이 아니다. 사다리가 절반만 채워졌으면 손실도
+    절반만 반영된다 — 그게 `stop_loss_pct` 주석의 '사이클 시작 자산 대비'다.
+    매입가 대비로 재면 물타기로 평균가가 내려간 만큼 한도가 헐거워진다.
+    """
+    if budget <= 0:
+        return False
+    return unrealized_pnl / budget <= float(grid_cfg.get("stop_loss_pct", -1.0))
 
 
 def paired_sell_price(

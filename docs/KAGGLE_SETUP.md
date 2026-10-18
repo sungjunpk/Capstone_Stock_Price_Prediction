@@ -234,13 +234,35 @@ done
 검증·검정 양 구간의 핀볼 손실과 DM 통계·p값이 시드마다 나온다. 이걸로 5.2절의
 "단일 시드에서 얻은 것" 문장을 실측으로 바꾼다.
 
-## 노트북은 하나만 쓴다
+## 논문 재실행 노트북 (2026-10-18 추가)
+
+`notebooks/kaggle_ktsde_rerun.ipynb` — KTSDE 원고의 〈Table 4〉 출처와 장비 혼재를 한 번에
+닫는 전용 노트북이다. 위 `kaggle_all_in_one.ipynb` 와 **목적이 다르다**(저쪽은 운영 모델
+학습 + 백테스트, 이쪽은 논문 수치 재산출). 백테스트·실주문과 무관하고, 모든 체크포인트에
+`_seedN` 태그가 붙어 실주문 경로로 새지 않는다.
+
+하는 일: 자료 동결 대조(`freeze_panel.py --verify docs/freeze_panel_20261018.json`) →
+배관 점검 → 제안 모형 5시드 → TFT 5시드 → `seed_aggregate.py` 집계 → 시드별 DM 검정 →
+`ktsde_rerun.zip`. 약 2시간 5분.
+
+⚠️ **돌리기 전에 `git push` 가 필요하다.** 노트북이 GitHub 에서 클론하므로
+`scripts/freeze_panel.py`, `scripts/seed_aggregate.py`, `docs/freeze_panel_20261018.json`
+이 올라가 있어야 한다.
+
+⚠️ 자료 동결 대조는 **윈도우 수·행 수·기간·피처 수**를 본다. sha256 은 비교하지 않는다 —
+`package_data.py` 가 열을 떼고 float32 로 다시 쓰므로 캐글 쪽 파일은 바이트가 달라진다.
+
+내려받은 뒤 로컬에서 할 나머지(추론만): 새 체크포인트로 〈Table 6〉·〈Table 7〉과
+기권율 맞춤 비교를 다시 산출한다. `scripts/abstain_quality.py` 의 `MODELS` 가 옛 체크포인트
+이름으로 고정돼 있어 그때 바꿔야 한다.
+
+## 노트북은 둘뿐이다
 
 예전에 있던 `train_kaggle.ipynb` / `train_colab.ipynb` 는 삭제했다.
 `/kaggle/working/` 이 세션 간에 남아 있어서 옛 노트북이 낡은 클론을 그대로 재사용했고,
 이미 폐기한 1.88M 설정으로 학습이 도는 사고가 있었다 (2026-08-25).
 
-`kaggle_all_in_one.ipynb` 는 이걸 두 겹으로 막는다:
+`kaggle_all_in_one.ipynb` 와 `kaggle_ktsde_rerun.ipynb` 는 이걸 두 겹으로 막는다:
 - 클론 전에 `shutil.rmtree` 로 기존 폴더를 지운다
 - 클론 직후 `configs/config.yaml` 의 `d_model`/`n_layers` 를 검사해
   확정 설정(minimal, 0.33M)이 아니면 그 자리에서 멈춘다

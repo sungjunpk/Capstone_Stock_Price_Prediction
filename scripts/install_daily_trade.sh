@@ -32,7 +32,7 @@ case "${1:-}" in
     cp "$SRC" "$DST"
     launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
     launchctl bootstrap "$DOMAIN" "$DST"
-    echo "설치됨: $LABEL — 평일 15:15 — ⚠️ 실제 주문이 나간다"
+    echo "설치됨: $LABEL — 평일 장중 30분 간격(09:05~15:05) — ⚠️ 실제 주문이 나간다"
     echo "  확인: bash scripts/install_daily_trade.sh --status"
     echo "  로그: outputs/logs/daily/"
     ;;

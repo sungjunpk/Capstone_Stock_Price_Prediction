@@ -70,9 +70,13 @@ class TraderState:
     last_rebalance: str | None = None
     entry_dates: dict[str, str] = field(default_factory=dict)
     runs: int = 0
-    # 그리드 사이클: {종목: {"center": 기준가, "spacing": 간격, "date": 사이클 시작일}}
+    # 그리드 사이클: {종목: {center, spacing, date, budget, rungs, stopped}}
     # 기준가는 사이클 안에서 **안 움직인다** — 매일 옮기면 그리드가 아니라 매일 재시작이다.
+    # rungs = {주문번호: {side, level, price, qty, filled}} — 걸어둔 칸. 체결 감지의 근거다.
     grids: dict[str, dict] = field(default_factory=dict)
+    # 사다리를 마지막으로 새로 깐 날. 오늘과 다르면 '아침 첫 회차'다 —
+    # 지정가가 장 마감에 소멸하므로 그때는 rungs 를 믿지 않는다(grid.py 참조).
+    grid_session: str | None = None
 
     @classmethod
     def load(cls, path: Path = STATE_PATH) -> TraderState:

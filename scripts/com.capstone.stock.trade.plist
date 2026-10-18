@@ -12,15 +12,16 @@
         <string>/Users/mac/Desktop/Capstone_Stock_Price_Prediction/scripts/daily_trade.sh</string>
     </array>
 
-    <!-- 평일 15:15. 장 마감(15:30) 직전이라 종가 근처에서 체결된다 —
-         백테스트가 '종가 체결'을 가정하므로 비교 가능성이 가장 높다. -->
+    <!-- 매시 :05 과 :35. 장중 30분 간격으로 돌아야 하는 이유는 **미체결 지정가가
+         장 마감에 소멸**하기 때문이다 (docs/KIWOOM_VERIFY.md 지정가 검증) —
+         사다리는 하루밖에 못 살고, 체결에 반응하지 않으면 왕복이 성립하지 않는다.
+
+         요일·시간 게이트는 daily_trade.sh 에 둔다. 65개(5일 x 13회)를 여기 적는
+         대신 두 줄로 두고, 장중이 아니면 스크립트가 API 호출 전에 끝낸다. -->
     <key>StartCalendarInterval</key>
     <array>
-        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
-        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
-        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
-        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
-        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Minute</key><integer>5</integer></dict>
+        <dict><key>Minute</key><integer>35</integer></dict>
     </array>
 
     <key>WorkingDirectory</key>

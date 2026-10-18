@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-10-18T23:16:05",
+  "profile_suffix": "",
+  "files": {
+    "panel.parquet": {
+      "sha256": "365628cd44271feae6f615887f6c4163b8725ada6ae8f39ddd3ae8f14507bd2f",
+      "bytes": 145677895,
+      "rows": 519617,
+      "cols": 43,
+      "codes": 201,
+      "date_min": "2015-01-02",
+      "date_max": "2026-10-16"
+    },
+    "macro.parquet": {
+      "sha256": "39eea5dff72015ec00daf4c5ab092f2cd277b4efbd9da6fca1a4929e61ae54e5",
+      "bytes": 292412,
+      "rows": 2892,
+      "cols": 14,
+      "codes": null,
+      "date_min": "2015-01-02",
+      "date_max": "2026-10-16"
+    },
+    "static.parquet": {
+      "sha256": "9d4c524c017e953db1bb98a6d98239dd6f8d6d30fe66214186eaa955e8707211",
+      "bytes": 16422,
+      "rows": 201,
+      "cols": 10,
+      "codes": 201,
+      "date_min": null,
+      "date_max": null
+    }
+  },
+  "windows": {
+    "train": 264653,
+    "val": 23086,
+    "test": 106490
+  },
+  "batch_size": 256,
+  "split": "SplitSpec(train_end=datetime.date(2022, 12, 31), val_end=datetime.date(2023, 12, 31), embargo_days=5, train_start=None, test_end=None)",
+  "n_features": 30,
+  "n_macro": 13
+}

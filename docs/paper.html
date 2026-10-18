@@ -1,0 +1,663 @@
+<title>Cheaper Quantiles, Same Accuracy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --page:#ffffff;
+  --ink:#111317;
+  --ink-2:#464c54;
+  --ink-3:#808791;
+  --rule:#e4e7ea;
+  --rule-mid:#c6cbd1;
+  --rule-dark:#111317;
+  --accent:#0f4c81;
+  --accent-tint:#f2f6fa;
+  --flag:#9a5b2a;
+  --flag-tint:#fbf6f1;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Libre Franklin",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--page);color:var(--ink);
+  font-family:var(--serif);font-size:18px;line-height:1.66;
+  font-optical-sizing:auto;-webkit-font-smoothing:antialiased;
+}
+.page{max-width:720px;margin:0 auto;padding-block:clamp(40px,7vw,86px);
+  padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+@media(min-width:760px){.page{padding-left:28px;padding-right:28px}}
+p{margin:0 0 1.1em}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600}
+a{color:var(--accent);text-underline-offset:2px}
+em{font-style:italic}
+
+/* masthead */
+.head{margin-bottom:40px}
+.kicker{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:20px}
+h1{font-size:clamp(32px,5.6vw,44px);line-height:1.12;letter-spacing:-.018em;font-weight:600}
+.sub{font-family:var(--serif);font-size:clamp(18px,2.4vw,21px);line-height:1.38;color:var(--ink-2);
+  margin-top:14px;font-weight:400}
+.byline{font-family:var(--sans);font-size:15px;font-weight:500;margin-top:30px;letter-spacing:.005em}
+.affil{font-family:var(--sans);font-size:13px;color:var(--ink-3);margin-top:5px;line-height:1.5}
+.toolbar{margin-top:26px}
+.btn{font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--accent);background:none;
+  border:1px solid var(--rule-mid);border-radius:3px;padding:7px 15px;cursor:pointer;letter-spacing:.01em}
+.btn:hover{border-color:var(--accent);background:var(--accent-tint)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* abstract */
+.abstract{border-top:1.5px solid var(--rule-dark);border-bottom:1px solid var(--rule);
+  padding:28px 0 24px;margin-bottom:12px}
+.abstract h2{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:16px}
+.abstract p{font-size:17px;line-height:1.6}
+.abstract p:last-child{margin-bottom:0}
+.kw{font-family:var(--sans);font-size:13px;color:var(--ink-2);line-height:1.6;
+  padding:16px 0 0;margin-top:4px}
+.kw b{font-family:var(--sans);color:var(--ink);font-weight:600}
+
+/* sections */
+section{margin-top:52px}
+h2.sec{font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:.02em;
+  text-transform:uppercase;color:var(--ink);padding-bottom:9px;margin-bottom:24px;
+  border-bottom:1px solid var(--rule-dark)}
+h2.sec span{color:var(--accent);margin-right:12px}
+h3{font-family:var(--serif);font-size:21px;font-weight:600;margin:36px 0 12px;letter-spacing:-.008em}
+h3 span{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink-3);margin-right:10px;
+  vertical-align:1px}
+h4{font-family:var(--sans);font-size:13.5px;font-weight:700;margin:26px 0 8px;letter-spacing:.01em}
+
+/* tables — booktabs */
+.tw{overflow-x:auto;margin:26px 0}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:13px;line-height:1.45;
+  font-variant-numeric:tabular-nums}
+caption{caption-side:top;text-align:left;font-family:var(--sans);font-size:12.5px;color:var(--ink-2);
+  padding-bottom:10px;line-height:1.5}
+caption b{color:var(--ink);font-weight:700}
+thead th{font-weight:600;text-align:left;padding:0 14px 8px 0;white-space:nowrap;
+  border-top:1.4px solid var(--rule-dark);border-bottom:.8px solid var(--rule-mid);padding-top:9px}
+tbody td{padding:8px 14px 8px 0;border-bottom:1px solid var(--rule);color:var(--ink-2);vertical-align:top}
+tbody tr:last-child td{border-bottom:1.4px solid var(--rule-dark)}
+td:first-child,th:first-child{color:var(--ink)}
+tr.ours td{color:var(--ink);font-weight:600}
+table.n td:not(:first-child),table.n th:not(:first-child){text-align:right;padding-right:0;padding-left:18px}
+
+/* figures */
+figure{margin:34px 0}
+figure img{display:block;width:100%;height:auto;border:1px solid var(--rule)}
+figcaption{font-family:var(--sans);font-size:12.5px;line-height:1.55;color:var(--ink-2);margin-top:12px}
+figcaption b{color:var(--ink);font-weight:700}
+
+/* equations */
+.eq{text-align:center;margin:24px 0;font-size:18px;overflow-x:auto;padding:2px 0}
+.eq i{font-style:italic}
+sub,sup{font-size:.68em;line-height:0}
+
+/* notes */
+.note{border-left:2px solid var(--rule-mid);padding:2px 0 2px 20px;margin:24px 0;font-size:16.5px;
+  line-height:1.58;color:var(--ink-2)}
+.note p:last-child{margin-bottom:0}
+.note b{color:var(--ink)}
+.note.flag{border-left-color:var(--flag)}
+.note.key{border-left-color:var(--accent)}
+.note .lab{font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:7px}
+.note.flag .lab{color:var(--flag)}
+.note.key .lab{color:var(--accent)}
+
+ol,ul{padding-left:1.35em;margin:0 0 1.1em}
+li{margin-bottom:.45em}
+ol.refs{font-family:var(--sans);font-size:13.5px;line-height:1.55;padding-left:1.6em}
+ol.refs li{margin-bottom:.7em;color:var(--ink-2)}
+ol.refs li b{color:var(--ink);font-weight:600}
+.chk{color:var(--accent);font-weight:600;font-size:11px;letter-spacing:.06em}
+
+.foot{font-family:var(--sans);font-size:12px;color:var(--ink-3);line-height:1.6;
+  border-top:1px solid var(--rule);padding-top:20px;margin-top:56px}
+
+@media print{
+  @page{margin:20mm 18mm}
+  body{font-size:10.5pt;line-height:1.46}
+  .page{max-width:none;padding:0}
+  .toolbar{display:none}
+  h2.sec,h3,h4{break-after:avoid}
+  figure,.tw,.note,table{break-inside:avoid}
+  a{color:#000;text-decoration:none}
+  table{font-size:8.4pt}
+  .abstract p,.note{font-size:9.8pt}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="page">
+
+<header class="head">
+  <div class="kicker">Quantile Forecasting · Architecture Study</div>
+  <h1>Cheaper Quantiles, Same Accuracy</h1>
+  <p class="sub">Recombining PatchTST and TFT for interpretable stock return forecasting</p>
+  <div class="byline">Park Sungjun · Kim Jimin · Kwon Ohjae · Song Haeol</div>
+  <div class="affil">Park Sungjun, first author &nbsp;·&nbsp; October 2026</div>
+  <div class="toolbar"><button class="btn" id="printBtn" type="button">Print / Save as PDF</button></div>
+</header>
+
+<div class="abstract">
+  <h2>Abstract</h2>
+  <p>Patch-based time-series transformers (PatchTST) tokenize a series in segments and keep channels
+  independent, which makes long lookbacks cheap — but they emit point forecasts and never say which
+  variable they used. The Temporal Fusion Transformer (TFT) fixes both through a Variable Selection
+  Network (VSN) and a quantile head, at the cost of attending at every time step. We recombine parts of
+  both into a 0.50M-parameter model — a PatchTST backbone, TFT variable selection and quantile head, and
+  a macro cross-attention block of our own — and compare it against both originals under one controlled
+  protocol: identical panel, split, seed, training loop, trading rules and evaluation window.</p>
+  <p>Forecast accuracy is <b>+2.36%</b> against an unconditional-quantile baseline, indistinguishable from
+  the original TFT (+2.32%) and far ahead of the original PatchTST (point forecast, −47.79%).
+  <b>The tie is broken by cost</b>: on one device the TFT needs 529.5&nbsp;s/epoch against 111.5&nbsp;s
+  (4.7×), 0.678&nbsp;ms vs 0.128&nbsp;ms per-stock inference (5.3×), and 167.8&nbsp;MB vs 45.8&nbsp;MB of
+  activation memory (3.7×). Abstention behaves as designed: the model declines 25.9% of candidates in the
+  highest-volatility quartile against 0.45% in the lowest, and its realized payoff ratio is 8.3× versus
+  TFT 3.7× and PatchTST 0.67×.</p>
+  <p>We report with equal weight what the architecture does <em>not</em> buy. Rank correlation between
+  learned VSN importance and univariate predictive power is <b>−0.03</b>, and the “dynamic” selection is
+  effectively frozen (year-over-year rank agreement 0.988–0.995). Directional information coefficient is
+  0.024 (<i>t</i>&nbsp;=&nbsp;3.9) against a width IC of 0.294 (<i>t</i>&nbsp;=&nbsp;43.8) — twelve times
+  larger — and a permutation test attributes only Sharpe +0.12 (<i>p</i>&nbsp;=&nbsp;0.25) to the ranking
+  signal. The recombination buys the same quantile accuracy at a quarter of the cost, with learned feature
+  weights attached; the model's competence is uncertainty, not direction.</p>
+  <p class="kw"><b>Keywords</b>&nbsp;&nbsp;time-series transformer · quantile regression · variable
+  selection · interpretability · cross-attention · forecast uncertainty · abstention</p>
+</div>
+
+<section>
+<h2 class="sec"><span>1</span>Introduction</h2>
+<p>Most deep-learning work on return forecasting ports a recent architecture onto a new dataset or tunes
+it until a metric moves. Neither answers <em>why this architecture</em>. When structure is not derived
+from requirements, the model is an interchangeable part and no outcome can be explained afterwards.</p>
+<p>We began from two operational requirements instead of a model. <b>Abstention</b>: the system must say
+not only “up or down” but “should a decision be made at all right now?” — which cannot be defined on a
+point estimate, since it needs a predictive distribution. <b>Interpretability</b>: a decision needs a
+human-readable basis, and post-hoc attribution explains a surrogate rather than the model's own
+computation, so the weight must exist as a learned parameter.</p>
+<p>These force the architecture. The first demands a quantile head with a pinball loss; the second demands
+learned variable importance, i.e. the TFT Variable Selection Network. Using TFT as-is makes cost the
+binding constraint; using PatchTST as-is provides neither. <b>Recombination is not the goal but the
+consequence</b> — and that is the claim this paper defends, on four axes: accuracy, cost, abstention
+behaviour, and what the learned importance does and does not mean.</p>
+<p>We also report, with the same weight, that the resulting trading performance is not statistically
+attributable to the model's directional signal. Omitting that would invite exactly the over-reading the
+paper is trying to avoid.</p>
+</section>
+
+<section>
+<h2 class="sec"><span>2</span>Related Work</h2>
+<p><b>Patch-based transformers.</b> PatchTST (Nie et al., ICLR 2023) tokenizes a series in segments rather
+than per time step and keeps channels independent, collapsing a length-<i>L</i> sequence to
+⌈<i>L</i>/<i>S</i>⌉ tokens. Two deficits follow: the output is a point forecast, and the model never
+reports which channel mattered. Our two requirements map onto exactly these two deficits.</p>
+<p><b>Interpretable forecasting.</b> The Temporal Fusion Transformer (Lim et al., 2021) learns a softmax
+gate over input channels in a Variable Selection Network, transforms each channel through a Gated
+Residual Network, and emits several quantiles at once. TFT is not state of the art, but no later
+component replaces “learn variable importance as a gate”; we keep its parts for function, not recency, and
+discard its per-time-step stack.</p>
+<p><b>Normalization.</b> RevIN (Kim et al., ICLR 2022) applies instance normalization per window and
+inverts it at the output — not optional where price levels mean different things across stocks and
+decades. We apply it selectively: cross-sectional rank channels carry their information entirely in the
+level, which within-window standardization would erase.</p>
+<p><b>Quantile regression.</b> Koenker &amp; Bassett (1978) quantile regression applied to a network output
+gives the pinball loss, for quantile <i>τ</i>,</p>
+<div class="eq">𝓛<sub><i>τ</i></sub>(<i>y</i>, <i>ŷ</i>) = max( <i>τ</i>(<i>y</i> − <i>ŷ</i>), (<i>τ</i> − 1)(<i>y</i> − <i>ŷ</i>) )</div>
+<p>trained jointly over <i>τ</i> ∈ {0.1, 0.5, 0.9}. A quantile forecast delivers uncertainty as the
+prediction itself, so abstention needs neither post-hoc calibration nor ensemble variance.</p>
+<div class="note flag">
+  <span class="lab">Independent arrival, stated</span>
+  <p>Our macro cross-attention block was not taken from a paper: we chose to make stock sequences the Query
+  and macro index sequences the Key/Value. But “inject exogenous variables through attention” is not a new
+  idea, and <b>TimeXer (2024) addresses the same problem in print</b>. We did not build on it; we arrived
+  at the same place independently, and we state that alongside the claim.</p>
+</div>
+<p><b>Baselines.</b> On the public Qlib benchmark, gradient-boosted trees outperform Transformer and LSTM
+baselines (Rank IC 0.047–0.051 vs 0.041–0.044). “No fair comparison against a well-tuned simple baseline”
+is the standing weakness of this literature, so we ran one under the same protocol (§5.5). We also
+considered and rejected DLinear/TSMixer, which can emit quantiles but carry no learned variable
+importance, and time-series foundation models, whose fine-tuning does not reach scale on roughly 1,900
+effective independent observations.</p>
+</section>
+
+<section>
+<h2 class="sec"><span>3</span>Method</h2>
+
+<h3><span>3.1</span>From requirements to parts</h3>
+<div class="tw"><table>
+<thead><tr><th>Requirement</th><th>Property it forces</th><th>Part chosen</th></tr></thead>
+<tbody>
+<tr><td>Abstention</td><td>A distribution, not a point: <i>q</i><sub>90</sub>−<i>q</i><sub>10</sub> must exist</td><td>Quantile head, pinball loss</td></tr>
+<tr><td>Interpretability</td><td>Learned importance, not a post-hoc surrogate</td><td>TFT variable selection</td></tr>
+<tr><td>Scale differs by stock and era</td><td>Non-stationary normalization</td><td>RevIN, with channel exceptions</td></tr>
+<tr><td>120-day lookback × 201 stocks</td><td>Sequence-length reduction</td><td>Patch tokenization (120 → 24)</td></tr>
+<tr><td>Local equities track global macro</td><td>Exogenous sequence injection</td><td>Cross-attention (ours)</td></tr>
+</tbody></table></div>
+<p>No part was selected because it was recent. Each left-hand entry forces its right-hand one.</p>
+
+<h3><span>3.2</span>Architecture</h3>
+<figure>
+  <img src="images/fig1_architecture.png" alt="Model architecture: a PatchTST backbone with TFT variable selection, macro cross-attention and a monotone quantile head, with detail panels for the encoder layer, gated residual network, variable selection network and quantile head.">
+  <figcaption><b>Figure 1.</b> Full model (a) with component detail (b–e). Yellow marks the PatchTST
+  lineage, blue the TFT components, teal the macro cross-attention we added, orange the static context
+  path. <i>C</i> = 30 stock channels, <i>M</i> = 13 macro channels, <i>L</i> = 120 days, patch length 5,
+  <i>N</i> = 24 tokens, <i>D</i> = 32.</figcaption>
+</figure>
+<p>Input arrives on three paths: dynamic stock features (30 channels × 120 days), macro sequences
+(13 channels), and three static categoricals. Static embeddings form a context vector that conditions
+variable selection and is added back after cross-attention; only the last patch token — the most recent
+week — reaches the head. Four integration decisions follow, each measured rather than assumed.</p>
+
+<h3><span>3.3</span>Channel independence is kept for interpretability, not speed</h3>
+<p>Patch embedding turns each channel independently into 24 tokens. This looks like PatchTST's channel
+independence carried over verbatim, but the reason is different: <b>mixing channels destroys the object
+the variable selection network is supposed to weight.</b> Channel mixing would leave the VSN undefined.
+This is where the two requirements collide, interpretability won, and it is the actual graft point between
+the two lineages.</p>
+
+<h3><span>3.4</span>Variable selection goes <em>before</em> the encoder</h3>
+<p>The VSN applies a softmax gate across the channel axis, conditioned on the static context
+<i>c<sub>s</sub></i>:</p>
+<div class="eq"><i>α</i> = softmax( GRN( [ flat(<i>E</i>) ; <i>c<sub>s</sub></i> ] ) ) ∈ ℝ<sup><i>C</i></sup>,
+&nbsp;&nbsp; <i>Z</i> = Σ<sub><i>i</i></sub> <i>α<sub>i</sub></i> · GRN<sub><i>i</i></sub>(<i>E<sub>i</sub></i>)</div>
+<p>Placed <em>after</em> the encoder, the encoder still sees a channel axis and runs once per channel:
+measured forward pass <b>259 ms</b> at 17 channels. Placed <em>before</em>, channels are already collapsed
+and the encoder runs once: <b>52 ms</b>, a <b>5× difference</b>. Interpretability is unaffected — the VSN
+consumes patch embeddings and still answers which channel was used, how much. A regression test pins the
+ordering so it cannot drift back.</p>
+
+<h3><span>3.5</span>The direction of macro cross-attention</h3>
+<p>The stock representation is the Query and the macro encoding the Key/Value:</p>
+<div class="eq">CA(<i>Z</i>, <i>H<sub>m</sub></i>) = softmax( (<i>ZW<sub>Q</sub></i>)(<i>H<sub>m</sub>W<sub>K</sub></i>)<sup>⊤</sup> ∕ √<i>d<sub>k</sub></i> ) (<i>H<sub>m</sub>W<sub>V</sub></i>)</div>
+<p><b>Direction is the design.</b> With macro as Query the output takes the shape of the macro sequence and
+per-stock forecasts disappear. We deliberately gave the macro path no variable selection: macro channel
+importance is not an object of interpretation here, and encoding macro per channel costs <b>13×</b>, so
+macro channels are merged first and encoded once. The asymmetry is intentional — the VSN goes only where
+explanation is required.</p>
+
+<h3><span>3.6</span>Monotone quantiles, and a head that starts at the baseline</h3>
+<div class="eq"><i>q</i><sub>10</sub> = <i>o</i><sub>1</sub>, &nbsp;
+<i>q</i><sub>50</sub> = <i>q</i><sub>10</sub> + softplus(<i>o</i><sub>2</sub>), &nbsp;
+<i>q</i><sub>90</sub> = <i>q</i><sub>50</sub> + softplus(<i>o</i><sub>3</sub>)</div>
+<p>Cumulative softplus makes quantile crossing impossible by construction, rather than penalized. The
+reason is operational: a crossing makes the abstention width negative and invalidates every downstream
+rule. Measured crossing rate for all four models in §5.1 is 0.000.</p>
+<p>Initialization matters more than it should. With default weights softplus(0) = 0.693, so the initial
+inter-quantile gap is 0.69 while the full quantile span of a 5-day return is 0.124 — <b>the output starts
+nine times larger than the target</b>, and the model spends its whole budget shrinking scale before it can
+learn signal (validation 0.013993 against a 0.013285 baseline, i.e. 5.3% <em>worse</em> than predicting a
+constant). Setting the final bias to the training unconditional quantiles fixes it. The final weight must
+be small but <b>not exactly zero</b>, or no gradient reaches the encoder at all.</p>
+
+<h3><span>3.7</span>Final configuration</h3>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Lookback / patch / stride</td><td>120 / 5 / 5 → 24 tokens</td></tr>
+<tr><td><i>d</i><sub>model</sub> / heads / layers / <i>d</i><sub>ff</sub> / dropout</td><td>32 / 2 / 1 / 64 / 0.5</td></tr>
+<tr><td>Quantiles</td><td>0.1, 0.5, 0.9</td></tr>
+<tr><td>Dynamic / macro / static inputs</td><td>30 channels / 13 channels / 3 categoricals</td></tr>
+<tr class="ours"><td>Parameters</td><td>0.50M</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2 class="sec"><span>4</span>Data and Protocol</h2>
+<p><b>Data.</b> Daily bars for the 201 constituents of the KOSPI 200 from 2015 onward (up to 2,857 trading
+days per stock), plus index and investor-flow series from the same broker API. Trading-halt days arrive as
+zero volume with open = high = low = close; left in, they produce fake zero returns and distort every
+volatility estimate, so they are removed before indicators are computed. Stocks have different calendars
+(1,887 common days against 2,857 total), so windows are built on each stock's own rows rather than on a
+forced common calendar, which would discard 34% of the data.</p>
+<p><b>Features.</b> Thirty dynamic channels — returns and momentum, trading activity, moving-average gaps,
+standard technical indicators, index-relative strength and beta with their cross-sectional ranks, and four
+investor-flow series. Thirteen macro channels and three static categoricals (sector, market-cap bucket,
+weekday). Price levels are never used raw: moving averages become gaps to close, MACD and ATR are divided
+by close, bounded oscillators are rescaled.</p>
+<p><b>Target.</b> The 5-day cumulative log return in excess of the KOSPI 200, with auxiliary 1-, 2- and
+3-day horizons learned from the same window as a multi-task regularizer.</p>
+<div class="eq"><i>y<sub>t</sub></i> = Σ<sub><i>k</i>=1</sub><sup>5</sup> <i>r</i><sub><i>t</i>+<i>k</i></sub> − Σ<sub><i>k</i>=1</sub><sup>5</sup> <i>r</i><sup>&thinsp;index</sup><sub><i>t</i>+<i>k</i></sub></div>
+<p><b>Split.</b> Global by date, never by stock: training through 2022, validation 2023, test from 2024,
+with a 5-day embargo at each boundary because the label looks five days ahead. Normalization statistics
+are estimated on training rows only.</p>
+<div class="note">
+  <span class="lab">Why the model is small</span>
+  <p>Adjacent samples share 119 of 120 lookback days (99.2% input overlap) and four of five target days.
+  Nominal training rows number 260,339, but non-overlapping samples are about 52,097 and <b>effective
+  independent events are roughly 1,900 trading days</b> — 201 stocks on one date share a market factor.
+  Capacity was chosen against that number, not the nominal one.</p>
+</div>
+<p><b>Baseline.</b> Every experiment is scored against the unconditional quantiles of the training data — a
+predictor that ignores its input and emits three constants. Failing to beat it is treated as a
+feature/target design failure rather than a tuning problem.</p>
+<p><b>From forecast to order.</b> One rule set, applied identically to every model compared here: abstain
+when the interval width exceeds a percentile of its recent distribution; rank survivors by the median
+forecast and hold the top <i>N</i>, with a hysteresis buffer so an existing position is sold only once it
+falls well outside the entry rank; size by confidence, so a narrower interval gets more weight; then apply
+per-name weight caps, a stop-loss and a daily trade cap.</p>
+<div class="note flag">
+  <span class="lab">A failure that shaped the rule</span>
+  <p>Under an <em>absolute</em> abstention threshold, training that ended in the 2022 drawdown left the
+  model's median forecast (−0.15%) below the realized mean (+0.80%), so the buy threshold (+0.40%) was
+  structurally unreachable: 64 fills in 2.1 years at 8.9% average exposure. The strategy had not lost — it
+  had not participated. Switching to cross-sectional ranking moved fills to 1,247, exposure to 66.5% and
+  Sharpe from 0.14 to 0.88. <b>A level that does not transfer across regimes is not a gate but a
+  constant</b>, and the same failure recurred later with an absolute tail-risk limit (§6.3).</p>
+</div>
+</section>
+
+<section>
+<h2 class="sec"><span>5</span>Results</h2>
+
+<h3><span>5.1</span>Four architectures, one protocol</h3>
+<p>All four models share panel, split, seed, training loop and early stopping. <b>The unconditional
+baseline came out at 0.012175 for all four</b> — numerical evidence that the control held.</p>
+<div class="tw"><table class="n">
+<caption><b>Table 1. Forecast accuracy.</b> Validation, three-quantile pinball loss.</caption>
+<thead><tr><th>Model</th><th>Params</th><th>Pinball</th><th>vs baseline</th><th>Best epoch</th><th>Crossings</th></tr></thead>
+<tbody>
+<tr><td>PatchTST, original (point)</td><td>0.034M</td><td>0.017993</td><td>−47.79%</td><td>1</td><td>0.000</td></tr>
+<tr><td>PatchTST + quantile head</td><td>0.035M</td><td>0.012143</td><td>+0.26%</td><td>5</td><td>0.000</td></tr>
+<tr><td>TFT, original</td><td>0.687M</td><td>0.011893</td><td>+2.32%</td><td>2</td><td>0.000</td></tr>
+<tr class="ours"><td>Ours (PatchTST × TFT)</td><td>0.500M</td><td>0.011887</td><td>+2.36%</td><td>5</td><td>0.000</td></tr>
+</tbody></table></div>
+<p>A point-forecast backbone is not merely worse here; it is unusable. Evaluated by pinball, an MSE-trained
+point forecast is a degenerate distribution, which is the quantitative form of the abstention requirement:
+<b>without a distribution, abstention is undefined.</b> Attaching a quantile head is necessary but not
+sufficient — it recovers only to +0.26%, barely above a constant, because variable selection, static
+context and macro input are still missing. <b>TFT and our model are tied on accuracy, and we claim no win
+here</b>; the tie is broken by Table 2.</p>
+<div class="tw"><table class="n">
+<caption><b>Table 2. Cost</b>, measured on one device (batch 64, 201-stock universe). Epoch times are
+medians.</caption>
+<thead><tr><th>Model</th><th>s / epoch</th><th>Latency / stock</th><th>Universe pass</th><th>Activation</th><th>Params</th></tr></thead>
+<tbody>
+<tr><td>PatchTST (+ quantile head)</td><td>111.1</td><td>0.090 ms</td><td>18.0 ms</td><td>84.0 MB</td><td>0.14 MB</td></tr>
+<tr><td>TFT, original</td><td>529.5</td><td>0.678 ms</td><td>136.2 ms</td><td>167.8 MB</td><td>2.75 MB</td></tr>
+<tr class="ours"><td>Ours</td><td>111.5</td><td>0.128 ms</td><td>25.7 ms</td><td>45.8 MB</td><td>2.00 MB</td></tr>
+</tbody></table></div>
+<div class="note key">
+  <span class="lab">What the recombination buys</span>
+  <p>At identical accuracy, our model trains <b>4.7× faster</b>, infers <b>5.3× faster per stock</b>, and
+  holds <b>3.7× less activation memory</b> than the TFT. Activation cost scales linearly in lookback for
+  both, so the gap is structural rather than a constant offset: patch tokenization removes a factor of five
+  from the attended sequence, and the single-pass encoder removes the channel loop. The 1.4× parameter
+  advantage is secondary — the real saving is in activations and wall-clock.</p>
+</div>
+
+<h3><span>5.2</span>Capacity: smaller is better</h3>
+<p>Because effective independent events number about 1,900, capacity was swept before anything else. The
+1.88M configuration peaked at epoch 1 — still inside learning-rate warmup — and from epoch 2 its validation
+loss was worse than a constant while training loss kept falling: immediate overfitting. <b>A best epoch of
+one is itself a symptom</b>, which is why two intermediate sizes were rejected despite respectable margins.</p>
+<div class="tw"><table class="n">
+<thead><tr><th>Preset</th><th>Parameters</th><th>Pinball</th><th>vs baseline</th><th>Best epoch</th></tr></thead>
+<tbody>
+<tr><td>current</td><td>1.88M</td><td>0.014177</td><td>+0.51%</td><td>1 — overfits</td></tr>
+<tr><td>tiny</td><td>0.49M</td><td>0.013799</td><td>+3.16%</td><td>1</td></tr>
+<tr><td>small</td><td>0.67M</td><td>0.013782</td><td>+3.28%</td><td>1</td></tr>
+<tr class="ours"><td>minimal</td><td>0.33M</td><td>0.013772</td><td>+3.35%</td><td>3 — only clean run</td></tr>
+</tbody></table></div>
+<p>The improvement is <b>2.8σ</b> under a date-level block bootstrap. An i.i.d. assumption would report
+5.5σ, but same-day stocks share a market factor, so the block figure is the correct one. The deployed model
+is 0.50M rather than 0.33M only because the universe and channel count later grew; the shape settings are
+unchanged.</p>
+
+<h3><span>5.3</span>Abstention, and where the performance separation lives</h3>
+<figure>
+  <img src="images/arch_compare_radar.png" alt="Seven-axis comparison of PatchTST, TFT and the recombined model: a radar chart at left and per-axis bar detail at right covering cumulative return, risk-adjusted return, per-trade expectancy, risk control, forecast accuracy, interpretability and training efficiency.">
+  <figcaption><b>Figure 2.</b> Seven-axis comparison of the two originals and the recombined model. The
+  risk-adjusted-return and risk-control axes are computed per completed round trip (Table 4); the
+  portfolio-curve Sharpe in Table 3 is a different basis, and both are reported below.</figcaption>
+</figure>
+<div class="tw"><table class="n">
+<caption><b>Table 3. Twelve-month evaluation</b>, 244 trading days, identical rules and costs for every
+model. Benchmark is the KOSPI 200.</caption>
+<thead><tr><th>Model</th><th>Total</th><th>Vol</th><th>Sharpe</th><th>MDD</th><th>Calmar</th><th>Hit</th></tr></thead>
+<tbody>
+<tr><td>PatchTST, original</td><td>+48.3%</td><td>50.0%</td><td>1.063</td><td>−36.2%</td><td>1.385</td><td>58.4%</td></tr>
+<tr><td>PatchTST + quantile</td><td>+55.4%</td><td>48.6%</td><td>1.178</td><td>−32.9%</td><td>1.749</td><td>58.9%</td></tr>
+<tr><td>TFT, original</td><td>+85.7%</td><td>41.1%</td><td>1.765</td><td>−24.4%</td><td>3.664</td><td>58.9%</td></tr>
+<tr class="ours"><td>Ours</td><td>+172.3%</td><td>54.2%</td><td>2.185</td><td>−33.6%</td><td>5.401</td><td>62.1%</td></tr>
+<tr><td>Benchmark index</td><td>+124.2%</td><td>59.1%</td><td>1.707</td><td>−40.9%</td><td>3.180</td><td>62.8%</td></tr>
+</tbody></table></div>
+<div class="tw"><table class="n">
+<caption><b>Table 4. Abstention and round-trip economics.</b> Q1–Q4 are realized-volatility quartiles of the
+candidate at decision time.</caption>
+<thead><tr><th>Model</th><th>Abstain</th><th>Q1</th><th>Q4</th><th>Trips</th><th>Win rate</th><th>Payoff</th><th>Expectancy</th></tr></thead>
+<tbody>
+<tr><td>PatchTST, original</td><td>0.0%</td><td>0.0%</td><td>0.0%</td><td>23</td><td>13.0%</td><td>0.67×</td><td>−9.35%</td></tr>
+<tr><td>PatchTST + quantile</td><td>4.72%</td><td>0.44%</td><td>12.07%</td><td>32</td><td>37.5%</td><td>2.44×</td><td>+3.62%</td></tr>
+<tr><td>TFT, original</td><td>5.80%</td><td>0.00%</td><td>16.28%</td><td>41</td><td>36.6%</td><td>3.70×</td><td>+9.51%</td></tr>
+<tr class="ours"><td>Ours</td><td>7.91%</td><td>0.45%</td><td>25.88%</td><td>46</td><td>34.8%</td><td>8.28×</td><td>+28.6%</td></tr>
+</tbody></table></div>
+<div class="note key">
+  <span class="lab">The clearest result in the paper</span>
+  <p>The trading rule is identical across rows; only the forecast distribution differs. The point-forecast
+  model abstains on nothing because it has no width to threshold, and its expectancy is negative. Adding a
+  quantile head alone turns expectancy positive. Adding variable selection, static context and macro input
+  pushes <b>Q4 abstention to 25.9% while Q1 stays at 0.45%</b> — the model declines 57× more often in the
+  most volatile quartile than in the calmest. <b>Win rate does not improve</b> (34.8%, lowest of the three
+  quantile models); the entire gain is payoff asymmetry, which is what one should expect if the model is
+  pricing uncertainty rather than calling direction.</p>
+</div>
+<div class="note flag">
+  <span class="lab">Do not read +172.3% as a repeatable edge</span>
+  <p>The window is one calendar slice of a historic bull market, and shifting the start date by a few days
+  moves the same strategy's six-month result between −9.4% and +10.3%. A separate ten-slice study of the
+  production configuration beat the index in 9/10 two-year slices and 8/10 one-year slices but only 3/10
+  six-month slices — and that configuration was <b>selected on test</b>, because validation (2023) is a flat
+  year in which every configuration clusters within 1.2 percentage points and cannot discriminate. Section
+  5.5 then shows the ranking signal is not statistically attributable. <b>The defensible claim from Table 3
+  is relative</b>: under one rule set and one window, the recombined model dominated both originals.</p>
+</div>
+
+<h3><span>5.4</span>Does variable selection actually select?</h3>
+<p>Uniform mass over thirty channels is 0.167. Both VSN-bearing models concentrate well above that floor,
+and ours concentrates 2.4× above uniform. The composition differs informatively: the TFT spends three of
+its top five on macro channels it receives as concatenated inputs, while our model — which reaches macro
+through a separate cross-attention path — spends its top five on stock-level volatility and activity.
+<b>Separating the macro path changes what the selector selects.</b></p>
+<div class="tw"><table>
+<caption><b>Table 5. Top-five learned importance.</b></caption>
+<thead><tr><th>Model</th><th>Top channels</th><th>Top-5 mass</th></tr></thead>
+<tbody>
+<tr><td>PatchTST + quantile</td><td>no selection exists — weights are uniform</td><td>0.167</td></tr>
+<tr><td>TFT, original</td><td>ATR · index 5-day return · index volume ratio · index 1-day return · pension flow</td><td>0.305</td></tr>
+<tr class="ours"><td>Ours</td><td>volume z-score · Bollinger width · turnover z-score · volume ratio · retail flow</td><td>0.398</td></tr>
+</tbody></table></div>
+<p>Concentration, however, is not correctness. Measured across 75,975 test windows, the rank correlation
+between VSN importance and univariate predictive power is <b>−0.03</b>: ATR ranks first by VSN weight and
+thirteenth by univariate IC, while the strongest univariate channel ranks seventh. This does not mean the
+VSN is wrong — a VSN weight is the share a channel receives in building the representation, not its
+contribution to directional prediction, and the volatility-heavy top five is consistent with §5.6.
+<b>But importance weights read as “this feature predicts returns” and do not mean that</b>, so we publish
+them next to univariate IC rather than alone.</p>
+<div class="note flag">
+  <span class="lab">The selection is not dynamic</span>
+  <p>Per-window rank against global mean rank correlates at 0.966; a 300-draw date bootstrap gives a rank
+  standard deviation of 0.00 on every channel; year-over-year rank agreement across 2024–2026 is
+  0.988–0.995. Stability helps reproducibility, but <b>the sentence “the model looks at different variables
+  in different situations” cannot be written.</b> This model's variable selection is close to one learned
+  global weight vector.</p>
+</div>
+
+<h3><span>5.5</span>Negative results</h3>
+<p><b>Against gradient boosting.</b> Under the same panel, split, embargo, target, evaluation and trading
+configuration — with trees given lagged features since they cannot ingest sequences — the transformer
+reaches rank IC +0.0235 (<i>t</i> = 3.87) against the tree's +0.0043 (<i>t</i> = 0.56), which is
+indistinguishable from zero. This runs opposite to the Qlib benchmark ordering; with a different market and
+feature set it is no refutation of that literature, but it does answer the baseline objection.</p>
+<p><b>Permutation test.</b> Shuffling only the median-forecast ranking while holding everything else fixed
+attributes <b>Sharpe +0.12, <i>p</i> = 0.25</b>. Most of the measured performance is not attributable to the
+model's ranking; it comes from the trading rules, the large-cap candidate pool and exposure to a rising
+market.</p>
+<p><b>Spread against cost.</b> The decile spread is +0.0005 against a round-trip cost of 0.0031 — the signal
+is <b>one-sixth of the cost of acting on it</b>. This single line explains why an architecture that wins on
+accuracy does not convert into reliable alpha, and no amount of rule tuning changes it.</p>
+<p><b>Target alignment.</b> Removing a market-cap look-ahead and widening the universe destroyed the
+apparent directional skill (rank IC +0.0235 → −0.0018). Aligning the target to excess return then made the
+signal strong but sign-inverted on test (−0.0244, <i>t</i> = −3.70), because the model had no channel with
+which to see whether a stock was beating the index — it was riding a low-volatility factor instead. Adding
+relative-strength and beta channels with their cross-sectional ranks aligned validation and test signs for
+the first time (<b>+0.0197, <i>t</i> = +2.69</b>), with no significantly negative quarter in test. That is
+the one configuration in this project that passed both splits.</p>
+
+<h3><span>5.6</span>What the model is actually good at</h3>
+<div class="tw"><table class="n">
+<thead><tr><th>Measure</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Interval coverage (nominal 80%)</td><td>78.6%</td></tr>
+<tr><td>Conformal correction required</td><td>+0.024 — negligible</td></tr>
+<tr><td>Directional IC (median vs realized return)</td><td>0.024 &nbsp;(<i>t</i> = 3.9)</td></tr>
+<tr class="ours"><td>Width IC (interval vs realized volatility)</td><td>0.294 &nbsp;(<i>t</i> = 43.8)</td></tr>
+</tbody></table></div>
+<p><b>The ability to forecast width exceeds the ability to forecast direction by a factor of twelve.</b>
+Four independent measurements agree — the permutation test, the VSN composition, these two ICs, and the
+payoff asymmetry of Table 4. Pinball loss even <em>improved</em> in the same experiment where directional
+IC collapsed, which is not a contradiction: the cheapest way to lower pinball is to predict width, and
+width is predictable because volatility clusters. The honest statement of this model's competence is
+<b>“it knows when not to decide,” not “it picks winners.”</b> The abstention requirement, chosen for
+product reasons, happened to match the only thing the model does well.</p>
+</section>
+
+<section>
+<h2 class="sec"><span>6</span>Spending the Width Where Width Is the Input</h2>
+<p>If the reliable output is interval width, it should be spent where width is the parameter rather than
+where direction is. We therefore added an execution layer in which the forecast interval sets the rung
+spacing of a limit-order grid:</p>
+<div class="eq">spacing = clip( (<i>q</i><sub>90</sub> − <i>q</i><sub>10</sub>) × <i>α</i>,
+&nbsp; 2<i>c</i><sub>round-trip</sub>, &nbsp; 0.10 ), &nbsp;&nbsp; <i>α</i> = 0.20</div>
+<p>with five rungs above and below, a cycle equal to the model's five-day forecast horizon — running ten
+days on a five-day forecast would leave half the cycle unspoken for — and a cycle stop-loss. The floor
+exists because a rung narrower than twice the round-trip cost loses money every time it fills.</p>
+<figure>
+  <img src="images/fig3_grid_ladder.png" alt="Ten trading days of one stock on ten-minute bars, showing five sell rungs above and five buy rungs below a centre line, four dashed vertical anchor resets, and marked fills.">
+  <figcaption><b>Figure 3.</b> Ten trading days on ten-minute bars. Upper rungs are sell levels, lower rungs
+  buy levels, the horizontal line the ladder centre. Dashed verticals mark anchor resets. The ladder
+  breathes with the model's daily width and re-centres when price leaves it entirely; 23 fills, 10 of them
+  buys.</figcaption>
+</figure>
+<figure>
+  <img src="images/fig4_grid_fills.png" alt="The same ten days on candlesticks, with dashed horizontal rung bands that widen and narrow daily, a flat anchor line within each cycle, and dots marking ten buy fills and thirteen sell fills.">
+  <figcaption><b>Figure 4.</b> The same period on candles. Rung bands widen and narrow day by day as the
+  forecast interval changes, while the anchor holds flat within a cycle. Ten buy fills, thirteen sell
+  fills.</figcaption>
+</figure>
+<p>Re-computing the width daily is the one change in this layer that passed both validation and test:
+paired by cycle against an exposure-matched control across 198 stocks, +0.049 pp (<i>t</i> = 4.47,
+<i>p</i> &lt; 0.001) on validation and +0.037 pp (<i>t</i> = 3.35, <i>p</i> = 0.001) on test.</p>
+<div class="note flag">
+  <span class="lab">The control says we cannot credit the model</span>
+  <p>Running the identical rule on a 20-day realized-volatility estimate instead of the model's width gives
+  no difference (<i>p</i> = 0.57 on validation, 0.81 on test). <b>The gain comes from re-measuring daily,
+  and we could not separate what we re-measure with.</b> The case for the model is that its initial width
+  does beat a fixed width, and that it costs nothing extra. Claiming “the model adapts the grid to the
+  market” without this control would be overstatement.</p>
+</div>
+<p>Two further results are negative and recorded as such. Re-centring the ladder bought no profit
+(<i>p</i> = 0.61) but bought <em>presence</em>: time spent outside the ladder, during which no rung can
+fill and the strategy effectively does not exist, fell from 34.8% to 1.2% of affected cycles. Ladder
+asymmetry driven by quantile skew was rejected outright — the model's quantiles are nearly symmetric, so
+the ladder barely tilts, and it won fewer than half of test cycles.</p>
+<p>This layer also reproduces, in a different market and at four times the transaction cost, the published
+result that a grid's expectation is zero before costs: at 0.5% spacing our idiosyncratic return falls 34%
+below an exposure-matched control, while drawdown in a falling leg is roughly a third of buy-and-hold.</p>
+</section>
+
+<section>
+<h2 class="sec"><span>7</span>Limitations</h2>
+<p><b>Comparison fairness.</b> Four caveats attach to §5.1–5.3, all working against our own claim. The
+PatchTST baselines see fewer inputs, because the original architecture has no concept of macro or static
+covariates — so this is a comparison of what one gives up by using the original as-is, not a pure
+architecture comparison. Hyperparameters were tuned for our structure and handed unchanged to the
+controls, where they are not optimal. Only our model trained on a CUDA device; the cost table is normalized
+to one device. And there is one test window with no walk-forward, in a historically strong bull market.</p>
+<p><b>Explainability has a boundary.</b> Portfolio-level explanation works: which channels carry
+representation weight, why a position was declined, and which share of performance is signal rather than
+rule. Name-level explanation does not: why a particular stock entered today's selection, or how the median
+ordering arrived at its order, cannot be answered. Abstention is the single exception, because it is
+explained by one number.</p>
+<p><b>Attribution.</b> Restating §5.5 as a limitation: permutation <i>p</i> = 0.25 and a decile spread at
+one-sixth of round-trip cost mean performance is not attributable to the ranking signal.</p>
+<div class="note flag">
+  <span class="lab">The most dangerous near-miss</span>
+  <p>Raising dropout from 0.5 to 0.65 delayed the best epoch and <em>improved</em> validation loss — while
+  rank IC collapsed from 0.0513 to 0.0010. The model had abandoned direction and was fitting width alone.
+  <b>Validation pinball cannot detect this</b>, so any regularization change must be checked against
+  out-of-sample rank IC and the permutation test.</p>
+</div>
+<p><b>Data bias.</b> The universe is drawn at the present date, so firms delisted since 2015 were never
+candidates and returns are optimistic by an unmeasured margin. Training ends in the 2022 drawdown, a regime
+the ranking formulation circumvents rather than removes. A six-month result flips between −9.4% and +10.3%
+across five days of start-date offset, so no single window should be cited. Share counts come from a
+present-day snapshot: splits cancel exactly against adjusted prices, but rights issues and buybacks do not.</p>
+<p><b>Costs and capacity.</b> Realized commission on a live paper account is 35 bp per side against the
+15.5 bp assumed in evaluation — 2.3×, which alone is enough to erase an edge worth one-sixth of cost. Under
+a square-root impact model fitted to 994 actual fills, market impact consumes the entire measured signal
+contribution somewhere in the hundreds of millions to low billions of won. <b>This strategy is meaningful at
+individual-account scale and does not extend to institutional size.</b> Over 31 live trading days the paper
+account returned −3.40%.</p>
+<p><b>Herding.</b> Every input is a public price or volume derivative, the architecture and target are
+literature standards, and the universe is 201 large caps with heavy overlap. Models built from the same
+ingredients buy the same names on the same day. A hysteresis buffer cuts new entries per rebalance by 56%,
+so the same signal does not produce the same-day exit — that is a mitigation, not a solution.</p>
+</section>
+
+<section>
+<h2 class="sec"><span>8</span>Conclusion</h2>
+<p><b>What the recombination buys.</b> The same quantile accuracy as the original TFT — +2.36% against
++2.32% on an identical baseline, with per-quantile losses agreeing to four decimals — at 4.7× less training
+time, 5.3× less inference latency and 3.7× less activation memory, with learned per-channel importance
+attached. Against the original PatchTST, which cannot express a distribution at all, the gap is categorical
+rather than incremental: no abstention is definable, the payoff ratio sits below one, and expectancy is
+negative. Under one rule set and one window the recombined model dominated both originals, declining 25.9%
+of the most volatile quartile against 0.45% of the calmest.</p>
+<p><b>What it does not buy.</b> Not direction. Width IC exceeds directional IC twelvefold, a permutation
+test attributes <i>p</i> = 0.25 to the ranking signal, the decile spread is one-sixth of round-trip cost,
+and the learned importance behind the interpretability claim correlates at −0.03 with univariate predictive
+power while being effectively frozen across years.</p>
+<p>Deriving architecture from requirements produced something better than the requirements asked for and
+worse than the project hoped: the abstention requirement, chosen for product reasons, turned out to align
+with the only thing this model does well. We would recommend that work in this setting spend the forecast
+where the model is strong — sizing, abstention, execution spacing — rather than on name selection; treat a
+permutation test and a univariate-IC contrast as mandatory rather than optional; and report cost in
+activations and wall-clock, because at this data scale the binding constraint on architecture is not
+accuracy but what fits in the compute budget.</p>
+</section>
+
+<section>
+<h2 class="sec">References</h2>
+<ol class="refs">
+  <li>Nie, Y., Nguyen, N. H., Sinthong, P., Kalagnanam, J. <b>A Time Series is Worth 64 Words: Long-term Forecasting with Transformers.</b> ICLR, 2023.</li>
+  <li>Lim, B., Arık, S. Ö., Loeff, N., Pfister, T. <b>Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting.</b> International Journal of Forecasting, 2021.</li>
+  <li>Kim, T., Kim, J., Tae, Y., Park, C., Choi, J.-H., Choo, J. <b>Reversible Instance Normalization for Accurate Time-Series Forecasting against Distribution Shift.</b> ICLR, 2022.</li>
+  <li>Vaswani, A. et al. <b>Attention Is All You Need.</b> NeurIPS, 2017.</li>
+  <li>Koenker, R., Bassett, G. <b>Regression Quantiles.</b> Econometrica 46(1), 33–50, 1978.</li>
+  <li>Wang, Y. et al. <b>TimeXer: Empowering Transformers for Time Series Forecasting with Exogenous Variables.</b> NeurIPS, 2024.</li>
+  <li>Avellaneda, M., Stoikov, S. <b>High-Frequency Trading in a Limit Order Book.</b> Quantitative Finance 8(3), 217–224, 2008. <span class="chk">✔ verified</span></li>
+  <li>Chen, K.-Y., Chen, K.-H., Jang, J.-S. R. <b>Dynamic Grid Trading Strategy: From Zero Expectation to Market Outperformance.</b> arXiv:2506.11921, 2025. <span class="chk">✔ verified</span></li>
+  <li>Yeh, W.-C., Hsieh, Y.-H., Huang, C.-L. <b>Newly Developed Flexible Grid Trading Model Combined ANN and SSO Algorithm.</b> arXiv:2211.12839, 2022. <span class="chk">✔ verified</span></li>
+  <li>Boyd, S. et al. <b>Markowitz Portfolio Construction at Seventy.</b> 2024.</li>
+  <li>Korea Capital Market Institute. <b>AI and Asset Management: On the Possibility of a Paradigm Shift.</b></li>
+  <li>Yang, X. et al. <b>Qlib: An AI-oriented Quantitative Investment Platform.</b></li>
+</ol>
+<p class="kw">References 7–9 were read in full; the remainder are pending verification against original
+sources.</p>
+</section>
+
+<p class="foot">All trading results in this paper come from a simulated paper-trading account. Nothing in
+this document is investment advice.</p>
+
+</div>
+
+<script>
+(function(){
+  var b = document.getElementById('printBtn');
+  if (b) b.addEventListener('click', function(){ window.print(); });
+})();
+</script>

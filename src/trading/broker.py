@@ -242,6 +242,8 @@ class PaperBroker:
                 "name": str(r.name),
                 "order_no": str(r.order_no),
                 "unfilled_qty": qty,
+                # 누적 체결수량. 그리드가 부분체결을 증분으로 잡는 근거다(grid.detect_fills)
+                "filled_qty": int(r.filled_qty or 0),
                 "side": SELL if "매도" in str(r.side) else BUY,
             })
         return out
@@ -321,6 +323,27 @@ class PaperBroker:
                 "pnl_rate": float(r.pnl_rate or 0.0),
             })
         return rows
+
+    def fetch_recent_closes(self, code: str, bars: int, tic: str = "10") -> list[float]:
+        """최근 분봉 종가 `bars` 개 (과거 → 최신). 장중 변동성 재계산의 입력이다.
+
+        응답은 최신→과거 내림차순이라 뒤집는다(`ep.MINUTE_CHART` 주석).
+        한 페이지가 900건이라 연속조회는 하지 않는다 — 여기서 쓰는 건 수십 개뿐이다.
+        """
+        try:
+            data, _ = self.client.request(
+                ep.MINUTE_CHART,
+                {"stk_cd": code, "tic_scope": tic, "upd_stkpc_tp": "1"},
+            )
+        except KiwoomAPIError as exc:
+            log.warning("[minute] %s 실패: %s", code, exc)
+            return []
+        df = parse_records(data.get(ep.MINUTE_CHART.list_key) or [],
+                           ep.MINUTE_CHART.schema)
+        if df.empty:
+            return []
+        closes = [float(x) for x in df["close"].tolist() if x and float(x) > 0]
+        return list(reversed(closes))[-bars:] if closes else []
 
     def fetch_prices(self, codes: list[str]) -> dict[str, float]:
         """현재가. 종목당 1회 호출이라 유니버스 전체가 아니라 **거래 대상만** 넘길 것."""

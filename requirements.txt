@@ -9,6 +9,7 @@ python-dotenv>=1.0
 # --- http ---
 requests>=2.32
 tenacity>=8.2          # 재시도 백오프
+websocket-client>=1.8  # 실시간 체결 통보 수신 (scripts/verify_ws.py)
 
 # --- deep learning ---
 torch>=2.2             # macOS: MPS 백엔드 사용
@@ -21,6 +22,10 @@ scikit-learn>=1.4
 pytest>=8.0
 ruff>=0.4
 tqdm>=4.66
+
+# 로컬 앱 (scripts/menubar.py · desktop.py) — macOS 전용
+rumps>=0.4; sys_platform == "darwin"
+pywebview>=6.0; sys_platform == "darwin"
 
 # Phase 2 (Mamba) 진입 시에만 설치:
 # mamba-ssm  (CUDA 전용 — Mac에서는 순수 PyTorch 대체 구현 필요)

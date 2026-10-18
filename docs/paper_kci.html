@@ -1,0 +1,740 @@
+<title>분위 예측 트랜스포머 결합 연구</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --page:#ffffff; --ink:#121212; --ink2:#3f3f3f; --ink3:#6e6e6e;
+  --rule:#111111; --rule-l:#cfcfcf; --band:#f4f4f2; --accent:#1a3f66;
+  --myeongjo:"Noto Serif KR",'바탕',Batang,serif;
+  --gothic:"Noto Sans KR",'돋움',Dotum,sans-serif;
+  --mono:"IBM Plex Mono",monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--myeongjo);
+  font-size:16px;line-height:1.85;-webkit-font-smoothing:antialiased;letter-spacing:-.003em}
+.sheet{max-width:840px;margin:0 auto;padding-block:clamp(32px,6vw,64px);
+  padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+@media(min-width:880px){.sheet{padding-left:30px;padding-right:30px}}
+p{margin:0 0 .85em;text-align:justify;text-justify:inter-word}
+h1,h2,h3,h4{margin:0;font-family:var(--gothic);text-wrap:balance}
+b,strong{font-weight:700}
+.mono{font-family:var(--mono);font-size:.9em}
+
+/* 표제부 */
+.title-block{text-align:center;border-bottom:2px solid var(--rule);padding-bottom:26px;margin-bottom:28px}
+h1{font-size:27px;font-weight:700;line-height:1.38;letter-spacing:-.02em}
+.subtitle-ko{font-size:17px;font-weight:500;color:var(--ink2);margin-top:9px;font-family:var(--gothic)}
+.title-en{font-size:15px;font-family:var(--gothic);font-weight:400;color:var(--ink2);
+  margin-top:16px;line-height:1.5}
+.authors{margin-top:20px;font-family:var(--gothic);font-size:16px;font-weight:500}
+.authors sup{font-size:11px;font-weight:400}
+.authors-en{font-family:var(--gothic);font-size:13.5px;color:var(--ink3);margin-top:4px}
+.affil{font-family:var(--gothic);font-size:12.5px;color:var(--ink3);margin-top:12px;line-height:1.65}
+
+/* 초록 */
+.abs{background:var(--band);border:1px solid var(--rule-l);padding:22px 26px;margin-bottom:30px}
+.abs h2{font-size:14px;font-weight:700;letter-spacing:.06em;margin-bottom:12px;text-align:center}
+.abs p{font-size:14.5px;line-height:1.8;margin:0;text-align:justify}
+.kw{margin-top:14px;padding-top:12px;border-top:1px solid var(--rule-l);
+  font-family:var(--gothic);font-size:13px;color:var(--ink2);line-height:1.7}
+.kw b{font-weight:700;color:var(--ink)}
+
+/* 장·절 */
+h2.ch{font-size:19px;font-weight:700;margin:40px 0 14px;letter-spacing:-.01em}
+h3.sec{font-size:16.5px;font-weight:700;margin:26px 0 9px;font-family:var(--gothic)}
+h4.sub{font-size:15px;font-weight:500;margin:18px 0 7px;font-family:var(--gothic);color:var(--ink2)}
+
+/* 표 — 3선표 */
+.tbl{margin:22px 0 26px}
+.tbl .cap{font-family:var(--gothic);font-size:13.5px;font-weight:500;margin-bottom:7px}
+.tbl .cap b{font-weight:700}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-family:var(--gothic);font-size:13px;line-height:1.5;
+  font-variant-numeric:tabular-nums}
+thead th{border-top:1.6px solid var(--rule);border-bottom:.9px solid var(--rule);
+  padding:8px 10px 8px 0;text-align:left;font-weight:700;white-space:nowrap}
+tbody td{border-bottom:.6px solid var(--rule-l);padding:7px 10px 7px 0;color:var(--ink2);vertical-align:top}
+tbody tr:last-child td{border-bottom:1.6px solid var(--rule)}
+td:first-child,th:first-child{color:var(--ink)}
+tr.em td{color:var(--ink);font-weight:700}
+table.n td:not(:first-child),table.n th:not(:first-child){text-align:right;padding-right:0;padding-left:14px}
+.tnote{font-family:var(--gothic);font-size:12px;color:var(--ink3);margin-top:7px;line-height:1.65}
+
+/* 그림 */
+figure{margin:24px 0 28px}
+figure img{display:block;width:100%;height:auto;border:1px solid var(--rule-l)}
+figcaption{font-family:var(--gothic);font-size:13.5px;margin-top:9px;text-align:center;font-weight:500}
+figcaption b{font-weight:700}
+.fnote{font-family:var(--gothic);font-size:12px;color:var(--ink3);margin-top:5px;text-align:center}
+
+/* 수식 */
+.eq{text-align:center;margin:18px 0;font-size:16px;overflow-x:auto}
+.eq i{font-style:italic}
+.eq .no{float:right;font-family:var(--gothic);font-size:13px;color:var(--ink3)}
+sub,sup{font-size:.68em;line-height:0}
+
+ol,ul{padding-left:1.5em;margin:0 0 .9em}
+li{margin-bottom:.35em}
+
+/* 참고문헌 */
+.refs{font-size:14px;line-height:1.7}
+.refs h3{font-family:var(--gothic);font-size:15px;font-weight:700;margin:20px 0 10px}
+.refs p{text-indent:-1.6em;padding-left:1.6em;margin-bottom:.5em;text-align:left}
+
+/* 영문초록 */
+.eabs{border-top:2px solid var(--rule);margin-top:40px;padding-top:26px}
+.eabs h2{font-family:var(--gothic);font-size:16px;font-weight:700;text-align:center;margin-bottom:6px}
+.eabs .et{font-family:var(--gothic);font-size:14.5px;text-align:center;color:var(--ink2);
+  margin-bottom:16px;line-height:1.5}
+.eabs p{font-size:14px;line-height:1.75}
+.foot{font-family:var(--gothic);font-size:12px;color:var(--ink3);border-top:1px solid var(--rule-l);
+  margin-top:36px;padding-top:16px;line-height:1.75}
+.tools{margin-top:22px;text-align:center}
+.btn{font-family:var(--gothic);font-size:12.5px;font-weight:500;color:var(--accent);background:none;
+  border:1px solid var(--rule-l);border-radius:3px;padding:7px 15px;cursor:pointer}
+.btn:hover{background:var(--band)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media print{
+  @page{size:A4;margin:25mm 22mm}
+  body{font-size:10.5pt;line-height:1.72}
+  .sheet{max-width:none;padding:0}
+  .tools{display:none}
+  h2.ch,h3.sec,h4.sub,figcaption,.tbl .cap{break-after:avoid}
+  figure,.tbl,table,.eq{break-inside:avoid}
+  table{font-size:8.6pt}
+  .abs p,.eabs p{font-size:9.4pt}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="sheet">
+
+<div class="title-block">
+  <h1>분위 예측 트랜스포머의 구조적 결합을 통한<br>해석가능한 주가 수익률 예측</h1>
+  <div class="subtitle-ko">PatchTST 백본과 TFT 변수선택망의 재조합, 그리고 기권 로직</div>
+  <div class="title-en">Recombining PatchTST and TFT for Interpretable Stock Return Forecasting:<br>
+    Same Quantile Accuracy at a Quarter of the Cost</div>
+  <div class="authors">박성준 · 김지민 · 권오재 · 송하얼</div>
+  <div class="authors-en">Park Sungjun · Kim Jimin · Kwon Ohjae · Song Haeol</div>
+  </div>
+
+<div class="abs">
+  <h2>국 문 초 록</h2>
+  <p>패치 기반 시계열 트랜스포머(PatchTST)는 구간 단위 토큰화와 채널 독립 가정으로 긴 입력을 저렴하게
+  처리하지만 점 예측만을 산출하며 어떤 변수를 사용했는지 설명하지 못한다. 반면 Temporal Fusion
+  Transformer(TFT)는 변수선택망과 분위 헤드로 두 결함을 모두 해소하나 시점 단위 연산으로 비용이 크다.
+  본 연구는 두 계보의 부품을 재조합하여 <b>PatchTST 백본 + TFT 변수선택·분위 헤드 + 매크로
+  크로스어텐션</b>으로 구성된 0.50M 파라미터 모형을 제안하고, 동일한 자료·분할·시드·학습절차·매매규칙
+  아래에서 두 원본 모형과 직접 비교하였다. 코스피200 201종목의 2015년 이후 일별 자료를 사용하였다.
+  분석 결과 제안 모형의 예측 정확도는 무조건부 분위수 기준선 대비 <b>+2.36%</b>로 TFT 원본(+2.32%)과
+  통계적으로 구분되지 않았으나, 동일 장비에서 학습시간은 <b>4.7배</b>, 추론지연은 <b>5.3배</b>, 활성값
+  메모리는 <b>3.7배</b> 절감되었다. 또한 변동성 최상위 분위에서 기권율이 25.9%인 반면 최하위 분위에서는
+  0.45%에 그쳐, 분위 폭을 이용한 기권 판단이 설계 의도대로 작동함을 확인하였다. 동시에 본 연구는
+  부정적 결과를 동일한 비중으로 보고한다. 학습된 변수중요도와 단변량 예측력의 순위상관은 <b>−0.03</b>이고
+  변수선택은 연도 간 0.988~0.995로 사실상 고정되어 있었으며, 방향 예측의 정보계수(0.024)보다 구간 폭의
+  정보계수(0.294)가 12배 컸고, 순열검정에서 순위신호의 기여는 유의하지 않았다(<i>p</i>=0.25). 결론적으로
+  본 결합 구조가 확보한 것은 방향 예측력이 아니라 <b>동등한 분위 정확도를 1/4 비용으로 산출하면서
+  학습된 변수중요도를 함께 제공하는 구조</b>이며, 이 모형의 실질적 능력은 방향이 아닌 불확실성에 있다.</p>
+  <div class="kw"><b>주제어:</b> 시계열 트랜스포머, 분위 회귀, 변수선택망, 해석가능 인공지능,
+  예측 불확실성, 기권 로직, 주가 수익률 예측</div>
+</div>
+
+<h2 class="ch">I. 서 론</h2>
+
+<p>주가 예측에 딥러닝을 적용한 다수의 연구는 최신 아키텍처를 새로운 자료에 이식하거나 손실함수와
+초매개변수를 조정하여 지표를 개선하는 방식을 취한다. 그러나 이러한 접근은 <b>왜 그 구조여야 하는가</b>에
+답하지 못한다. 구조가 요구사항으로부터 도출되지 않으면 모형은 교체 가능한 부품이 되고, 결과의 좋고
+나쁨을 사후에 설명할 근거가 남지 않는다.</p>
+
+<p>본 연구는 모형이 아니라 두 가지 운용 요구사항에서 출발하였다. 첫째는 <b>기권(abstention)</b>이다.
+시스템은 "오를 것인가 내릴 것인가"뿐 아니라 "지금 판단해도 되는가"를 말할 수 있어야 한다. 이는 점
+추정으로는 정의할 수 없으며 예측 분포를 필요로 한다. 둘째는 <b>해석가능성</b>이다. 매매 판단에는 사람이
+읽을 수 있는 근거가 필요한데, SHAP과 같은 사후 귀속 기법은 모형 자체가 아니라 모형의 대리모형을
+설명한다. 근거로 인정받으려면 중요도가 <b>학습된 모수로 존재</b>해야 한다.</p>
+
+<p>이 두 요구가 구조를 강제한다. 첫째 요구는 분위 헤드와 핀볼 손실을, 둘째 요구는 학습되는 변수중요도,
+즉 TFT의 변수선택망을 요구한다. 그런데 TFT를 그대로 사용하면 계산비용이 제약이 되고, PatchTST를 그대로
+사용하면 두 요구를 모두 충족하지 못한다. <b>따라서 재조합은 목적이 아니라 요구사항의 결과이며</b>, 이것이
+본 연구가 검증하려는 주장이다.</p>
+
+<p>본 연구의 구체적 질문은 다음 네 가지이다. (1) 재조합 구조가 각 원본보다 우수한가, 그리고 어느 축에서
+우수한가. (2) 결합 과정에서 발생한 설계 선택(변수선택망의 배치, 매크로 주입 방향, 분위 단조성 보장,
+헤드 초기화)이 성능에 실질적 영향을 주는가. (3) 학습된 변수중요도를 매매 근거로 제시할 수 있는가.
+(4) 분위 예측에서 도출된 성과가 모형 신호에 귀속되는가.</p>
+
+<p>네 번째 질문에 대한 답이 부정적이라는 점을 미리 밝힌다. 본 연구는 해당 부정적 결과를 IV장 6절과
+V장에 그대로 수록한다. 이를 누락할 경우 IV장 3절의 수익률 표가 과대 해석될 소지가 있기 때문이다.</p>
+
+<h2 class="ch">II. 이론적 배경</h2>
+
+<h3 class="sec">1. 패치 기반 시계열 트랜스포머</h3>
+<p>Nie et al.(2023)이 제안한 PatchTST는 시계열을 시점 단위가 아니라 <b>구간(패치) 단위</b>로 토큰화하고
+다변량 입력을 <b>채널 독립</b>으로 처리한다. 길이 <i>L</i>의 입력은 ⌈<i>L</i>/<i>S</i>⌉개 토큰으로
+축약되어 어텐션 비용이 감소하며, 채널 수에 대해 선형으로 확장된다. 본 연구는 120일 입력을 패치 길이 5
+(1거래주), 스트라이드 5로 분할하여 24개 토큰으로 축약하였다. 다만 출력이 점 예측이고 어떤 채널이
+기여했는지 보고하지 않는다는 두 가지 결함이 있으며, 이는 서론에서 제시한 두 요구사항과 정확히
+대응한다.</p>
+
+<h3 class="sec">2. 해석가능 시계열 모형</h3>
+<p>Lim et al.(2021)의 Temporal Fusion Transformer는 <b>변수선택망</b>을 통해 입력 채널별 소프트맥스
+게이트를 학습하고, <b>게이트 잔차 신경망</b>으로 채널별 변환을 수행하며, 복수의 분위를 동시에 산출한다.
+정적 공변량을 별도로 부호화하여 문맥 벡터로 주입하는 구조도 함께 제시한다. TFT는 2021년 모형으로 최신
+기법은 아니지만, "변수중요도를 게이트로 학습한다"는 기능을 대체할 구성요소가 아직 제시되지 않았다는
+점에서 본 연구는 최신성이 아닌 <b>기능</b>을 기준으로 해당 부품을 채택하였다.</p>
+
+<h3 class="sec">3. 분포 이동 정규화와 분위 회귀</h3>
+<p>Kim et al.(2022)의 RevIN은 입력 윈도우별 인스턴스 정규화를 적용하고 출력에서 역변환한다. 종목과
+시대에 따라 가격 수준의 의미가 달라지는 주가 자료에서는 선택이 아닌 필수 요소이다. 다만 본 연구는 이를
+선별적으로 적용하는데, 횡단면 순위 채널은 정보가 전적으로 수준에 담겨 있어 종목별 윈도우 내 표준화가
+그 정보를 소거하기 때문이다.</p>
+
+<p>Koenker &amp; Bassett(1978)의 분위회귀를 신경망 출력에 적용한 것이 핀볼 손실이며, 분위
+<i>τ</i>에 대하여 식 (1)과 같이 정의된다.</p>
+<div class="eq"><span class="no">(1)</span>
+𝓛<sub><i>τ</i></sub>(<i>y</i>, <i>ŷ</i>) = max[ <i>τ</i>(<i>y</i> − <i>ŷ</i>), (<i>τ</i> − 1)(<i>y</i> − <i>ŷ</i>) ]</div>
+<p>본 연구는 <i>τ</i> ∈ {0.1, 0.5, 0.9}를 동시에 학습한다. 분위 예측은 불확실성을 예측 결과 자체로
+산출하므로, 사후 보정이나 앙상블 분산 없이 기권 규칙을 정의할 수 있다.</p>
+
+<h3 class="sec">4. 선행연구의 한계와 본 연구의 차별성</h3>
+<p>공개 벤치마크인 Qlib(CSI300/Alpha158)에서는 그래디언트 부스팅 계열이 Transformer 및 LSTM을 모두
+상회하는 것으로 보고된다(랭크 IC 0.047~0.051 대 0.041~0.044). "잘 조정된 단순 기준모형과의 공정한
+비교가 부재하다"는 점은 이 분야 문헌의 공통된 약점이므로, 본 연구는 동일 조건의 GBDT 기준모형을 함께
+검증하였다(IV장 6절).</p>
+
+<p>본 연구에서 매크로 지표를 주입하는 크로스어텐션 모듈은 선행 논문에서 가져온 것이 아니라 직접
+설계하였다. 다만 외생변수를 어텐션으로 주입한다는 발상 자체는 새롭지 않으며 TimeXer(2024)가 동일한
+문제를 다루었다. 본 연구는 해당 연구를 참조하여 구성한 것이 아니라 독립적으로 동일한 지점에 도달하였고,
+기여를 주장함에 있어 이 사실을 함께 밝힌다.</p>
+
+<h2 class="ch">III. 연구 방법</h2>
+
+<h3 class="sec">1. 요구사항으로부터의 구조 도출</h3>
+<p>본 연구의 구성요소는 모두 <표 1>의 좌측 요구사항으로부터 역산되었다. 최신성을 기준으로 선택된
+부품은 없다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 1&gt;</b> 요구사항과 구성요소의 대응</div>
+  <div class="tw"><table>
+  <thead><tr><th>요구사항</th><th>강제되는 성질</th><th>채택 구성요소</th></tr></thead>
+  <tbody>
+  <tr><td>기권 판단</td><td>점 추정이 아닌 분포. <i>q</i><sub>90</sub>−<i>q</i><sub>10</sub>이 정의되어야 함</td><td>분위 헤드, 핀볼 손실</td></tr>
+  <tr><td>해석가능성</td><td>사후 대리모형이 아닌 학습된 중요도</td><td>TFT 변수선택망</td></tr>
+  <tr><td>종목·시대별 척도 상이</td><td>비정상 시계열 정규화</td><td>RevIN(채널 선별 적용)</td></tr>
+  <tr><td>입력 120일 × 201종목</td><td>시퀀스 길이 축약</td><td>패치 토큰화(120→24)</td></tr>
+  <tr><td>국내 종목의 매크로 종속성</td><td>외생 시퀀스 주입</td><td>크로스어텐션(자체 설계)</td></tr>
+  </tbody></table></div>
+</div>
+
+<h3 class="sec">2. 제안 모형의 구조</h3>
+<figure>
+  <img src="images/fig1_architecture.png" alt="제안 모형의 전체 구조도. PatchTST 백본, TFT 변수선택망, 매크로 크로스어텐션, 단조 분위 헤드와 각 구성요소의 세부 도해.">
+  <figcaption><b>[그림 1]</b> 제안 모형(Phase 1)의 전체 구조</figcaption>
+  <div class="fnote">노랑=PatchTST 계보, 파랑=TFT 구성요소, 청록=본 연구가 추가한 매크로 크로스어텐션,
+  주황=정적 문맥 경로</div>
+</figure>
+
+<p>입력은 세 경로로 구성된다. 종목 동적 변수(30채널 × 120일), 매크로 시퀀스(13채널), 정적 범주형 변수
+3종이다. 정적 임베딩은 문맥 벡터를 형성하여 변수선택을 조건화하고, 크로스어텐션 이후 다시 더해진다.
+헤드에는 마지막 패치 토큰, 즉 가장 최근 1주의 표현만이 전달된다.</p>
+
+<h3 class="sec">3. 설계 결정과 그 근거</h3>
+
+<h4 class="sub">1) 채널 독립의 유지 — 효율이 아니라 해석가능성</h4>
+<p>패치 임베딩은 각 채널을 독립적으로 24개 토큰으로 변환한다. 이는 PatchTST의 채널 독립을 그대로 가져온
+것처럼 보이나 이유가 다르다. <b>채널을 혼합하면 변수선택망이 가중할 대상 자체가 소멸하여 해석가능성의
+근거가 사라진다.</b> 즉 채널 혼합을 택할 경우 다음 항의 변수선택망이 정의되지 않는다. 두 요구사항이
+충돌한 지점이며, 본 연구는 해석가능성을 우선하였다.</p>
+
+<h4 class="sub">2) 변수선택망을 인코더 앞에 배치 — 연산 5배 차이</h4>
+<p>변수선택망은 정적 문맥 <i>c<sub>s</sub></i>로 조건화된 소프트맥스 게이트를 채널 축에 적용한다
+(식 2, 3).</p>
+<div class="eq"><span class="no">(2)</span>
+<i>α</i> = softmax( GRN( [ flat(<i>E</i>) ; <i>c<sub>s</sub></i> ] ) ) ∈ ℝ<sup><i>C</i></sup></div>
+<div class="eq"><span class="no">(3)</span>
+<i>Z</i> = Σ<sub><i>i</i>=1</sub><sup><i>C</i></sup> <i>α<sub>i</sub></i> · GRN<sub><i>i</i></sub>(<i>E<sub>i</sub></i>)</div>
+<p>변수선택망을 인코더 <b>뒤</b>에 두면 인코더가 채널 축을 그대로 받아 채널 수만큼 반복 실행된다. 당시
+17채널 기준 순전파 실측값은 <b>259ms</b>였다. 반면 <b>앞</b>에 두면 채널이 먼저 하나로 축약되어 인코더가
+1회만 실행되며, 동일 조건에서 <b>52ms</b>로 <b>5배</b> 단축되었다. 변수선택망이 패치 임베딩을 입력받아
+채널을 가중하므로 <i>α</i>는 여전히 "어떤 채널을 얼마나 사용했는가"를 의미하며 해석가능성은 보존된다.</p>
+
+<h4 class="sub">3) 매크로 크로스어텐션의 방향</h4>
+<p>종목 표현을 질의(Query)로, 매크로 부호화를 키·값(Key/Value)으로 설정하였다(식 4).</p>
+<div class="eq"><span class="no">(4)</span>
+CA(<i>Z</i>, <i>H<sub>m</sub></i>) = softmax[ (<i>ZW<sub>Q</sub></i>)(<i>H<sub>m</sub>W<sub>K</sub></i>)<sup>⊤</sup> ∕ √<i>d<sub>k</sub></i> ] (<i>H<sub>m</sub>W<sub>V</sub></i>)</div>
+<p>방향 자체가 설계의 핵심이다. 매크로를 질의로 두면 출력이 매크로 시퀀스의 형상을 따르게 되어 종목별
+예측이 산출되지 않는다. 한편 매크로 경로에는 변수선택망을 두지 않았는데, 매크로 채널의 중요도는 본
+연구의 해석 대상이 아니며 채널별 부호화 시 비용이 <b>13배</b> 증가하기 때문이다. 설명이 필요한 경로에만
+변수선택망을 배치한 의도적 비대칭이다.</p>
+
+<h4 class="sub">4) 분위 단조성의 구조적 보장과 헤드 초기화</h4>
+<p>분위 교차를 손실 벌점이 아니라 누적 소프트플러스 구조로 원천 차단하였다(식 5).</p>
+<div class="eq"><span class="no">(5)</span>
+<i>q</i><sub>10</sub> = <i>o</i><sub>1</sub>, &nbsp;
+<i>q</i><sub>50</sub> = <i>q</i><sub>10</sub> + softplus(<i>o</i><sub>2</sub>), &nbsp;
+<i>q</i><sub>90</sub> = <i>q</i><sub>50</sub> + softplus(<i>o</i><sub>3</sub>)</div>
+<p>교차가 발생하면 기권 폭이 음수가 되어 하위 규칙 전체가 무효화되므로 구조적 보장이 필요하다. IV장
+1절의 네 모형 모두 실측 교차율은 0.000이었다.</p>
+
+<p>초기화 역시 성능을 좌우하였다. 기본 초기화에서는 softplus(0)=0.693이므로 초기 분위 간격이 0.69인
+반면 5일 수익률의 전체 분위 폭은 0.124로, <b>출력이 목표보다 9배 큰 상태에서 학습이 시작</b>된다. 이
+경우 검증 손실 0.013993으로 기준선(0.013285)보다 5.3% 열등하였다. 최종층 편향을 학습자료의 무조건부
+분위수로 설정하여 이를 해소하였으며, 최종층 가중치는 작게 두되 정확히 0으로 두어서는 안 된다. 기울기가
+인코더까지 전달되지 않기 때문이다.</p>
+
+<h3 class="sec">4. 자료 및 변수</h3>
+<p>분석 자료는 코스피200 구성종목 201개의 2015년 이후 일별 자료이며, 종목당 최대 2,857거래일이다.
+거래정지일은 거래량 0과 시가=고가=저가=종가의 형태로 입력되는데, 이를 제거하지 않으면 허위의 0 수익률이
+변동성을 과소추정하게 하므로 지표 산출 이전에 제거하였다. 종목별 거래일이 상이하여(공통 1,887일, 전체
+2,857일) 공통 달력을 강제할 경우 34%의 자료가 소실되므로, 윈도우는 각 종목의 자기 행 위에서
+구성하였다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 2&gt;</b> 입력 변수의 구성</div>
+  <div class="tw"><table>
+  <thead><tr><th>구분</th><th>변수</th><th>수</th></tr></thead>
+  <tbody>
+  <tr><td>수익률·모멘텀</td><td>1·5·20일 수익률, 12-1 모멘텀, 1개월 반전</td><td>5</td></tr>
+  <tr><td>거래활동</td><td>회전율 표준화, 실현변동성, 거래량 비율·표준화</td><td>4</td></tr>
+  <tr><td>이동평균 괴리</td><td>5·20·60일 이동평균 대비 종가 괴리율</td><td>3</td></tr>
+  <tr><td>기술적 지표</td><td>MACD 3종, RSI, CCI, 볼린저 2종, ATR</td><td>8</td></tr>
+  <tr><td>지수 상대</td><td>20·60일 상대강도, 베타, 각각의 횡단면 순위</td><td>6</td></tr>
+  <tr><td>투자자 수급</td><td>개인·외국인·기관·연기금 순매수</td><td>4</td></tr>
+  <tr class="em"><td>동적 변수 소계</td><td>—</td><td>30</td></tr>
+  <tr><td>매크로 시퀀스</td><td>코스피·코스닥 지수 파생, 해외지수 ETF</td><td>13</td></tr>
+  <tr><td>정적 공변량</td><td>업종, 시가총액 구간, 요일</td><td>3</td></tr>
+  </tbody></table></div>
+  <div class="tnote">가격 수준은 직접 사용하지 않는다. 이동평균은 종가 대비 괴리율로, MACD와 ATR은
+  종가로 나누어, 유계 지표는 0~1로 축약하여 입력한다.</div>
+</div>
+
+<p>목표변수는 코스피200 대비 초과분으로 정의한 5일 누적 로그수익률이다(식 6). 1·2·3일 보조 지평을 동일
+윈도우에서 함께 학습하여 다중과제 정칙화 효과를 얻었다.</p>
+<div class="eq"><span class="no">(6)</span>
+<i>y<sub>t</sub></i> = Σ<sub><i>k</i>=1</sub><sup>5</sup> <i>r</i><sub><i>t</i>+<i>k</i></sub>
+− Σ<sub><i>k</i>=1</sub><sup>5</sup> <i>r</i><sup>&thinsp;index</sup><sub><i>t</i>+<i>k</i></sub></div>
+
+<p>전향편의(look-ahead) 통제를 위해 모든 지표는 <i>t</i> 시점까지의 정보만으로 산출하였으며, 중심이동
+평균이나 음의 시차는 사용하지 않았다. 미래 종가를 3배로 조작해도 과거 지표값이 변하지 않음을 확인하는
+회귀 검정을 상시 수행하였다. 재무비율은 조회 시점 스냅숏만 제공되어 과거 시계열이 존재하지 않으므로
+입력에서 제외하였다. 시가총액 구간은 학습구간 종료시점 기준으로 산출하였는데, 조회 시점 기준으로
+산출할 경우 2015년 관측치가 "이 종목이 이후 성장한다"는 정보를 갖게 되기 때문이다. 수정 전후로
+201종목 중 <b>106종목(56%)</b>의 구간이 변경되어 무시할 수 없는 차이임을 확인하였다.</p>
+
+<h3 class="sec">5. 분할 및 평가 설계</h3>
+<p>자료는 종목이 아니라 <b>날짜 기준으로 전역 분할</b>하였다. 학습구간은 2022년까지, 검증구간은 2023년,
+검정구간은 2024년 이후이며, 각 경계에 5일의 격리구간(embargo)을 두었다. 목표변수가 <i>t</i>+5를
+참조하므로 격리구간이 없으면 학습 말단 표본의 레이블이 검증구간을 침범한다. 정규화 통계량은 학습구간
+에서만 추정하였다.</p>
+
+<p>명목 표본수는 독립 정보량과 다르다. 인접 표본은 120일 입력 중 119일을 공유하여 <b>99.2%</b>가
+중첩되고 목표변수도 5일 중 4일이 중첩된다. 비중첩 표본은 약 52,097개로 명목의 20% 수준이며, 같은 날짜의
+201종목이 시장 공통요인으로 묶이는 점을 고려하면 <b>실질적 독립 사건은 약 1,900거래일</b>에 해당한다.
+모형 규모는 이 수치를 기준으로 결정하였다.</p>
+
+<p>모든 실험은 <b>학습자료의 무조건부 분위수</b>를 기준선으로 삼아 비교하였다. 입력을 보지 않고 세 개의
+상수를 산출하는 예측기로, 이를 상회하지 못하면 초매개변수가 아니라 변수·목표 설계의 문제로
+판정하였다.</p>
+
+<p>예측 결과를 매매로 변환하는 규칙은 다음 다섯 단계이며, IV장 3절의 비교에서 네 모형 모두 동일한
+규칙과 비용 가정을 적용하였다. (1) 분위 폭이 최근 분포의 특정 백분위를 초과하면 기권한다. (2) 통과한
+종목을 중앙값 예측 기준으로 횡단면 순위화하여 상위 <i>N</i>개를 보유하되, 기보유 종목은 청산순위 밖으로
+이탈할 때만 매도한다. (3) 구간이 좁을수록 비중을 크게 배분한다. (4) 종목별 비중 상한, 손절, 일일 거래
+상한을 적용한다. (5) 모의투자 계좌로 주문을 전송한다.</p>
+
+<p>기권 임계값을 절대수준이 아닌 백분위로 설정한 것은 실패에서 도출된 결정이다. 절대 임계값을 사용한
+초기 설정에서는 학습구간이 2022년 하락장으로 종료되어 모형의 중앙값 예측(−0.15%)이 실현 평균(+0.80%)과
+괴리되었고, 매수 임계값(+0.40%)에 <b>구조적으로 도달하지 못하였다</b>. 2.1년간 체결 64건, 평균 노출
+8.9%로 전략이 패배한 것이 아니라 참여하지 않은 것이다. 횡단면 순위로 전환한 결과 체결은 1,247건,
+평균 노출은 66.5%, 샤프지수는 0.14에서 0.88로 개선되었다. <b>국면 간 이식되지 않는 수준값은 게이트가
+아니라 상수</b>라는 교훈이며, 동일한 실패 양상이 V장의 포트폴리오 꼬리위험 한도에서 재현되었다.</p>
+
+<h2 class="ch">IV. 연구 결과</h2>
+
+<h3 class="sec">1. 모형 규모의 결정</h3>
+<p>실질적 독립 사건이 약 1,900건에 불과하므로 모형 규모를 최우선으로 탐색하였다. 1.88M 설정은 1회차에서
+최적값에 도달하였는데, 이는 학습률 준비구간 내부였으며 2회차부터 검증손실이 상수 기준선보다 열등해진
+반면 학습손실은 계속 감소하여 전형적인 즉시 과적합을 보였다. <b>최적 회차가 1이라는 사실 자체가
+과적합의 징후</b>이므로 중간 규모 두 설정도 기각하였다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 3&gt;</b> 모형 규모별 예측 성능 (146종목, 전체 학습)</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>설정</th><th>모수</th><th>검증 핀볼손실</th><th>기준선 대비</th><th>최적 회차</th></tr></thead>
+  <tbody>
+  <tr><td>current</td><td>1.88M</td><td>0.014177</td><td>+0.51%</td><td>1 (과적합)</td></tr>
+  <tr><td>tiny</td><td>0.49M</td><td>0.013799</td><td>+3.16%</td><td>1</td></tr>
+  <tr><td>small</td><td>0.67M</td><td>0.013782</td><td>+3.28%</td><td>1</td></tr>
+  <tr class="em"><td>minimal</td><td>0.33M</td><td>0.013772</td><td>+3.35%</td><td>3</td></tr>
+  </tbody></table></div>
+  <div class="tnote">개선폭 0.000478에 대한 날짜 단위 블록 부트스트랩 결과는 2.8σ이다. 표본 독립을
+  가정하면 5.5σ가 산출되나 동일 날짜 종목이 시장 공통요인으로 묶이므로 블록 추정치를 보고한다.</div>
+</div>
+
+<h3 class="sec">2. 네 가지 구조의 동일조건 비교</h3>
+<p>네 모형은 자료·분할·시드·학습절차·조기종료 규칙을 공유한다. <b>무조건부 기준선 손실이 네 모형 모두
+0.012175로 동일</b>하게 산출되어 통제가 실제로 작동하였음을 수치로 확인할 수 있다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 4&gt;</b> 예측 정확도 비교 (검증구간, 3분위 핀볼손실)</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>모형</th><th>모수</th><th>핀볼손실</th><th>기준선 대비</th><th>최적 회차</th><th>분위 교차율</th></tr></thead>
+  <tbody>
+  <tr><td>PatchTST 원본(점 예측)</td><td>0.034M</td><td>0.017993</td><td>−47.79%</td><td>1</td><td>0.000</td></tr>
+  <tr><td>PatchTST + 분위 헤드</td><td>0.035M</td><td>0.012143</td><td>+0.26%</td><td>5</td><td>0.000</td></tr>
+  <tr><td>TFT 원본</td><td>0.687M</td><td>0.011893</td><td>+2.32%</td><td>2</td><td>0.000</td></tr>
+  <tr class="em"><td>제안 모형</td><td>0.500M</td><td>0.011887</td><td>+2.36%</td><td>5</td><td>0.000</td></tr>
+  </tbody></table></div>
+</div>
+
+<p>결과는 세 가지로 해석된다. 첫째, <b>점 예측 백본은 열등한 것이 아니라 본 과업에 사용할 수 없다.</b>
+PatchTST 원본이 상수 예측기 대비 −47.79%를 기록한 것은 평균제곱오차로 학습된 점 예측이 핀볼손실 기준
+퇴화한 분포(<i>q</i><sub>10</sub>=<i>q</i><sub>50</sub>=<i>q</i><sub>90</sub>)이기 때문이다. 이는 PatchTST에
+대한 비판이 아니라 첫째 요구사항의 정량적 진술, 즉 <b>분포가 없으면 기권이 정의되지 않는다</b>는 명제의
+확인이다. 둘째, 분위 헤드만 부착해서는 충분하지 않다. 해당 설정은 +0.26%로 상수 예측을 간신히 상회하는
+데 그쳤으며, 변수선택·정적문맥·매크로 입력이 결여되어 있다. 셋째, <b>TFT 원본과 제안 모형은 정확도에서
+사실상 동률이다.</b> 본 연구는 이 축에서의 우위를 주장하지 않으며, 동률은 &lt;표 5&gt;의 비용에서
+갈린다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 5&gt;</b> 계산 비용 비교 (동일 장비, 배치 64, 201종목)</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>모형</th><th>초/epoch</th><th>종목당 추론</th><th>전종목 1회</th><th>활성값 메모리</th><th>모수 메모리</th></tr></thead>
+  <tbody>
+  <tr><td>PatchTST(+분위 헤드)</td><td>111.1</td><td>0.090 ms</td><td>18.0 ms</td><td>84.0 MB</td><td>0.14 MB</td></tr>
+  <tr><td>TFT 원본</td><td>529.5</td><td>0.678 ms</td><td>136.2 ms</td><td>167.8 MB</td><td>2.75 MB</td></tr>
+  <tr class="em"><td>제안 모형</td><td>111.5</td><td>0.128 ms</td><td>25.7 ms</td><td>45.8 MB</td><td>2.00 MB</td></tr>
+  </tbody></table></div>
+  <div class="tnote">epoch 시간은 중앙값이다. 제안 모형은 외부 GPU에서 29.3초/epoch로 학습되었으며, 표의
+  값은 세 행을 동일 장비로 맞추기 위한 실측 대리값이다.</div>
+</div>
+
+<p>동일한 정확도에서 제안 모형은 학습 <b>4.7배</b>, 종목당 추론 <b>5.3배</b>, 활성값 메모리 <b>3.7배</b>의
+절감을 보였다. 활성값은 두 모형 모두 입력 길이에 대해 선형으로 증가하므로(60→240 구간 비율 약 3.96)
+이 격차는 상수항이 아니라 구조적이다. 패치 토큰화가 어텐션 대상 시퀀스에서 5배를 제거하고, 변수선택망
+선행 배치가 채널 반복을 제거한 결과이다. 모수 1.4배의 차이는 부차적이며, <b>실질적 절감은 활성값과
+벽시계 시간</b>에서 발생한다.</p>
+
+<h3 class="sec">3. 동일 규칙 하의 매매 성과</h3>
+<figure>
+  <img src="images/arch_compare_light.png" alt="7개 축에 대한 세 모형의 종합 비교. 좌측 레이더 차트와 우측 축별 막대 비교.">
+  <figcaption><b>[그림 2]</b> 7개 축에 대한 구조별 종합 비교</figcaption>
+  <div class="fnote">위험조정 수익과 리스크 제어 축은 &lt;표 7&gt;의 왕복거래 기준이며,
+  &lt;표 6&gt;의 일별 곡선 기준과 산출 기준이 다르다.</div>
+</figure>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 6&gt;</b> 12개월 백테스트 결과 (244거래일, 동일 규칙·비용)</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>모형</th><th>누적수익</th><th>변동성</th><th>샤프</th><th>최대낙폭</th><th>칼마</th><th>적중률</th></tr></thead>
+  <tbody>
+  <tr><td>PatchTST 원본</td><td>+48.3%</td><td>50.0%</td><td>1.063</td><td>−36.2%</td><td>1.385</td><td>58.4%</td></tr>
+  <tr><td>PatchTST + 분위</td><td>+55.4%</td><td>48.6%</td><td>1.178</td><td>−32.9%</td><td>1.749</td><td>58.9%</td></tr>
+  <tr><td>TFT 원본</td><td>+85.7%</td><td>41.1%</td><td>1.765</td><td>−24.4%</td><td>3.664</td><td>58.9%</td></tr>
+  <tr class="em"><td>제안 모형</td><td>+172.3%</td><td>54.2%</td><td>2.185</td><td>−33.6%</td><td>5.401</td><td>62.1%</td></tr>
+  <tr><td>코스피200</td><td>+124.2%</td><td>59.1%</td><td>1.707</td><td>−40.9%</td><td>3.180</td><td>62.8%</td></tr>
+  </tbody></table></div>
+</div>
+
+<h3 class="sec">4. 기권 행태와 왕복거래 수익구조</h3>
+<div class="tbl">
+  <div class="cap"><b>&lt;표 7&gt;</b> 변동성 분위별 기권율과 왕복거래 수익구조</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>모형</th><th>전체 기권율</th><th>Q1</th><th>Q4</th><th>왕복</th><th>승률</th><th>손익비</th><th>기대수익</th></tr></thead>
+  <tbody>
+  <tr><td>PatchTST 원본</td><td>0.0%</td><td>0.0%</td><td>0.0%</td><td>23</td><td>13.0%</td><td>0.67배</td><td>−9.35%</td></tr>
+  <tr><td>PatchTST + 분위</td><td>4.72%</td><td>0.44%</td><td>12.07%</td><td>32</td><td>37.5%</td><td>2.44배</td><td>+3.62%</td></tr>
+  <tr><td>TFT 원본</td><td>5.80%</td><td>0.00%</td><td>16.28%</td><td>41</td><td>36.6%</td><td>3.70배</td><td>+9.51%</td></tr>
+  <tr class="em"><td>제안 모형</td><td>7.91%</td><td>0.45%</td><td>25.88%</td><td>46</td><td>34.8%</td><td>8.28배</td><td>+28.6%</td></tr>
+  </tbody></table></div>
+  <div class="tnote">Q1~Q4는 판단 시점 후보종목의 실현변동성 사분위이다.</div>
+</div>
+
+<p>&lt;표 7&gt;은 기권 요구사항이 매매 규칙이 아니라 <b>구조</b>에 의해 충족되었음을 보여주는 가장 직접적인
+증거이다. 네 행의 매매 규칙은 동일하며 예측 분포만 다르다. 점 예측 모형은 임계할 폭이 없어 기권이 0이고
+손익비가 1 미만, 기대수익이 음수이다. 분위 헤드만 부착해도 기대수익이 양수로 전환되며, 변수선택·정적
+문맥·매크로 입력이 더해지면 <b>최상위 변동성 분위의 기권율이 25.9%인 반면 최하위 분위는 0.45%</b>에
+머문다. 즉 가장 변동성이 큰 구간에서 57배 더 자주 판단을 보류한다. 다만 <b>승률은 개선되지 않았으며</b>
+(34.8%로 분위 모형 중 최저) 성과 격차는 전적으로 승패 크기의 비대칭에서 발생하였다. 이는 모형이 방향을
+맞히는 것이 아니라 불확실성을 가격화한다는 해석과 정합한다.</p>
+
+<p>다만 &lt;표 6&gt;의 +172.3%를 재현 가능한 초과수익으로 해석해서는 안 된다. 첫째, 해당 구간은 역사적
+강세장의 한 달력 조각이며 시작일을 수일만 이동해도 동일 전략의 6개월 성과가 −9.4%에서 +10.3%까지
+변동한다. 둘째, 운용 설정에 대한 10구간 달력 검증에서 2년 기준 9/10, 1년 기준 8/10 구간이 지수를
+상회하였으나 6개월 기준은 3/10에 그쳤고, 해당 설정은 검증구간(2023년)이 모든 설정을 1.2%p 이내로 수렴
+시키는 무방향장이어서 <b>검정구간에서 선택</b>되었다. 셋째, 아래 6절이 순위신호의 통계적 귀속을
+기각한다. &lt;표 6&gt;에서 방어 가능한 주장은 <b>상대적 우위</b>, 즉 동일 규칙·동일 구간에서 제안 모형이
+두 원본을 모든 수익·위험조정 지표에서 상회하였다는 사실에 한정된다.</p>
+
+<h3 class="sec">5. 변수선택은 실제로 선택하는가</h3>
+<p>30개 채널에 대한 균등 가중의 상위 5개 합은 0.167이다. 변수선택망을 보유한 두 모형은 이를 상회하였고
+제안 모형은 균등 대비 <b>2.4배</b>로 집중되었다. 구성에서도 차이가 나타나는데, TFT 원본은 상위 5개 중
+3개를 관측입력으로 결합된 매크로 채널에 배분한 반면, 별도의 크로스어텐션 경로로 매크로를 수용하는 제안
+모형은 상위 5개를 모두 종목 수준의 변동성·거래활동 채널에 배분하였다. <b>매크로 경로의 분리가 선택
+대상을 바꾸었다</b>는 의미이다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 8&gt;</b> 학습된 변수중요도 상위 5개</div>
+  <div class="tw"><table>
+  <thead><tr><th>모형</th><th>상위 채널</th><th>상위5 합</th></tr></thead>
+  <tbody>
+  <tr><td>PatchTST + 분위</td><td>변수선택 미보유 — 균등 가중</td><td>0.167</td></tr>
+  <tr><td>TFT 원본</td><td>ATR · 지수 5일수익 · 지수 거래량비 · 지수 1일수익 · 연기금 수급</td><td>0.305</td></tr>
+  <tr class="em"><td>제안 모형</td><td>거래량 표준화 · 볼린저 폭 · 회전율 표준화 · 거래량 비율 · 개인 수급</td><td>0.398</td></tr>
+  </tbody></table></div>
+</div>
+
+<p>그러나 <b>집중은 타당성과 다르다.</b> 검정구간 75,975개 윈도우에서 측정한 결과, 변수중요도와 단변량
+예측력의 순위상관은 <b>−0.03</b>으로 사실상 무관하였다. ATR은 중요도 1위이나 단변량 정보계수로는 13위
+이며, 단변량 최상위 채널은 중요도 7위에 위치한다. 이는 변수선택망이 틀렸다는 의미가 아니다. 변수중요도
+가중치는 <b>표현을 구성할 때 해당 채널이 받는 비중</b>이지 방향 예측 기여도가 아니며, 상위 채널이
+변동성·거래활동 계열이라는 사실은 6절의 결과와 정합한다. 다만 중요도는 "이 변수가 수익률을 예측한다"로
+읽히기 쉬우므로, 본 연구는 이를 단변량 정보계수와 <b>병기</b>하여 제시한다.</p>
+
+<p>더욱이 '동적' 변수선택은 사실상 고정되어 있었다. 윈도우별 순위와 전역 평균 순위의 상관은 0.966,
+날짜 부트스트랩 300회의 순위 표준편차는 전 채널 0.00, 2024~2026년 연도별 순위 일치도는 0.988~0.995였다.
+안정성은 재현성 측면에서 미덕이나, <b>"상황에 따라 다른 변수를 참조한다"는 서술은 성립하지 않는다.</b>
+본 모형의 변수선택은 하나의 학습된 전역 가중벡터에 가깝다.</p>
+
+<h3 class="sec">6. 성과의 귀속 — 부정적 결과</h3>
+<p>동일한 자료·분할·격리구간·목표변수·평가함수·매매설정 하에서 GBDT 기준모형과 비교한 결과, 제안 모형의
+랭크 정보계수는 +0.0235(<i>t</i>=3.87)인 반면 GBDT는 +0.0043(<i>t</i>=0.56)으로 <b>0과 구분되지
+않았다</b>. 이는 Qlib 벤치마크의 순서와 상반되나 시장·유니버스·변수집합이 상이하므로 해당 문헌에 대한
+반증은 아니며, 기준모형 부재라는 비판에 대한 답변에 해당한다.</p>
+
+<p>그러나 중앙값 예측의 순위만을 무작위로 치환한 순열검정에서 신호의 기여는 <b>샤프 +0.12,
+<i>p</i>=0.25</b>로 유의하지 않았다. <b>측정된 성과의 대부분은 모형의 순위에 귀속되지 않으며</b>, 매매
+규칙·대형주 후보군·상승장 노출에서 비롯된다. 또한 십분위 스프레드는 <b>+0.0005로 왕복비용
+0.0031의 1/6</b>에 불과하였다. 정확도에서 우위를 보인 구조가 신뢰할 만한 초과수익으로 전환되지 않는
+이유가 이 한 줄에 있으며, 매매 규칙의 조정으로는 해소되지 않는다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 9&gt;</b> 목표변수 정렬에 따른 랭크 정보계수 변화</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>단계</th><th>유니버스 / 목표변수</th><th>랭크 IC</th><th><i>t</i></th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>146종목, 원시 수익률, 시가총액 전향편의 존재</td><td>+0.0235</td><td>3.87</td></tr>
+  <tr><td>2</td><td>201종목, 원시 수익률, 편의 제거</td><td>−0.0018</td><td>−0.23</td></tr>
+  <tr><td>3</td><td>201종목, 지수 대비 초과수익</td><td>−0.0244</td><td>−3.70</td></tr>
+  <tr class="em"><td>4</td><td>201종목, 초과수익 + 상대강도 채널 추가</td><td>+0.0197</td><td>+2.69</td></tr>
+  </tbody></table></div>
+</div>
+
+<p>전향편의를 제거하고 유니버스를 확대하자 외견상의 방향 예측력이 소멸하였다(1→2단계). 목표변수를 초과
+수익으로 정렬하자 신호는 강해졌으나 검정구간에서 <b>부호가 역전</b>되었는데(3단계), 모형에 "이 종목이
+지수를 상회하는가"를 관측할 채널이 없어 저변동성 요인을 대리 추종하였기 때문이다. 상대강도·베타와 그
+횡단면 순위를 추가하여(동적 채널 24→30) 비로소 검증·검정 양 구간의 부호가 일치하였으며(4단계), 검정구간
+9개 분기 중 유의하게 음수인 분기는 존재하지 않았다. <b>본 연구에서 두 구간을 모두 통과한 유일한
+설정</b>이다.</p>
+
+<h3 class="sec">7. 이 모형이 실제로 잘하는 것</h3>
+<div class="tbl">
+  <div class="cap"><b>&lt;표 10&gt;</b> 예측구간 교정과 방향·폭 예측력 비교</div>
+  <div class="tw"><table class="n">
+  <thead><tr><th>측정</th><th>결과</th></tr></thead>
+  <tbody>
+  <tr><td>예측구간 포함률 (명목 80%)</td><td>78.6%</td></tr>
+  <tr><td>등각예측 보정량</td><td>+0.024 (무시 가능)</td></tr>
+  <tr><td>방향 정보계수 (중앙값 대 실현수익)</td><td>0.024 (<i>t</i>=3.9)</td></tr>
+  <tr class="em"><td>폭 정보계수 (구간 대 실현변동성)</td><td>0.294 (<i>t</i>=43.8)</td></tr>
+  </tbody></table></div>
+</div>
+
+<p><b>구간 폭을 예측하는 능력이 방향을 예측하는 능력보다 12배 크다.</b> 순열검정, 변수중요도의 구성,
+위 두 정보계수, 그리고 &lt;표 7&gt;의 손익 비대칭이라는 네 가지 독립적 측정이 동일한 결론을 가리킨다.
+실제로 방향 정보계수가 소멸한 동일 실험에서 핀볼손실은 오히려 개선되었는데(+3.35%→+3.75%), 이는 모순이
+아니라 핀볼손실을 낮추는 가장 저렴한 경로가 폭의 예측이고 변동성은 군집성으로 인해 예측 가능하다는
+사실의 반영이다. 따라서 본 모형의 능력에 대한 정직한 진술은 <b>"오를 종목을 고른다"가 아니라 "지금
+판단해도 되는지를 안다"</b>이다. 제품 요구사항으로 설정한 기권 조건이 결과적으로 모형의 실제 능력과
+합치하였다.</p>
+
+<h3 class="sec">8. 분위 폭의 실행계층 적용</h3>
+<p>모형의 신뢰 가능한 출력이 구간 폭이라면, 폭이 입력으로 기능하는 영역에 이를 사용하는 것이 자연스럽다.
+본 연구는 분위 폭이 지정가 사다리의 칸 간격을 결정하는 실행계층을 부가적으로 구성하였다(식 7).</p>
+<div class="eq"><span class="no">(7)</span>
+간격 = clip[ (<i>q</i><sub>90</sub> − <i>q</i><sub>10</sub>) × <i>α</i>, &nbsp; 2<i>c</i><sub>왕복</sub>, &nbsp; 0.10 ],
+&nbsp;&nbsp; <i>α</i> = 0.20</div>
+
+<figure>
+  <img src="images/fig3_ladder.png" alt="10분봉 10거래일 구간의 그리드 사다리 재생 도해. 매도 칸과 매수 칸, 기준가 재설정 시점과 체결 표시.">
+  <figcaption><b>[그림 3]</b> 분위 폭으로 결정된 지정가 사다리와 기준가 재설정</figcaption>
+  <div class="fnote">사다리는 모형의 일별 폭에 따라 변하며, 가격이 사다리를 이탈하면 기준가를 재설정한다.</div>
+</figure>
+
+<p>폭을 매일 재산출하는 처리는 본 계층에서 검증·검정 양 구간을 모두 통과한 유일한 변경이다(198종목,
+사이클 단위 대응표본 기준 검증 +0.049%p, <i>t</i>=4.47; 검정 +0.037%p, <i>t</i>=3.35). <b>다만 동일
+규칙을 20일 실현변동성으로 대체한 통제군과는 차이가 없었다</b>(<i>p</i>=0.57, 0.81). 즉 이득의 출처는
+"매일 다시 측정한다"는 행위이며 무엇으로 측정하는지는 가려내지 못하였다. 모형을 사용할 근거는 초기 폭에서
+고정 폭 대비 우위가 확인되었다는 점과 동일 예측에서 산출되어 추가 비용이 없다는 점에 한정된다.</p>
+
+<p>또한 사다리 이탈 시 기준가를 재설정하는 처리는 수익을 개선하지 못하였으나(<i>p</i>=0.61), 사다리를
+벗어나 체결 가능한 칸이 하나도 없는 <b>정지 시간을 34.8%에서 1.2%로</b> 감소시켰다. 수익이 아니라
+전략의 존재 시간을 확보한 변경이다.</p>
+
+<h2 class="ch">V. 논의 및 한계</h2>
+
+<h3 class="sec">1. 비교의 공정성에 관한 한계</h3>
+<p>IV장 2~3절에는 네 가지 한계가 수반되며, 모두 본 연구의 주장에 불리한 방향으로 작용한다. 첫째,
+PatchTST 계열 대조군은 매크로와 정적 공변량을 입력받지 못한다. 원본 구조에 해당 개념이 없기 때문이며,
+따라서 본 비교는 순수한 구조 비교가 아니라 <b>원본을 그대로 사용할 때 무엇을 포기하게 되는가</b>의
+비교이다. 둘째, 초매개변수는 제안 모형에 맞추어 조정된 값을 대조군에 동일하게 적용하였으므로 대조군의
+최적값이 아니다. 셋째, 제안 모형만 외부 GPU에서 학습되었다(비용 표는 동일 장비로 정규화하였다). 넷째,
+검정구간이 역사적 강세장 한 구간이며 walk-forward 검증을 수행하지 않았다.</p>
+
+<h3 class="sec">2. 해석가능성의 경계</h3>
+<p>본 연구는 변수중요도를 매매 근거로 제시하겠다고 선언하였으나, IV장 5절은 그 중요도가 단변량 예측력과
+−0.03의 순위상관을 가지며 선택이 사실상 고정되어 있음을 보였다. <b>대조표 없이 중요도만 제시하는 것은
+설명의 외형만 갖춘 안전 환상에 해당</b>하므로 본 연구는 항상 두 값을 병기한다. 설명 가능한 범위와 불가능한
+범위는 <표 11>과 같다.</p>
+
+<div class="tbl">
+  <div class="cap"><b>&lt;표 11&gt;</b> 설명 가능한 범위와 불가능한 범위</div>
+  <div class="tw"><table>
+  <thead><tr><th>설명 가능</th><th>설명 불가능</th></tr></thead>
+  <tbody>
+  <tr><td>어떤 채널이 표현 구성에서 큰 비중을 받는가</td><td><b>왜</b> 특정 종목이 오늘 상위에 편입되었는가</td></tr>
+  <tr><td>기권 사실과 그 임계값의 근거</td><td>중앙값 순위가 어떤 근거로 그 순서가 되었는가</td></tr>
+  <tr><td>성과 중 신호와 규칙의 기여 분해(순열검정)</td><td>개별 매수 결정의 인과</td></tr>
+  </tbody></table></div>
+</div>
+<p>즉 <b>포트폴리오 수준의 설명은 가능하고 개별 종목 수준의 설명은 불가능하다.</b> 기권만이 예외인데,
+이는 폭이라는 단일 수치로 설명되기 때문이다.</p>
+
+<h3 class="sec">3. 정칙화 변경 시의 함정</h3>
+<p>드롭아웃을 0.5에서 0.65로 상향하자 최적 회차가 지연되며 검증손실이 <b>개선</b>되었으나, 랭크 정보계수는
+0.0513에서 0.0010으로 붕괴하였다. 모형이 방향을 포기하고 폭만 적합시켜 검증지표가 좋아진 것이다.
+<b>검증 핀볼손실은 이 현상을 탐지하지 못한다.</b> 따라서 정칙화를 변경할 때에는 반드시 표본외 랭크
+정보계수와 순열검정을 함께 확인해야 한다.</p>
+
+<h3 class="sec">4. 자료의 편의</h3>
+<div class="tbl">
+  <div class="cap"><b>&lt;표 12&gt;</b> 자료에 내재한 편의와 그 영향</div>
+  <div class="tw"><table>
+  <thead><tr><th>편의</th><th>내용</th><th>영향</th></tr></thead>
+  <tbody>
+  <tr><td>생존편의</td><td>유니버스를 현재 시점에서 추출하여 2015년 이후 상장폐지 종목이 후보에 없음</td><td>수익률이 낙관적. 방향은 확실하나 크기는 미측정</td></tr>
+  <tr><td>국면편의</td><td>학습구간이 2022년 하락장으로 종료</td><td>절대 임계값 붕괴의 원인. 순위 방식으로 우회하였을 뿐 제거되지 않음</td></tr>
+  <tr><td>시작일편의</td><td>최근 6개월 성과가 시작일 5일 차이로 −9.4%~+10.3%로 역전</td><td>단일 구간 성과를 인용하지 않음</td></tr>
+  <tr><td>비용편의</td><td>백테스트 편도 15.5bp 대 모의계좌 실측 35bp</td><td>실거래가 백테스트보다 열등해지는 구조적 원인</td></tr>
+  <tr><td>주식수편의</td><td>시가총액 산출에 조회시점 상장주식수를 사용</td><td>액면분할은 상쇄되나 증자·소각은 왜곡. 크기 미계량</td></tr>
+  </tbody></table></div>
+</div>
+
+<h3 class="sec">5. 운용 규모와 실거래 검증</h3>
+<p>실체결 994건에 당시 거래대금과 변동성을 결합한 제곱근 충격모형으로 추정한 결과, <b>순열검정이 측정한
+신호 기여분을 시장충격이 상쇄하는 지점은 수억~수십억 원 규모</b>로 나타났다. 모의계좌 운용자금 1억 원은
+이미 동일한 자릿수에 속한다. 본 전략은 개인 계좌 규모에서 의미를 가지며 기관 규모로 확장되지 않는다.
+한편 31거래일간의 모의투자 결과는 <b>−3.40%</b>였으며, 실현 수수료가 백테스트 가정의 2.3배라는 점이 이
+괴리의 구조적 원인에 해당한다. 신호의 가치가 왕복비용의 1/6에 불과한 상황에서 비용 가정이 2.3배
+어긋나는 것만으로 초과수익은 소멸한다.</p>
+
+<h3 class="sec">6. 행태 수렴</h3>
+<p>본 연구의 입력은 전부 공개된 가격·거래량 파생지표이고, 구조와 목표변수는 문헌 표준이며, 유니버스는
+중복도가 높은 대형주 201종목이다. 동일한 재료로 구성된 모형들은 같은 날 같은 종목을 매수하게 된다.
+이력 완충(청산순위를 편입순위의 2배로 설정)이 리밸런싱당 신규 편입을 56% 감소시키는 것이 유일한 완화
+장치이며, 근본적 해결책은 아니다.</p>
+
+<h2 class="ch">VI. 결 론</h2>
+
+<p>본 연구는 PatchTST와 TFT의 부품을 재조합하는 것이 정당화되는가, 그리고 어느 축에서 정당화되는가를
+검증하였다. 측정된 답은 한정적이며 한정적으로 진술한다.</p>
+
+<p><b>재조합이 확보한 것.</b> TFT 원본과 동일한 분위 정확도(+2.36% 대 +2.32%, 분위별 손실이 소수점
+넷째 자리까지 일치)를 <b>학습시간 4.7배, 추론지연 5.3배, 활성값 메모리 3.7배의 절감</b>과 함께, 그리고
+학습된 채널별 중요도를 부수적으로 얻으며 달성하였다. 분포를 표현할 수 없는 PatchTST 원본과의 격차는
+점진적이 아니라 범주적이다. 기권이 정의되지 않고, 손익비가 1 미만이며, 기대수익이 음수이다. 동일 규칙
+동일 구간에서 제안 모형은 두 원본을 모두 상회하였고, 최상위 변동성 분위의 25.9%를 보류하는 반면 최하위
+분위에서는 0.45%만을 보류하였다.</p>
+
+<p><b>재조합이 확보하지 못한 것.</b> 방향 예측력이다. 폭의 정보계수가 방향의 12배이고, 순열검정은
+순위신호의 기여를 기각하며(<i>p</i>=0.25), 십분위 스프레드는 왕복비용의 1/6이다. 해석가능성 주장을
+뒷받침해야 할 학습된 중요도는 단변량 예측력과 −0.03의 상관을 가지며 연도 간 사실상 고정되어 있다.</p>
+
+<p>요구사항으로부터 구조를 도출한 결과는 요구사항이 기대한 것보다는 나았고 연구가 희망한 것보다는
+못하였다. 제품 요건으로 설정한 기권 조건이 공교롭게도 이 모형이 잘하는 유일한 영역과 합치하였기
+때문이다. 후속 연구에 대한 제언은 세 가지이다. 첫째, 예측을 종목 선별이 아니라 모형이 강한 영역
+—비중 결정, 기권, 실행 간격— 에 사용할 것. 둘째, 순열검정과 단변량 정보계수 대조를 선택이 아닌 필수
+절차로 둘 것. 셋째, 비용을 활성값과 벽시계 시간으로 보고할 것. 이 자료 규모에서 구조를 제약하는 것은
+정확도가 아니라 가용 연산자원이기 때문이다.</p>
+
+<div class="refs">
+<h2 class="ch">참고문헌</h2>
+
+<h3>국내문헌</h3>
+<p>자본시장연구원, 「AI와 자산운용: 패러다임의 전환 가능성 고찰」, 자본시장연구원 연구보고서.</p>
+
+<h3>국외문헌</h3>
+<p>Avellaneda, M. and S. Stoikov, "High-Frequency Trading in a Limit Order Book,"
+<i>Quantitative Finance</i>, Vol.8, No.3(2008), 217–224.</p>
+<p>Boyd, S., K. Johansson, R. Kahn, P. Schiele, and T. Schmelzer, "Markowitz Portfolio Construction
+at Seventy," 2024.</p>
+<p>Chen, K.-Y., K.-H. Chen, and J.-S. R. Jang, "Dynamic Grid Trading Strategy: From Zero Expectation
+to Market Outperformance," <i>arXiv preprint</i> arXiv:2506.11921, 2025.</p>
+<p>Kim, T., J. Kim, Y. Tae, C. Park, J.-H. Choi, and J. Choo, "Reversible Instance Normalization for
+Accurate Time-Series Forecasting against Distribution Shift," <i>Proceedings of the International
+Conference on Learning Representations</i>, 2022.</p>
+<p>Koenker, R. and G. Bassett, "Regression Quantiles," <i>Econometrica</i>, Vol.46, No.1(1978), 33–50.</p>
+<p>Lim, B., S. Ö. Arık, N. Loeff, and T. Pfister, "Temporal Fusion Transformers for Interpretable
+Multi-horizon Time Series Forecasting," <i>International Journal of Forecasting</i>, Vol.37,
+No.4(2021), 1748–1764.</p>
+<p>Nie, Y., N. H. Nguyen, P. Sinthong, and J. Kalagnanam, "A Time Series is Worth 64 Words: Long-term
+Forecasting with Transformers," <i>Proceedings of the International Conference on Learning
+Representations</i>, 2023.</p>
+<p>Vaswani, A., N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, and
+I. Polosukhin, "Attention Is All You Need," <i>Advances in Neural Information Processing Systems</i>,
+2017.</p>
+<p>Wang, Y., H. Wu, J. Dong, Y. Liu, M. Long, and J. Wang, "TimeXer: Empowering Transformers for Time
+Series Forecasting with Exogenous Variables," <i>Advances in Neural Information Processing
+Systems</i>, 2024.</p>
+<p>Yang, X., W. Liu, D. Zhou, J. Bian, and T.-Y. Liu, "Qlib: An AI-oriented Quantitative Investment
+Platform," <i>arXiv preprint</i> arXiv:2009.11189, 2020.</p>
+<p>Yeh, W.-C., Y.-H. Hsieh, and C.-L. Huang, "Newly Developed Flexible Grid Trading Model Combined ANN
+and SSO Algorithm," <i>arXiv preprint</i> arXiv:2211.12839, 2022.</p>
+</div>
+
+<div class="eabs">
+  <h2>Abstract</h2>
+  <div class="et">Recombining PatchTST and TFT for Interpretable Stock Return Forecasting:<br>
+    Same Quantile Accuracy at a Quarter of the Cost</div>
+  <p>Patch-based time-series transformers (PatchTST) tokenize a series in segments and keep channels
+  independent, which makes long inputs inexpensive to process, but they emit only point forecasts and
+  cannot report which variable they used. The Temporal Fusion Transformer (TFT) resolves both
+  limitations through a variable selection network and a quantile head, yet pays for it by operating at
+  every time step. This study recombines components from the two lineages into a 0.50M-parameter model
+  — a PatchTST backbone with TFT variable selection and quantile head, together with a macro
+  cross-attention block of our own design — and compares it against both originals under an identical
+  protocol of data, split, seed, training procedure, and trading rules, using daily data on the 201
+  constituents of the KOSPI 200 from 2015 onward. Forecast accuracy reaches <b>+2.36%</b> against an
+  unconditional-quantile baseline, statistically indistinguishable from the original TFT (+2.32%), while
+  training time, inference latency, and activation memory are reduced by <b>4.7×, 5.3×, and 3.7×</b>
+  respectively on the same device. Abstention behaves as designed: the model declines 25.9% of
+  candidates in the highest volatility quartile but only 0.45% in the lowest. This study reports its
+  negative findings with equal weight. The rank correlation between learned variable importance and
+  univariate predictive power is <b>−0.03</b>, variable selection is effectively fixed across years
+  (0.988–0.995 rank agreement), the information coefficient of interval width (0.294) exceeds that of
+  direction (0.024) by twelvefold, and a permutation test fails to attribute performance to the ranking
+  signal (<i>p</i>=0.25). What the recombination secures is therefore not directional accuracy but
+  <b>equivalent quantile accuracy at a quarter of the cost with learned feature weights attached</b>;
+  the model's genuine competence lies in uncertainty rather than direction.</p>
+  <div class="kw"><b>Key Words:</b> Time-Series Transformer, Quantile Regression, Variable Selection
+  Network, Explainable AI, Forecast Uncertainty, Abstention, Stock Return Forecasting</div>
+</div>
+
+<div class="foot">
+  본 연구의 모든 수치는 저자들이 구축한 분석 환경에서 산출된 것이며, 산출 절차와 결과물은 재현 가능하도록
+  기록되어 있다. 매매 결과는 전부 모의투자 계좌에서 얻어진 것으로 실제 자금이 투입된 결과가 아니며, 본
+  논문의 어떠한 내용도 투자 권유에 해당하지 않는다.<br><br>
+  II장 1~3절의 서지사항 중 일부는 원문 대조가 완료되지 않았다. 투고 전 확인이 필요하다.
+</div>
+
+<div class="tools"><button class="btn" id="printBtn" type="button">인쇄 / PDF로 저장 (A4)</button></div>
+
+</div>
+
+<script>
+(function(){
+  var b = document.getElementById('printBtn');
+  if (b) b.addEventListener('click', function(){ window.print(); });
+})();
+</script>

@@ -1,5 +1,10 @@
 #!/bin/bash
-# 평일 15:15 자동 매매. launchd 가 호출한다.
+# 평일 장중 30분 간격 자동 매매(09:05~15:05). launchd 가 매시 :05·:35 에 호출한다.
+#
+# 왜 하루 한 번이 아닌가: **미체결 지정가는 장 마감에 소멸한다**
+# (docs/KIWOOM_VERIFY.md 지정가 검증). 사다리가 하루밖에 못 살고, 체결에
+# 반응하지 않으면 짝 매도가 안 걸려 왕복이 성립하지 않는다.
+# 아침 첫 회차가 사다리를 새로 깔고, 이후 회차는 체결에만 반응한다(run_grid).
 #
 #   설치:   bash scripts/install_daily_trade.sh
 #   해제:   bash scripts/install_daily_trade.sh --uninstall
@@ -17,6 +22,14 @@ LOGDIR="$PROJECT/outputs/logs/daily"
 
 mkdir -p "$LOGDIR"
 LOG="$LOGDIR/trade_$(date +%F).log"
+
+# 장중이 아니면 **로그도 API 도 건드리지 않고** 끝낸다. launchd 는 하루 48번
+# 부르는데(매시 :05·:35) 그중 13번만 장중이다 — 나머지에 토큰을 발급받을 이유가 없다.
+HHMM=$(date +%H%M)
+DOW=$(date +%u)                       # 1=월 … 7=일
+if [ "$DOW" -gt 5 ] || [ "$HHMM" \< "0905" ] || [ "$HHMM" \> "1505" ]; then
+    exit 0
+fi
 
 exec >>"$LOG" 2>&1
 echo "=========== $(date '+%F %T') 매매 시작 ==========="
@@ -50,6 +63,6 @@ if [ -f "$FLAG" ]; then
 fi
 
 echo "--- 주문 전송 ---"
-"$PY" scripts/paper_trade.py --execute $FORCE || { echo "매매 실패"; exit 1; }
+"$PY" scripts/paper_trade.py --execute --grid $FORCE || { echo "매매 실패"; exit 1; }
 
 echo "=========== $(date '+%F %T') 매매 완료 ==========="

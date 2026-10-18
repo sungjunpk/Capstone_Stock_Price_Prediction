@@ -7,15 +7,22 @@
 import pytest
 
 from src.trading.grid import (
+    Fill,
     build_ladder,
     center_from_quantiles,
+    detect_fills,
     grid_offsets,
     outside_ladder,
     paired_sell_price,
+    reactions_to_fills,
+    realized_vol,
+    relay_spacing,
     round_to_tick,
+    sell_ladder_for_holding,
     should_relay,
     spacing_from_quantiles,
     spans_from_quantiles,
+    stop_loss_hit,
     tick_size,
 )
 from src.trading.signal import QuantilePrediction, round_trip_cost
@@ -202,6 +209,40 @@ class TestRelay:
         assert should_relay(0.030, 0.032, CFG | {"relay_band": 0.02})
 
 
+class TestRelaySpacing:
+    """장중 간격 — **수준은 모델이, 변화분만 가격이** 정한다."""
+
+    FLAT = [70_000 + (i % 2) for i in range(39)]
+    WIGGLY = [70_000 * (1 + 0.01 * (-1) ** i) for i in range(39)]
+
+    def test_변동성이_두_배면_간격도_두_배(self):
+        assert relay_spacing(0.030, 0.02, 0.04, COSTS, CFG) == pytest.approx(0.060)
+
+    def test_변동성이_그대로면_간격도_그대로(self):
+        assert relay_spacing(0.030, 0.02, 0.02, COSTS, CFG) == pytest.approx(0.030)
+
+    def test_아무리_잔잔해도_왕복비용_바닥(self):
+        assert relay_spacing(0.030, 0.02, 0.0001, COSTS, CFG) == pytest.approx(
+            round_trip_cost(COSTS) * 2.0
+        )
+
+    def test_아무리_흔들려도_상한(self):
+        assert relay_spacing(0.030, 0.02, 2.0, COSTS, CFG) == CFG["max_spacing"]
+
+    def test_못_재면_None(self):
+        """못 재는 것과 '좁아졌다'는 다르다 — 호출자가 폭을 그대로 두게 한다."""
+        assert relay_spacing(0.030, 0.0, 0.02, COSTS, CFG) is None
+        assert relay_spacing(0.030, 0.02, 0.0, COSTS, CFG) is None
+        assert relay_spacing(0.0, 0.02, 0.02, COSTS, CFG) is None
+
+    def test_실현변동성은_종가가_모자라면_None(self):
+        assert realized_vol([70_000] * 5) is None
+        assert realized_vol([]) is None
+
+    def test_실현변동성은_흔들릴수록_크다(self):
+        assert realized_vol(self.WIGGLY) > realized_vol(self.FLAT)
+
+
 class TestOutsideLadder:
     """사이클 중간에 기준가를 다시 잡는 유일한 조건 — 사다리 이탈."""
 
@@ -241,3 +282,174 @@ class TestPairedSell:
         fill = next(o.price for o in lad.buys if o.level == 3)     # 3번 칸은 3번 가격에 체결된다
         upper = next(o.price for o in lad.buys if o.level == 2)
         assert paired_sell_price(lad, 3, fill_price=fill, costs=COSTS) == upper
+
+
+def ladder(width: float = 0.12, budget: float = 10_000_000):
+    return build_ladder(pred(width), 70_000, budget, COSTS, CFG)
+
+
+class TestDetectFills:
+    """체결 감지. 조용히 틀리면 **사지도 않은 수량에 매도를 건다.**"""
+
+    def rungs(self, **over):
+        base = {"side": "buy", "level": 1, "price": 30_000, "qty": 10, "filled": 0}
+        return {"A1": {**base, **over}}
+
+    def test_목록에서_사라지면_전량체결이다(self):
+        fills = detect_fills(self.rungs(), [])
+        assert [(f.order_no, f.side, f.level, f.quantity) for f in fills] == [
+            ("A1", "buy", 1, 10)
+        ]
+
+    def test_남아있고_체결수량이_늘면_부분체결이다(self):
+        fills = detect_fills(self.rungs(), [{"order_no": "A1", "filled_qty": 4}])
+        assert len(fills) == 1 and fills[0].quantity == 4
+
+    def test_아무것도_안_늘었으면_체결이_아니다(self):
+        assert detect_fills(self.rungs(), [{"order_no": "A1", "filled_qty": 0}]) == []
+
+    def test_이미_본_체결은_다시_세지_않는다(self):
+        """증분이어야 한다 — 누적으로 세면 같은 체결에 매도를 두 번 건다."""
+        rungs = self.rungs(filled=4)
+        assert detect_fills(rungs, [{"order_no": "A1", "filled_qty": 4}]) == []
+        fills = detect_fills(rungs, [{"order_no": "A1", "filled_qty": 7}])
+        assert fills[0].quantity == 3
+
+    def test_부분체결_뒤_사라지면_나머지만_센다(self):
+        fills = detect_fills(self.rungs(filled=4), [])
+        assert fills[0].quantity == 6
+
+    def test_다른_종목의_주문은_섞이지_않는다(self):
+        assert detect_fills({}, [{"order_no": "ZZ", "filled_qty": 9}]) == []
+
+
+class TestReactions:
+    """체결 → 반대쪽 칸. 여기가 그리드가 '흐르는' 지점이다."""
+
+    def test_매수_체결은_윗칸_매도가_된다(self):
+        lad = ladder()
+        price = next(o.price for o in lad.buys if o.level == 3)
+        out = reactions_to_fills([Fill("A", "buy", 3, price, 5)], lad, COSTS)
+        assert len(out) == 1
+        assert out[0].side == "sell" and out[0].quantity == 5
+        assert out[0].price == paired_sell_price(lad, 3, fill_price=price, costs=COSTS)
+
+    def test_매도_체결은_같은_칸_매수를_다시_건다(self):
+        lad = ladder()
+        rung = next(o for o in lad.buys if o.level == 2)
+        out = reactions_to_fills([Fill("B", "sell", 2, 80_000, 3)], lad, COSTS)
+        assert out[0].side == "buy" and out[0].price == rung.price
+
+    def test_재장전은_받은_대금을_넘지_않는다(self):
+        """원래 칸 수량을 그대로 쓰면 부분체결일 때 예산을 넘긴다."""
+        lad = ladder()
+        proceeds = 3 * 80_000
+        out = reactions_to_fills([Fill("B", "sell", 2, 80_000, 3)], lad, COSTS)
+        assert out[0].quantity * out[0].price <= proceeds
+
+    def test_없는_칸의_매도_체결은_무시한다(self):
+        assert reactions_to_fills([Fill("C", "sell", 99, 80_000, 1)], ladder(), COSTS) == []
+
+    def test_체결이_없으면_주문도_없다(self):
+        assert reactions_to_fills([], ladder(), COSTS) == []
+
+
+class TestSellLadderForHolding:
+    """보유분을 매도 칸에 덮는다 — 어느 칸이 체결됐는지 역산하지 않는다."""
+
+    def test_가까운_칸부터_채운다(self):
+        lad = ladder()
+        out = sell_ladder_for_holding(lad, lad.sells[0].quantity)
+        assert [o.level for o in out] == [1]
+
+    def test_사다리_정의수량을_넘지_않는다(self):
+        lad = ladder()
+        out = sell_ladder_for_holding(lad, 10**9)
+        assert [o.quantity for o in out] == [o.quantity for o in lad.sells]
+
+    def test_이미_걸린_칸은_건너뛴다(self):
+        """같은 칸에 두 번 걸면 두 배를 판다."""
+        lad = ladder()
+        out = sell_ladder_for_holding(lad, 10**9, busy_levels=frozenset({1, 2}))
+        assert {o.level for o in out} == {3, 4, 5}
+
+    def test_보유가_없으면_아무것도_안_걸린다(self):
+        assert sell_ladder_for_holding(ladder(), 0) == []
+
+    def test_모든_칸이_걸려_있으면_아무것도_안_걸린다(self):
+        lad = ladder()
+        busy = frozenset(o.level for o in lad.sells)
+        assert sell_ladder_for_holding(lad, 10**9, busy_levels=busy) == []
+
+
+class TestStopLoss:
+    CFG = {"stop_loss_pct": -0.15}
+
+    def test_배정액_대비로_잰다(self):
+        assert stop_loss_hit(-1_500_000, 10_000_000, self.CFG)
+        assert not stop_loss_hit(-1_400_000, 10_000_000, self.CFG)
+
+    def test_매입금액_대비가_아니다(self):
+        """사다리가 절반만 채워졌으면 손실도 절반만 반영된다.
+
+        500만원 매입에 100만원 손실 = 매입 대비 -20% 지만, 배정 1000만원
+        대비로는 -10% 다. 매입 대비로 재면 물타기가 한도를 헐겁게 만든다.
+        """
+        assert not stop_loss_hit(-1_000_000, 10_000_000, self.CFG)
+
+    def test_이익이면_발동하지_않는다(self):
+        assert not stop_loss_hit(500_000, 10_000_000, self.CFG)
+
+    def test_배정액을_모르면_발동하지_않는다(self):
+        """0 으로 나누지 않는다 — 판단 근거가 없으면 팔지 않는 쪽이다."""
+        assert not stop_loss_hit(-9_999_999, 0, self.CFG)
+
+
+class TestNoDoubleSell:
+    """짝 매도 + 매도 칸 보충이 겹치지 않는가 — `_grid_intraday` 의 불변식.
+
+    실제로 한 번 겹쳤다(2026-09-27). rungs 에 아직 없는 **이번 회차의 짝 매도**를
+    빼놓으면 같은 칸에 매도가 두 번 걸리고 매도가능수량을 넘긴다.
+    """
+
+    def test_같은_칸에_두_번_걸리지_않는다(self):
+        lad, sellable = ladder(), 18
+        fills = [Fill("X1", "buy", 1, lad.buys[0].price, 3),
+                 Fill("X2", "buy", 2, lad.buys[1].price, 2)]
+        pending = [o for o in reactions_to_fills(fills, lad, COSTS) if o.side == "sell"]
+        room = sellable - sum(o.quantity for o in pending)
+        fill_in = sell_ladder_for_holding(
+            lad, room, frozenset(o.level for o in pending)
+        )
+        levels = [o.level for o in pending + fill_in]
+        assert len(levels) == len(set(levels)), f"칸 중복: {levels}"
+
+    def test_보충은_짝_매도가_예약한_몫을_건드리지_않는다(self):
+        """매도 총량이 매도가능수량을 넘으면 거부된다 — 예약분을 빼고 채워야 한다."""
+        lad = ladder()
+        rung = lad.buys[0]
+        fills = [Fill("X1", "buy", 1, rung.price, rung.quantity)]
+        pending = [o for o in reactions_to_fills(fills, lad, COSTS) if o.side == "sell"]
+        sellable = rung.quantity + 10          # 방금 체결분 + 초기매수로 들고 있던 10주
+        room = sellable - sum(o.quantity for o in pending)
+        fill_in = sell_ladder_for_holding(
+            lad, max(room, 0), frozenset(o.level for o in pending)
+        )
+        assert sum(o.quantity for o in pending + fill_in) <= sellable
+
+    def test_짝_매도는_상단_매도칸과_다른_축이다(self):
+        """짝 매도는 중심 **아래**에 걸린다 — 상단 칸 번호와 섞이면 안 된다.
+
+        섞으면 `busy_levels` 가 엉뚱한 상단 칸을 '사용 중'으로 읽고 건너뛴다.
+        초과매도는 아니지만 사다리 커버리지가 조용히 빈다 (2026-09-27 감사).
+        """
+        lad = ladder()
+        f = Fill("X2", "buy", 2, lad.buys[1].price, 3)
+        paired = reactions_to_fills([f], lad, COSTS)[0]
+        assert paired.side == "sell" and paired.level < 0
+        # 가격도 실제로 중심 아래다
+        assert paired.price < lad.center
+        # 상단 2번 칸은 여전히 비어 있어야 한다
+        busy = frozenset(o.level for o in [paired] if o.level > 0)
+        fill_in = sell_ladder_for_holding(lad, 10**9, busy)
+        assert 2 in {o.level for o in fill_in}
