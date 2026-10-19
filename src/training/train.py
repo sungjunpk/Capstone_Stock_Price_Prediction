@@ -67,8 +67,14 @@ def loader_settings(device: torch.device, requested_workers: int) -> dict:
     return {"num_workers": 0, "pin_memory": False, "persistent_workers": False}
 
 
-def use_amp(device: torch.device) -> bool:
-    """혼합정밀은 CUDA 에서만. MPS 의 autocast 는 아직 신뢰하기 어렵다."""
+def use_amp(device: torch.device, cfg: dict | None = None) -> bool:
+    """혼합정밀은 CUDA 에서만. MPS 의 autocast 는 아직 신뢰하기 어렵다.
+
+    `training.amp: false` 로 끌 수 있다. 대조군 TFT 가 혼합정밀도에서 손해를 보는 것이
+    관측되어(논문 5.1절), 두 구조를 단정밀도로 맞춰 비교할 길을 열어 둔다.
+    """
+    if cfg is not None and not cfg["training"].get("amp", True):
+        return False
     return device.type == "cuda"
 
 
@@ -298,7 +304,7 @@ def evaluate(model, loader, criterion, device,
 def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> dict:
     set_seed(int(cfg["project"]["seed"]))
     device = get_device()
-    log.info("디바이스: %s | AMP: %s", device, use_amp(device))
+    log.info("디바이스: %s | AMP: %s", device, use_amp(device, cfg))
 
     loaders, meta = build_loaders(cfg, smoke=smoke)
     log.info("샘플 수: %s", meta["sizes"])
@@ -327,7 +333,7 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
     opt = torch.optim.AdamW(
         model.parameters(), lr=float(t["lr"]), weight_decay=float(t["weight_decay"])
     )
-    scaler = torch.amp.GradScaler("cuda", enabled=use_amp(device))
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp(device, cfg))
 
     epochs = max_epochs or int(t["epochs"])
     if smoke:
@@ -369,7 +375,7 @@ def train(cfg: dict, *, smoke: bool = False, max_epochs: int | None = None) -> d
 
             dyn, mac, stat, y = (x.to(device, non_blocking=True) for x in (dyn, mac, stat, y))
             opt.zero_grad(set_to_none=True)
-            with torch.amp.autocast("cuda", enabled=use_amp(device)):
+            with torch.amp.autocast("cuda", enabled=use_amp(device, cfg)):
                 out = model(dyn, mac, stat)
                 y_main, y_aux = _split_y(y)
                 loss = criterion(out.quantiles, y_main)

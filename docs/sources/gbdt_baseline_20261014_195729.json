@@ -1,0 +1,321 @@
+{
+  "generated_at": "2026-10-14T19:57:29",
+  "purpose": "GBDT(HistGradientBoosting quantile) vs Phase1 트랜스포머 공정 비교",
+  "setup": {
+    "lags": [
+      1,
+      5,
+      20
+    ],
+    "n_features": 136,
+    "split": "SplitSpec(train_end=datetime.date(2022, 12, 31), val_end=datetime.date(2023, 12, 31), embargo_days=5, train_start=None, test_end=None)",
+    "rows": {
+      "train": 282962,
+      "val": 45656,
+      "test": 125160
+    },
+    "hyperparams": {
+      "max_iter": 600,
+      "chunk": 25,
+      "patience": 4,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 31,
+      "l2": 1.0,
+      "seed": 42
+    },
+    "trees_per_quantile": {
+      "q10": {
+        "n_trees": 75,
+        "val_pinball": 0.0075
+      },
+      "q50": {
+        "n_trees": 25,
+        "val_pinball": 0.017136
+      },
+      "q90": {
+        "n_trees": 275,
+        "val_pinball": 0.009263
+      }
+    },
+    "checkpoint": "phase1_eadf265f_idxrel2.pt"
+  },
+  "quantile_loss": {
+    "note": "두 모델의 val 표본 집합이 다르다(Phase1 은 lookback 120일 윈도우만). 각자의 표본 위에서 같은 train 무조건부 분위수와 비교한다.",
+    "gbdt": {
+      "n_samples": 45656,
+      "baseline_val": 0.011581,
+      "model_val": 0.0113,
+      "improvement_vs_baseline_pct": 2.428,
+      "by_quantile": {
+        "q10": {
+          "baseline": 0.007888,
+          "model": 0.0075,
+          "improvement_pct": 4.925
+        },
+        "q50": {
+          "baseline": 0.017113,
+          "model": 0.017136,
+          "improvement_pct": -0.132
+        },
+        "q90": {
+          "baseline": 0.009741,
+          "model": 0.009263,
+          "improvement_pct": 4.904
+        }
+      },
+      "val_crossings": 0,
+      "test_crossings": 0
+    },
+    "phase1": {
+      "n_samples": 23086,
+      "baseline_val": 0.012175,
+      "model_val": 0.011887,
+      "improvement_vs_baseline_pct": 2.366,
+      "val_rank_ic": {
+        "n_dates": 122,
+        "ic_mean": 0.04868,
+        "ic_std": 0.14641,
+        "ic_ir": 0.3325,
+        "t_stat": 3.672,
+        "ic_positive_rate": 0.6311
+      },
+      "by_quantile": {
+        "q10": {
+          "baseline": 0.008502,
+          "model": 0.008036,
+          "improvement_pct": 5.478
+        },
+        "q50": {
+          "baseline": 0.017958,
+          "model": 0.017929,
+          "improvement_pct": 0.16
+        },
+        "q90": {
+          "baseline": 0.010065,
+          "model": 0.009696,
+          "improvement_pct": 3.673
+        }
+      }
+    }
+  },
+  "results": {
+    "gbdt": {
+      "rank_ic": {
+        "n_dates": 526,
+        "ic_mean": 0.02879,
+        "ic_std": 0.1703,
+        "ic_ir": 0.1691,
+        "t_stat": 3.877,
+        "ic_positive_rate": 0.5589
+      },
+      "decile_spread": {
+        "n_dates": 526,
+        "spread_mean": 0.00297,
+        "t_stat": 1.683,
+        "positive_rate": 0.5456
+      },
+      "backtest": {
+        "n_days": 531,
+        "periods_per_year": 252.0,
+        "cagr": 0.19188,
+        "volatility": 0.28012,
+        "sharpe": 0.767,
+        "sortino": 0.9814,
+        "calmar": 0.5445,
+        "max_drawdown": -0.3524,
+        "hit_rate": 0.5283,
+        "total_return": 0.44756,
+        "n_trades": 1228,
+        "annual_turnover": 27.19
+      },
+      "signal_stats": {
+        "abstain": 479,
+        "hold": 8712,
+        "buy": 1060,
+        "sell": 0,
+        "blocked": 70,
+        "decisions": 10251,
+        "abstain_rate": 0.0467,
+        "trade_rate": 0.1034,
+        "n_trades": 1228,
+        "round_trip_cost": 0.0031,
+        "cash_weight_end": -0.0114,
+        "abstain_threshold": 0.18025,
+        "abstain_threshold_first": 0.16308,
+        "abstain_threshold_last": 0.21455,
+        "width_p50": 0.12073,
+        "q50_p50": -0.00295,
+        "q50_p90": 0.00051,
+        "long_threshold": 0.004,
+        "q50_over_threshold_rate": 0.0143,
+        "mode": "cross_sectional",
+        "top_n": 20,
+        "exposure_scaling": false,
+        "avg_gross_exposure": 0.9632,
+        "avg_n_positions": 19.02,
+        "avg_turnover_per_rebalance": 1.0789,
+        "annual_turnover": 27.19,
+        "n_rebalances": 53,
+        "total_cost_pct": 0.08772,
+        "annual_cost_pct": 0.04163,
+        "hold_until_exit": false,
+        "n_entries": 554,
+        "annual_entries": 262.9,
+        "flat_rate": 0.0,
+        "avg_holding_days": 18.2,
+        "exit_rank": 40,
+        "min_trade_weight": 0.01,
+        "cvar_limit": null,
+        "cvar_limit_ratio": null,
+        "cvar_n": 0,
+        "avg_cvar": 0.0,
+        "avg_cvar_ratio": 0.0,
+        "cvar_bind_rate": 0.0,
+        "blocked_by_reason": {
+          "손절": 70
+        }
+      },
+      "n_predictions": 101745
+    },
+    "phase1": {
+      "rank_ic": {
+        "n_dates": 526,
+        "ic_mean": 0.01968,
+        "ic_std": 0.16755,
+        "ic_ir": 0.1174,
+        "t_stat": 2.694,
+        "ic_positive_rate": 0.538
+      },
+      "decile_spread": {
+        "n_dates": 526,
+        "spread_mean": 0.00053,
+        "t_stat": 0.302,
+        "positive_rate": 0.5095
+      },
+      "backtest": {
+        "n_days": 531,
+        "periods_per_year": 252.0,
+        "cagr": 0.27848,
+        "volatility": 0.20797,
+        "sharpe": 1.2863,
+        "sortino": 1.6974,
+        "calmar": 1.3074,
+        "max_drawdown": -0.21301,
+        "hit_rate": 0.5472,
+        "total_return": 0.67811,
+        "n_trades": 1017,
+        "annual_turnover": 19.12
+      },
+      "signal_stats": {
+        "abstain": 632,
+        "hold": 8559,
+        "buy": 1060,
+        "sell": 0,
+        "blocked": 60,
+        "decisions": 10251,
+        "abstain_rate": 0.0617,
+        "trade_rate": 0.1034,
+        "n_trades": 1017,
+        "round_trip_cost": 0.0031,
+        "cash_weight_end": 0.0228,
+        "abstain_threshold": 0.21515,
+        "abstain_threshold_first": 0.19881,
+        "abstain_threshold_last": 0.32933,
+        "width_p50": 0.12738,
+        "q50_p50": -0.00241,
+        "q50_p90": -0.00082,
+        "long_threshold": 0.004,
+        "q50_over_threshold_rate": 0.0067,
+        "mode": "cross_sectional",
+        "top_n": 20,
+        "exposure_scaling": false,
+        "avg_gross_exposure": 0.9714,
+        "avg_n_positions": 19.02,
+        "avg_turnover_per_rebalance": 0.7589,
+        "annual_turnover": 19.12,
+        "n_rebalances": 53,
+        "total_cost_pct": 0.06146,
+        "annual_cost_pct": 0.02917,
+        "hold_until_exit": false,
+        "n_entries": 457,
+        "annual_entries": 216.9,
+        "flat_rate": 0.0,
+        "avg_holding_days": 21.8,
+        "exit_rank": 40,
+        "min_trade_weight": 0.01,
+        "cvar_limit": null,
+        "cvar_limit_ratio": null,
+        "cvar_n": 0,
+        "avg_cvar": 0.0,
+        "avg_cvar_ratio": 0.0,
+        "cvar_bind_rate": 0.0,
+        "blocked_by_reason": {
+          "손절": 60
+        }
+      },
+      "n_predictions": 101745
+    },
+    "buy_and_hold": {
+      "backtest": {
+        "n_days": 531,
+        "periods_per_year": 252,
+        "cagr": 0.34294,
+        "volatility": 0.28064,
+        "sharpe": 1.193,
+        "sortino": 1.3747,
+        "calmar": 1.3458,
+        "max_drawdown": -0.25483,
+        "hit_rate": 0.5849,
+        "total_return": 0.86139
+      }
+    }
+  },
+  "permutation_test": {
+    "phase1": {
+      "n_permutations": 1000,
+      "real": {
+        "sharpe": 1.2863,
+        "cagr": 0.27848
+      },
+      "shuffled_mean": {
+        "sharpe": 0.9664,
+        "cagr": 0.2368,
+        "max_drawdown": -0.2143
+      },
+      "shuffled_sharpe_range": [
+        0.286,
+        1.77
+      ],
+      "shuffled_sharpe_std": 0.2207,
+      "p_value_sharpe": 0.067,
+      "p_value_cagr": 0.262,
+      "signal_contribution": {
+        "sharpe": 0.3199,
+        "cagr": 0.0417
+      }
+    },
+    "gbdt": {
+      "n_permutations": 1000,
+      "real": {
+        "sharpe": 0.767,
+        "cagr": 0.19188
+      },
+      "shuffled_mean": {
+        "sharpe": 0.93,
+        "cagr": 0.2354,
+        "max_drawdown": -0.2574
+      },
+      "shuffled_sharpe_range": [
+        0.293,
+        1.563
+      ],
+      "shuffled_sharpe_std": 0.2184,
+      "p_value_sharpe": 0.786,
+      "p_value_cagr": 0.729,
+      "signal_contribution": {
+        "sharpe": -0.163,
+        "cagr": -0.0435
+      }
+    }
+  }
+}

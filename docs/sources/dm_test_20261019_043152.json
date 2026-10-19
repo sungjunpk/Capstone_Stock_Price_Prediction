@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-10-19T04:30:49",
+  "a": "outputs/checkpoints/phase1_b113237e_seed42.pt",
+  "b": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed42.pt",
+  "splits": {
+    "val": {
+      "n_dates": 122,
+      "mean_loss_diff": -0.00015404845180455595,
+      "se": 0.00018301978707313538,
+      "dm_stat": -0.8417038321495056,
+      "p_value": 0.39995375269530076,
+      "dm_stat_hln": -0.8106500397041365,
+      "p_value_hln": 0.4191582410898147,
+      "nw_lag": 4,
+      "n_samples": 23086,
+      "mean_loss_a": 0.03561875969171524,
+      "mean_loss_b": 0.035774074494838715
+    },
+    "test": {
+      "n_dates": 550,
+      "mean_loss_diff": -0.0009146748925559223,
+      "se": 0.0003961538604926318,
+      "dm_stat": -2.3088879585266113,
+      "p_value": 0.02094979935636454,
+      "dm_stat_hln": -2.2899960950910687,
+      "p_value_hln": 0.022399968018270044,
+      "nw_lag": 4,
+      "n_samples": 106490,
+      "mean_loss_a": 0.053683970123529434,
+      "mean_loss_b": 0.05461389198899269
+    }
+  }
+}

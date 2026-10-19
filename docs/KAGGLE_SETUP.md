@@ -260,7 +260,7 @@ done
 영구 보존한다. Input·GPU·Internet 설정은 그대로 따라간다.
 
 ⚠️ **돌리기 전에 `git push` 가 필요하다.** 노트북이 GitHub 에서 클론하므로
-`scripts/freeze_panel.py`, `scripts/seed_aggregate.py`, `docs/freeze_panel_20261018.json`
+`scripts/freeze_panel.py`, `scripts/seed_aggregate.py`, `docs/sources/freeze_panel_20261018.json`
 이 올라가 있어야 한다.
 
 ⚠️ 자료 동결 대조는 **윈도우 수·행 수·기간·피처 수**를 본다. sha256 은 비교하지 않는다 —

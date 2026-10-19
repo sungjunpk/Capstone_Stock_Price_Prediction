@@ -1,0 +1,4269 @@
+{
+  "generated_at": "2026-10-19T14:46:28",
+  "recent_days": 90,
+  "basis": "width",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "models": {
+    "patchtst": {
+      "checkpoint": "outputs/checkpoints/phase1_7b693204_patchtst.pt",
+      "n": 106490,
+      "a2": {
+        "width_ic": {
+          "n_dates": 0,
+          "ic_mean": 0.0,
+          "ic_std": 0.0,
+          "ic_ir": 0.0,
+          "t_stat": 0.0,
+          "ic_positive_rate": 0.0
+        },
+        "rvol20_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.14498,
+          "ic_std": 0.19911,
+          "ic_ir": 0.7282,
+          "t_stat": 17.077,
+          "ic_positive_rate": 0.8091
+        },
+        "directional_ic": {
+          "n_dates": 550,
+          "ic_mean": -0.00907,
+          "ic_std": 0.12104,
+          "ic_ir": -0.0749,
+          "t_stat": -1.757,
+          "ic_positive_rate": 0.4673
+        }
+      }
+    },
+    "patchtst_q": {
+      "checkpoint": "outputs/checkpoints/phase1_5263fac6_patchtst_q.pt",
+      "n": 106490,
+      "a1": {
+        "abstained": {
+          "n": 5002,
+          "pinball": 0.023867,
+          "abs_err": 0.071134,
+          "hit_rate": 0.5866
+        },
+        "retained": {
+          "n": 101488,
+          "pinball": 0.018059,
+          "abs_err": 0.052472,
+          "hit_rate": 0.5517
+        },
+        "paired": {
+          "n_dates": 550,
+          "mean_diff": 0.007078,
+          "t_stat": 13.438
+        }
+      },
+      "a4": {
+        "width": {
+          "rate": 4.7,
+          "pinball_abstained": 0.023867,
+          "pinball_retained": 0.018059,
+          "ratio": 1.322
+        },
+        "rvol_20": {
+          "rate": 5.66,
+          "pinball_abstained": 0.024537,
+          "pinball_retained": 0.017959,
+          "ratio": 1.366
+        }
+      },
+      "a5": {
+        "2": {
+          "rate_width": 2.07,
+          "rate_rvol_20": 2.07,
+          "ratio_width": 1.528,
+          "ratio_rvol_20": 1.505,
+          "diff": 0.023,
+          "diff_ci95": [
+            -0.042,
+            0.085
+          ],
+          "diff_positive_rate": 0.759,
+          "n_dates": 550
+        },
+        "5": {
+          "rate_width": 5.16,
+          "rate_rvol_20": 5.16,
+          "ratio_width": 1.339,
+          "ratio_rvol_20": 1.417,
+          "diff": -0.078,
+          "diff_ci95": [
+            -0.119,
+            -0.039
+          ],
+          "diff_positive_rate": 0.0,
+          "n_dates": 550
+        },
+        "6": {
+          "rate_width": 6.2,
+          "rate_rvol_20": 6.2,
+          "ratio_width": 1.305,
+          "ratio_rvol_20": 1.393,
+          "diff": -0.088,
+          "diff_ci95": [
+            -0.125,
+            -0.05
+          ],
+          "diff_positive_rate": 0.0,
+          "n_dates": 550
+        },
+        "10": {
+          "rate_width": 10.21,
+          "rate_rvol_20": 10.21,
+          "ratio_width": 1.249,
+          "ratio_rvol_20": 1.331,
+          "diff": -0.082,
+          "diff_ci95": [
+            -0.113,
+            -0.051
+          ],
+          "diff_positive_rate": 0.0,
+          "n_dates": 550
+        },
+        "20": {
+          "rate_width": 20.21,
+          "rate_rvol_20": 20.21,
+          "ratio_width": 1.184,
+          "ratio_rvol_20": 1.283,
+          "diff": -0.099,
+          "diff_ci95": [
+            -0.126,
+            -0.075
+          ],
+          "diff_positive_rate": 0.0,
+          "n_dates": 550
+        },
+        "30": {
+          "rate_width": 30.24,
+          "rate_rvol_20": 30.24,
+          "ratio_width": 1.142,
+          "ratio_rvol_20": 1.239,
+          "diff": -0.097,
+          "diff_ci95": [
+            -0.122,
+            -0.07
+          ],
+          "diff_positive_rate": 0.0,
+          "n_dates": 550
+        }
+      },
+      "a6": {
+        "n_days": 244,
+        "date_first": "2025-10-10",
+        "date_last": "2026-10-08",
+        "threshold_first": 0.1697,
+        "threshold_last": 0.1581,
+        "change_pct": -6.9,
+        "mean_width": 0.1269
+      },
+      "a3": {
+        "75": {
+          "overall": 24.21,
+          "Q1": 8.08,
+          "Q2": 17.36,
+          "Q3": 27.97,
+          "Q4": 43.42
+        },
+        "90": {
+          "overall": 9.52,
+          "Q1": 1.63,
+          "Q2": 4.51,
+          "Q3": 10.0,
+          "Q4": 21.95
+        },
+        "95": {
+          "overall": 4.7,
+          "Q1": 0.4,
+          "Q2": 1.41,
+          "Q3": 4.07,
+          "Q4": 12.91
+        }
+      },
+      "a2": {
+        "width_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.09616,
+          "ic_std": 0.13612,
+          "ic_ir": 0.7064,
+          "t_stat": 16.566,
+          "ic_positive_rate": 0.8182
+        },
+        "rvol20_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.14498,
+          "ic_std": 0.19911,
+          "ic_ir": 0.7282,
+          "t_stat": 17.077,
+          "ic_positive_rate": 0.8091
+        },
+        "directional_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.04129,
+          "ic_std": 0.14646,
+          "ic_ir": 0.2819,
+          "t_stat": 6.611,
+          "ic_positive_rate": 0.6164
+        }
+      }
+    },
+    "tft": {
+      "checkpoint": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed42.pt",
+      "n": 106490,
+      "a1": {
+        "abstained": {
+          "n": 5537,
+          "pinball": 0.026976,
+          "abs_err": 0.08081,
+          "hit_rate": 0.5196
+        },
+        "retained": {
+          "n": 100953,
+          "pinball": 0.017724,
+          "abs_err": 0.052222,
+          "hit_rate": 0.512
+        },
+        "paired": {
+          "n_dates": 535,
+          "mean_diff": 0.008987,
+          "t_stat": 17.605
+        }
+      },
+      "a4": {
+        "width": {
+          "rate": 5.2,
+          "pinball_abstained": 0.026976,
+          "pinball_retained": 0.017724,
+          "ratio": 1.522
+        },
+        "rvol_20": {
+          "rate": 5.66,
+          "pinball_abstained": 0.024379,
+          "pinball_retained": 0.017834,
+          "ratio": 1.367
+        }
+      },
+      "a5": {
+        "2": {
+          "rate_width": 2.07,
+          "rate_rvol_20": 2.07,
+          "ratio_width": 1.582,
+          "ratio_rvol_20": 1.513,
+          "diff": 0.069,
+          "diff_ci95": [
+            0.001,
+            0.144
+          ],
+          "diff_positive_rate": 0.975,
+          "n_dates": 550
+        },
+        "5": {
+          "rate_width": 5.16,
+          "rate_rvol_20": 5.16,
+          "ratio_width": 1.461,
+          "ratio_rvol_20": 1.408,
+          "diff": 0.053,
+          "diff_ci95": [
+            0.007,
+            0.094
+          ],
+          "diff_positive_rate": 0.988,
+          "n_dates": 550
+        },
+        "6": {
+          "rate_width": 6.2,
+          "rate_rvol_20": 6.2,
+          "ratio_width": 1.45,
+          "ratio_rvol_20": 1.381,
+          "diff": 0.069,
+          "diff_ci95": [
+            0.03,
+            0.108
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "10": {
+          "rate_width": 10.21,
+          "rate_rvol_20": 10.21,
+          "ratio_width": 1.421,
+          "ratio_rvol_20": 1.316,
+          "diff": 0.105,
+          "diff_ci95": [
+            0.077,
+            0.135
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "20": {
+          "rate_width": 20.21,
+          "rate_rvol_20": 20.21,
+          "ratio_width": 1.347,
+          "ratio_rvol_20": 1.261,
+          "diff": 0.086,
+          "diff_ci95": [
+            0.067,
+            0.106
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "30": {
+          "rate_width": 30.24,
+          "rate_rvol_20": 30.24,
+          "ratio_width": 1.309,
+          "ratio_rvol_20": 1.22,
+          "diff": 0.089,
+          "diff_ci95": [
+            0.072,
+            0.106
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        }
+      },
+      "a6": {
+        "n_days": 244,
+        "date_first": "2025-10-10",
+        "date_last": "2026-10-08",
+        "threshold_first": 0.1765,
+        "threshold_last": 0.1894,
+        "change_pct": 7.3,
+        "mean_width": 0.1353
+      },
+      "a3": {
+        "75": {
+          "overall": 25.92,
+          "Q1": 0.49,
+          "Q2": 10.26,
+          "Q3": 37.11,
+          "Q4": 55.81
+        },
+        "90": {
+          "overall": 10.46,
+          "Q1": 0.02,
+          "Q2": 1.37,
+          "Q3": 11.05,
+          "Q4": 29.38
+        },
+        "95": {
+          "overall": 5.2,
+          "Q1": 0.0,
+          "Q2": 0.3,
+          "Q3": 3.94,
+          "Q4": 16.55
+        }
+      },
+      "a2": {
+        "width_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.19388,
+          "ic_std": 0.18639,
+          "ic_ir": 1.0402,
+          "t_stat": 24.394,
+          "ic_positive_rate": 0.8691
+        },
+        "rvol20_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.14498,
+          "ic_std": 0.19911,
+          "ic_ir": 0.7282,
+          "t_stat": 17.077,
+          "ic_positive_rate": 0.8091
+        },
+        "directional_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.02001,
+          "ic_std": 0.16431,
+          "ic_ir": 0.1218,
+          "t_stat": 2.856,
+          "ic_positive_rate": 0.5055
+        }
+      },
+      "seeds": {
+        "n": 5,
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed42.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 5537,
+                "pinball": 0.026976,
+                "abs_err": 0.08081,
+                "hit_rate": 0.5196
+              },
+              "retained": {
+                "n": 100953,
+                "pinball": 0.017724,
+                "abs_err": 0.052222,
+                "hit_rate": 0.512
+              },
+              "paired": {
+                "n_dates": 535,
+                "mean_diff": 0.008987,
+                "t_stat": 17.605
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.2,
+                "pinball_abstained": 0.026976,
+                "pinball_retained": 0.017724,
+                "ratio": 1.522
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.024379,
+                "pinball_retained": 0.017834,
+                "ratio": 1.367
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.582,
+                "ratio_rvol_20": 1.513,
+                "diff": 0.069,
+                "diff_ci95": [
+                  0.001,
+                  0.144
+                ],
+                "diff_positive_rate": 0.975,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.461,
+                "ratio_rvol_20": 1.408,
+                "diff": 0.053,
+                "diff_ci95": [
+                  0.007,
+                  0.094
+                ],
+                "diff_positive_rate": 0.988,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.45,
+                "ratio_rvol_20": 1.381,
+                "diff": 0.069,
+                "diff_ci95": [
+                  0.03,
+                  0.108
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.421,
+                "ratio_rvol_20": 1.316,
+                "diff": 0.105,
+                "diff_ci95": [
+                  0.077,
+                  0.135
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.347,
+                "ratio_rvol_20": 1.261,
+                "diff": 0.086,
+                "diff_ci95": [
+                  0.067,
+                  0.106
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.309,
+                "ratio_rvol_20": 1.22,
+                "diff": 0.089,
+                "diff_ci95": [
+                  0.072,
+                  0.106
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1765,
+              "threshold_last": 0.1894,
+              "change_pct": 7.3,
+              "mean_width": 0.1353
+            },
+            "a3": {
+              "75": {
+                "overall": 25.92,
+                "Q1": 0.49,
+                "Q2": 10.26,
+                "Q3": 37.11,
+                "Q4": 55.81
+              },
+              "90": {
+                "overall": 10.46,
+                "Q1": 0.02,
+                "Q2": 1.37,
+                "Q3": 11.05,
+                "Q4": 29.38
+              },
+              "95": {
+                "overall": 5.2,
+                "Q1": 0.0,
+                "Q2": 0.3,
+                "Q3": 3.94,
+                "Q4": 16.55
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.19388,
+                "ic_std": 0.18639,
+                "ic_ir": 1.0402,
+                "t_stat": 24.394,
+                "ic_positive_rate": 0.8691
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.02001,
+                "ic_std": 0.16431,
+                "ic_ir": 0.1218,
+                "t_stat": 2.856,
+                "ic_positive_rate": 0.5055
+              }
+            }
+          },
+          {
+            "seed": 43,
+            "checkpoint": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed43.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 5494,
+                "pinball": 0.026376,
+                "abs_err": 0.078862,
+                "hit_rate": 0.5288
+              },
+              "retained": {
+                "n": 100996,
+                "pinball": 0.017971,
+                "abs_err": 0.052392,
+                "hit_rate": 0.5186
+              },
+              "paired": {
+                "n_dates": 532,
+                "mean_diff": 0.009021,
+                "t_stat": 14.066
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.16,
+                "pinball_abstained": 0.026376,
+                "pinball_retained": 0.017971,
+                "ratio": 1.468
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.024724,
+                "pinball_retained": 0.018026,
+                "ratio": 1.372
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.491,
+                "ratio_rvol_20": 1.512,
+                "diff": -0.021,
+                "diff_ci95": [
+                  -0.093,
+                  0.046
+                ],
+                "diff_positive_rate": 0.269,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.44,
+                "ratio_rvol_20": 1.409,
+                "diff": 0.031,
+                "diff_ci95": [
+                  -0.015,
+                  0.072
+                ],
+                "diff_positive_rate": 0.909,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.413,
+                "ratio_rvol_20": 1.384,
+                "diff": 0.029,
+                "diff_ci95": [
+                  -0.01,
+                  0.068
+                ],
+                "diff_positive_rate": 0.93,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.377,
+                "ratio_rvol_20": 1.317,
+                "diff": 0.06,
+                "diff_ci95": [
+                  0.032,
+                  0.091
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.312,
+                "ratio_rvol_20": 1.263,
+                "diff": 0.049,
+                "diff_ci95": [
+                  0.032,
+                  0.069
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.279,
+                "ratio_rvol_20": 1.222,
+                "diff": 0.057,
+                "diff_ci95": [
+                  0.041,
+                  0.073
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1588,
+              "threshold_last": 0.1784,
+              "change_pct": 12.3,
+              "mean_width": 0.1254
+            },
+            "a3": {
+              "75": {
+                "overall": 25.66,
+                "Q1": 0.86,
+                "Q2": 10.28,
+                "Q3": 35.96,
+                "Q4": 55.52
+              },
+              "90": {
+                "overall": 10.31,
+                "Q1": 0.05,
+                "Q2": 1.34,
+                "Q3": 10.98,
+                "Q4": 28.87
+              },
+              "95": {
+                "overall": 5.16,
+                "Q1": 0.0,
+                "Q2": 0.32,
+                "Q3": 4.15,
+                "Q4": 16.16
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.18084,
+                "ic_std": 0.19808,
+                "ic_ir": 0.913,
+                "t_stat": 21.411,
+                "ic_positive_rate": 0.8527
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.02193,
+                "ic_std": 0.16709,
+                "ic_ir": 0.1313,
+                "t_stat": 3.078,
+                "ic_positive_rate": 0.5255
+              }
+            }
+          },
+          {
+            "seed": 44,
+            "checkpoint": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed44.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 5652,
+                "pinball": 0.026194,
+                "abs_err": 0.076645,
+                "hit_rate": 0.5196
+              },
+              "retained": {
+                "n": 100838,
+                "pinball": 0.017812,
+                "abs_err": 0.052388,
+                "hit_rate": 0.5246
+              },
+              "paired": {
+                "n_dates": 533,
+                "mean_diff": 0.009442,
+                "t_stat": 16.466
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.31,
+                "pinball_abstained": 0.026194,
+                "pinball_retained": 0.017812,
+                "ratio": 1.471
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.025198,
+                "pinball_retained": 0.01784,
+                "ratio": 1.412
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.58,
+                "ratio_rvol_20": 1.567,
+                "diff": 0.013,
+                "diff_ci95": [
+                  -0.064,
+                  0.091
+                ],
+                "diff_positive_rate": 0.628,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.52,
+                "ratio_rvol_20": 1.454,
+                "diff": 0.066,
+                "diff_ci95": [
+                  0.022,
+                  0.108
+                ],
+                "diff_positive_rate": 0.998,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.51,
+                "ratio_rvol_20": 1.424,
+                "diff": 0.086,
+                "diff_ci95": [
+                  0.047,
+                  0.125
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.444,
+                "ratio_rvol_20": 1.353,
+                "diff": 0.091,
+                "diff_ci95": [
+                  0.061,
+                  0.122
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.368,
+                "ratio_rvol_20": 1.295,
+                "diff": 0.073,
+                "diff_ci95": [
+                  0.047,
+                  0.1
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.327,
+                "ratio_rvol_20": 1.251,
+                "diff": 0.076,
+                "diff_ci95": [
+                  0.052,
+                  0.102
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1544,
+              "threshold_last": 0.1576,
+              "change_pct": 2.1,
+              "mean_width": 0.1333
+            },
+            "a3": {
+              "75": {
+                "overall": 25.75,
+                "Q1": 0.2,
+                "Q2": 7.65,
+                "Q3": 37.81,
+                "Q4": 57.35
+              },
+              "90": {
+                "overall": 10.43,
+                "Q1": 0.0,
+                "Q2": 0.71,
+                "Q3": 10.68,
+                "Q4": 30.34
+              },
+              "95": {
+                "overall": 5.31,
+                "Q1": 0.0,
+                "Q2": 0.15,
+                "Q3": 3.8,
+                "Q4": 17.28
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.18628,
+                "ic_std": 0.17292,
+                "ic_ir": 1.0773,
+                "t_stat": 25.264,
+                "ic_positive_rate": 0.8618
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": -0.00141,
+                "ic_std": 0.17012,
+                "ic_ir": -0.0083,
+                "t_stat": -0.195,
+                "ic_positive_rate": 0.4582
+              }
+            }
+          },
+          {
+            "seed": 45,
+            "checkpoint": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed45.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 5581,
+                "pinball": 0.025373,
+                "abs_err": 0.076361,
+                "hit_rate": 0.5564
+              },
+              "retained": {
+                "n": 100909,
+                "pinball": 0.017965,
+                "abs_err": 0.052329,
+                "hit_rate": 0.5253
+              },
+              "paired": {
+                "n_dates": 533,
+                "mean_diff": 0.007755,
+                "t_stat": 14.962
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.24,
+                "pinball_abstained": 0.025373,
+                "pinball_retained": 0.017965,
+                "ratio": 1.412
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.02442,
+                "pinball_retained": 0.017989,
+                "ratio": 1.357
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.436,
+                "ratio_rvol_20": 1.5,
+                "diff": -0.064,
+                "diff_ci95": [
+                  -0.136,
+                  0.01
+                ],
+                "diff_positive_rate": 0.039,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.388,
+                "ratio_rvol_20": 1.393,
+                "diff": -0.005,
+                "diff_ci95": [
+                  -0.049,
+                  0.036
+                ],
+                "diff_positive_rate": 0.396,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.394,
+                "ratio_rvol_20": 1.367,
+                "diff": 0.027,
+                "diff_ci95": [
+                  -0.012,
+                  0.064
+                ],
+                "diff_positive_rate": 0.913,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.372,
+                "ratio_rvol_20": 1.304,
+                "diff": 0.068,
+                "diff_ci95": [
+                  0.04,
+                  0.098
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.321,
+                "ratio_rvol_20": 1.253,
+                "diff": 0.068,
+                "diff_ci95": [
+                  0.051,
+                  0.085
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.294,
+                "ratio_rvol_20": 1.214,
+                "diff": 0.08,
+                "diff_ci95": [
+                  0.064,
+                  0.097
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1646,
+              "threshold_last": 0.1714,
+              "change_pct": 4.1,
+              "mean_width": 0.1259
+            },
+            "a3": {
+              "75": {
+                "overall": 26.04,
+                "Q1": 0.45,
+                "Q2": 8.64,
+                "Q3": 36.17,
+                "Q4": 58.92
+              },
+              "90": {
+                "overall": 10.38,
+                "Q1": 0.02,
+                "Q2": 1.05,
+                "Q3": 10.32,
+                "Q4": 30.14
+              },
+              "95": {
+                "overall": 5.24,
+                "Q1": 0.0,
+                "Q2": 0.24,
+                "Q3": 4.02,
+                "Q4": 16.7
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.1893,
+                "ic_std": 0.19025,
+                "ic_ir": 0.995,
+                "t_stat": 23.335,
+                "ic_positive_rate": 0.8545
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.02524,
+                "ic_std": 0.16271,
+                "ic_ir": 0.1551,
+                "t_stat": 3.638,
+                "ic_positive_rate": 0.5545
+              }
+            }
+          },
+          {
+            "seed": 46,
+            "checkpoint": "outputs/checkpoints/phase1_f5e8f4e4_tft_seed46.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 5849,
+                "pinball": 0.024295,
+                "abs_err": 0.073578,
+                "hit_rate": 0.5751
+              },
+              "retained": {
+                "n": 100641,
+                "pinball": 0.018065,
+                "abs_err": 0.052657,
+                "hit_rate": 0.5038
+              },
+              "paired": {
+                "n_dates": 486,
+                "mean_diff": 0.007288,
+                "t_stat": 12.801
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.49,
+                "pinball_abstained": 0.024295,
+                "pinball_retained": 0.018065,
+                "ratio": 1.345
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.024379,
+                "pinball_retained": 0.018048,
+                "ratio": 1.351
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.45,
+                "ratio_rvol_20": 1.507,
+                "diff": -0.057,
+                "diff_ci95": [
+                  -0.141,
+                  0.025
+                ],
+                "diff_positive_rate": 0.07,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.369,
+                "ratio_rvol_20": 1.397,
+                "diff": -0.028,
+                "diff_ci95": [
+                  -0.073,
+                  0.01
+                ],
+                "diff_positive_rate": 0.079,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.356,
+                "ratio_rvol_20": 1.371,
+                "diff": -0.015,
+                "diff_ci95": [
+                  -0.051,
+                  0.024
+                ],
+                "diff_positive_rate": 0.203,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.344,
+                "ratio_rvol_20": 1.302,
+                "diff": 0.042,
+                "diff_ci95": [
+                  0.014,
+                  0.07
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.293,
+                "ratio_rvol_20": 1.249,
+                "diff": 0.044,
+                "diff_ci95": [
+                  0.027,
+                  0.064
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.255,
+                "ratio_rvol_20": 1.207,
+                "diff": 0.048,
+                "diff_ci95": [
+                  0.034,
+                  0.063
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1659,
+              "threshold_last": 0.1962,
+              "change_pct": 18.2,
+              "mean_width": 0.1281
+            },
+            "a3": {
+              "75": {
+                "overall": 26.55,
+                "Q1": 0.77,
+                "Q2": 10.5,
+                "Q3": 35.49,
+                "Q4": 59.44
+              },
+              "90": {
+                "overall": 10.97,
+                "Q1": 0.05,
+                "Q2": 1.65,
+                "Q3": 11.36,
+                "Q4": 30.81
+              },
+              "95": {
+                "overall": 5.49,
+                "Q1": 0.0,
+                "Q2": 0.45,
+                "Q3": 4.68,
+                "Q4": 16.84
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.18075,
+                "ic_std": 0.20641,
+                "ic_ir": 0.8757,
+                "t_stat": 20.537,
+                "ic_positive_rate": 0.8582
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.03246,
+                "ic_std": 0.17638,
+                "ic_ir": 0.184,
+                "t_stat": 4.316,
+                "ic_positive_rate": 0.5618
+              }
+            }
+          }
+        ],
+        "agg": {
+          "checkpoint": [
+            "outputs/checkpoints/phase1_f5e8f4e4_tft_seed42.pt",
+            "outputs/checkpoints/phase1_f5e8f4e4_tft_seed43.pt",
+            "outputs/checkpoints/phase1_f5e8f4e4_tft_seed44.pt",
+            "outputs/checkpoints/phase1_f5e8f4e4_tft_seed45.pt",
+            "outputs/checkpoints/phase1_f5e8f4e4_tft_seed46.pt"
+          ],
+          "n": {
+            "mean": 106490.0,
+            "sd": 0.0,
+            "range": [
+              106490,
+              106490
+            ]
+          },
+          "a1": {
+            "abstained": {
+              "n": {
+                "mean": 5622.6,
+                "sd": 139.389024,
+                "range": [
+                  5494,
+                  5849
+                ]
+              },
+              "pinball": {
+                "mean": 0.025843,
+                "sd": 0.001038,
+                "range": [
+                  0.024295,
+                  0.026976
+                ]
+              },
+              "abs_err": {
+                "mean": 0.077251,
+                "sd": 0.002735,
+                "range": [
+                  0.073578,
+                  0.08081
+                ]
+              },
+              "hit_rate": {
+                "mean": 0.5399,
+                "sd": 0.024793,
+                "range": [
+                  0.5196,
+                  0.5751
+                ]
+              }
+            },
+            "retained": {
+              "n": {
+                "mean": 100867.4,
+                "sd": 139.389024,
+                "range": [
+                  100641,
+                  100996
+                ]
+              },
+              "pinball": {
+                "mean": 0.017907,
+                "sd": 0.000137,
+                "range": [
+                  0.017724,
+                  0.018065
+                ]
+              },
+              "abs_err": {
+                "mean": 0.052398,
+                "sd": 0.00016,
+                "range": [
+                  0.052222,
+                  0.052657
+                ]
+              },
+              "hit_rate": {
+                "mean": 0.51686,
+                "sd": 0.00906,
+                "range": [
+                  0.5038,
+                  0.5253
+                ]
+              }
+            },
+            "paired": {
+              "n_dates": {
+                "mean": 523.8,
+                "sd": 21.158922,
+                "range": [
+                  486,
+                  535
+                ]
+              },
+              "mean_diff": {
+                "mean": 0.008499,
+                "sd": 0.000925,
+                "range": [
+                  0.007288,
+                  0.009442
+                ]
+              },
+              "t_stat": {
+                "mean": 15.18,
+                "sd": 1.902799,
+                "range": [
+                  12.801,
+                  17.605
+                ]
+              }
+            }
+          },
+          "a4": {
+            "width": {
+              "rate": {
+                "mean": 5.28,
+                "sd": 0.129808,
+                "range": [
+                  5.16,
+                  5.49
+                ]
+              },
+              "pinball_abstained": {
+                "mean": 0.025843,
+                "sd": 0.001038,
+                "range": [
+                  0.024295,
+                  0.026976
+                ]
+              },
+              "pinball_retained": {
+                "mean": 0.017907,
+                "sd": 0.000137,
+                "range": [
+                  0.017724,
+                  0.018065
+                ]
+              },
+              "ratio": {
+                "mean": 1.4436,
+                "sd": 0.067478,
+                "range": [
+                  1.345,
+                  1.522
+                ]
+              }
+            },
+            "rvol_20": {
+              "rate": {
+                "mean": 5.66,
+                "sd": 0.0,
+                "range": [
+                  5.66,
+                  5.66
+                ]
+              },
+              "pinball_abstained": {
+                "mean": 0.02462,
+                "sd": 0.000354,
+                "range": [
+                  0.024379,
+                  0.025198
+                ]
+              },
+              "pinball_retained": {
+                "mean": 0.017947,
+                "sd": 0.000103,
+                "range": [
+                  0.017834,
+                  0.018048
+                ]
+              },
+              "ratio": {
+                "mean": 1.3718,
+                "sd": 0.023931,
+                "range": [
+                  1.351,
+                  1.412
+                ]
+              }
+            }
+          },
+          "a5": {
+            "2": {
+              "rate_width": {
+                "mean": 2.07,
+                "sd": 0.0,
+                "range": [
+                  2.07,
+                  2.07
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 2.07,
+                "sd": 0.0,
+                "range": [
+                  2.07,
+                  2.07
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.5078,
+                "sd": 0.069815,
+                "range": [
+                  1.436,
+                  1.582
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.5198,
+                "sd": 0.026883,
+                "range": [
+                  1.5,
+                  1.567
+                ]
+              },
+              "diff": {
+                "mean": -0.012,
+                "sd": 0.054763,
+                "range": [
+                  -0.064,
+                  0.069
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": -0.0866,
+                  "sd": 0.058364,
+                  "range": [
+                    -0.141,
+                    0.001
+                  ]
+                },
+                {
+                  "mean": 0.0632,
+                  "sd": 0.054513,
+                  "range": [
+                    0.01,
+                    0.144
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 0.3962,
+                "sd": 0.399662,
+                "range": [
+                  0.039,
+                  0.975
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "5": {
+              "rate_width": {
+                "mean": 5.16,
+                "sd": 0.0,
+                "range": [
+                  5.16,
+                  5.16
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 5.16,
+                "sd": 0.0,
+                "range": [
+                  5.16,
+                  5.16
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.4356,
+                "sd": 0.060186,
+                "range": [
+                  1.369,
+                  1.52
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.4122,
+                "sd": 0.024366,
+                "range": [
+                  1.393,
+                  1.454
+                ]
+              },
+              "diff": {
+                "mean": 0.0234,
+                "sd": 0.039361,
+                "range": [
+                  -0.028,
+                  0.066
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": -0.0216,
+                  "sd": 0.039228,
+                  "range": [
+                    -0.073,
+                    0.022
+                  ]
+                },
+                {
+                  "mean": 0.064,
+                  "sd": 0.04062,
+                  "range": [
+                    0.01,
+                    0.108
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 0.674,
+                "sd": 0.415363,
+                "range": [
+                  0.079,
+                  0.998
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "6": {
+              "rate_width": {
+                "mean": 6.2,
+                "sd": 0.0,
+                "range": [
+                  6.2,
+                  6.2
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 6.2,
+                "sd": 0.0,
+                "range": [
+                  6.2,
+                  6.2
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.4246,
+                "sd": 0.058556,
+                "range": [
+                  1.356,
+                  1.51
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.3854,
+                "sd": 0.022678,
+                "range": [
+                  1.367,
+                  1.424
+                ]
+              },
+              "diff": {
+                "mean": 0.0392,
+                "sd": 0.039588,
+                "range": [
+                  -0.015,
+                  0.086
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0008,
+                  "sd": 0.038571,
+                  "range": [
+                    -0.051,
+                    0.047
+                  ]
+                },
+                {
+                  "mean": 0.0778,
+                  "sd": 0.039752,
+                  "range": [
+                    0.024,
+                    0.125
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 0.8092,
+                "sd": 0.341195,
+                "range": [
+                  0.203,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "10": {
+              "rate_width": {
+                "mean": 10.21,
+                "sd": 0.0,
+                "range": [
+                  10.21,
+                  10.21
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 10.21,
+                "sd": 0.0,
+                "range": [
+                  10.21,
+                  10.21
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.3916,
+                "sd": 0.040228,
+                "range": [
+                  1.344,
+                  1.444
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.3184,
+                "sd": 0.020501,
+                "range": [
+                  1.302,
+                  1.353
+                ]
+              },
+              "diff": {
+                "mean": 0.0732,
+                "sd": 0.025014,
+                "range": [
+                  0.042,
+                  0.105
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0448,
+                  "sd": 0.024672,
+                  "range": [
+                    0.014,
+                    0.077
+                  ]
+                },
+                {
+                  "mean": 0.1032,
+                  "sd": 0.025704,
+                  "range": [
+                    0.07,
+                    0.135
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 1.0,
+                "sd": 0.0,
+                "range": [
+                  1.0,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "20": {
+              "rate_width": {
+                "mean": 20.21,
+                "sd": 0.0,
+                "range": [
+                  20.21,
+                  20.21
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 20.21,
+                "sd": 0.0,
+                "range": [
+                  20.21,
+                  20.21
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.3282,
+                "sd": 0.029541,
+                "range": [
+                  1.293,
+                  1.368
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.2642,
+                "sd": 0.018144,
+                "range": [
+                  1.249,
+                  1.295
+                ]
+              },
+              "diff": {
+                "mean": 0.064,
+                "sd": 0.017364,
+                "range": [
+                  0.044,
+                  0.086
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0448,
+                  "sd": 0.015944,
+                  "range": [
+                    0.027,
+                    0.067
+                  ]
+                },
+                {
+                  "mean": 0.0848,
+                  "sd": 0.018458,
+                  "range": [
+                    0.064,
+                    0.106
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 1.0,
+                "sd": 0.0,
+                "range": [
+                  1.0,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "30": {
+              "rate_width": {
+                "mean": 30.24,
+                "sd": 0.0,
+                "range": [
+                  30.24,
+                  30.24
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 30.24,
+                "sd": 0.0,
+                "range": [
+                  30.24,
+                  30.24
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.2928,
+                "sd": 0.027626,
+                "range": [
+                  1.255,
+                  1.327
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.2228,
+                "sd": 0.016814,
+                "range": [
+                  1.207,
+                  1.251
+                ]
+              },
+              "diff": {
+                "mean": 0.07,
+                "sd": 0.016956,
+                "range": [
+                  0.048,
+                  0.089
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0526,
+                  "sd": 0.01571,
+                  "range": [
+                    0.034,
+                    0.072
+                  ]
+                },
+                {
+                  "mean": 0.0882,
+                  "sd": 0.019045,
+                  "range": [
+                    0.063,
+                    0.106
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 1.0,
+                "sd": 0.0,
+                "range": [
+                  1.0,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            }
+          },
+          "a6": {
+            "n_days": {
+              "mean": 244.0,
+              "sd": 0.0,
+              "range": [
+                244,
+                244
+              ]
+            },
+            "date_first": "2025-10-10",
+            "date_last": "2026-10-08",
+            "threshold_first": {
+              "mean": 0.16404,
+              "sd": 0.008358,
+              "range": [
+                0.1544,
+                0.1765
+              ]
+            },
+            "threshold_last": {
+              "mean": 0.1786,
+              "sd": 0.01516,
+              "range": [
+                0.1576,
+                0.1962
+              ]
+            },
+            "change_pct": {
+              "mean": 8.8,
+              "sd": 6.516134,
+              "range": [
+                2.1,
+                18.2
+              ]
+            },
+            "mean_width": {
+              "mean": 0.1296,
+              "sd": 0.004465,
+              "range": [
+                0.1254,
+                0.1353
+              ]
+            }
+          },
+          "a3": {
+            "75": {
+              "overall": {
+                "mean": 25.984,
+                "sd": 0.349042,
+                "range": [
+                  25.66,
+                  26.55
+                ]
+              },
+              "Q1": {
+                "mean": 0.554,
+                "sd": 0.264821,
+                "range": [
+                  0.2,
+                  0.86
+                ]
+              },
+              "Q2": {
+                "mean": 9.466,
+                "sd": 1.259198,
+                "range": [
+                  7.65,
+                  10.5
+                ]
+              },
+              "Q3": {
+                "mean": 36.508,
+                "sd": 0.936547,
+                "range": [
+                  35.49,
+                  37.81
+                ]
+              },
+              "Q4": {
+                "mean": 57.408,
+                "sd": 1.770359,
+                "range": [
+                  55.52,
+                  59.44
+                ]
+              }
+            },
+            "90": {
+              "overall": {
+                "mean": 10.51,
+                "sd": 0.263344,
+                "range": [
+                  10.31,
+                  10.97
+                ]
+              },
+              "Q1": {
+                "mean": 0.028,
+                "sd": 0.021679,
+                "range": [
+                  0.0,
+                  0.05
+                ]
+              },
+              "Q2": {
+                "mean": 1.224,
+                "sd": 0.357323,
+                "range": [
+                  0.71,
+                  1.65
+                ]
+              },
+              "Q3": {
+                "mean": 10.878,
+                "sd": 0.394614,
+                "range": [
+                  10.32,
+                  11.36
+                ]
+              },
+              "Q4": {
+                "mean": 29.908,
+                "sd": 0.776254,
+                "range": [
+                  28.87,
+                  30.81
+                ]
+              }
+            },
+            "95": {
+              "overall": {
+                "mean": 5.28,
+                "sd": 0.129808,
+                "range": [
+                  5.16,
+                  5.49
+                ]
+              },
+              "Q1": {
+                "mean": 0.0,
+                "sd": 0.0,
+                "range": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "Q2": {
+                "mean": 0.292,
+                "sd": 0.110318,
+                "range": [
+                  0.15,
+                  0.45
+                ]
+              },
+              "Q3": {
+                "mean": 4.118,
+                "sd": 0.338851,
+                "range": [
+                  3.8,
+                  4.68
+                ]
+              },
+              "Q4": {
+                "mean": 16.706,
+                "sd": 0.409243,
+                "range": [
+                  16.16,
+                  17.28
+                ]
+              }
+            }
+          },
+          "a2": {
+            "width_ic": {
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              },
+              "ic_mean": {
+                "mean": 0.18621,
+                "sd": 0.005635,
+                "range": [
+                  0.18075,
+                  0.19388
+                ]
+              },
+              "ic_std": {
+                "mean": 0.19081,
+                "sd": 0.012611,
+                "range": [
+                  0.17292,
+                  0.20641
+                ]
+              },
+              "ic_ir": {
+                "mean": 0.98024,
+                "sd": 0.084681,
+                "range": [
+                  0.8757,
+                  1.0773
+                ]
+              },
+              "t_stat": {
+                "mean": 22.9882,
+                "sd": 1.985683,
+                "range": [
+                  20.537,
+                  25.264
+                ]
+              },
+              "ic_positive_rate": {
+                "mean": 0.85926,
+                "sd": 0.006521,
+                "range": [
+                  0.8527,
+                  0.8691
+                ]
+              }
+            },
+            "rvol20_ic": {
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              },
+              "ic_mean": {
+                "mean": 0.14498,
+                "sd": 0.0,
+                "range": [
+                  0.14498,
+                  0.14498
+                ]
+              },
+              "ic_std": {
+                "mean": 0.19911,
+                "sd": 0.0,
+                "range": [
+                  0.19911,
+                  0.19911
+                ]
+              },
+              "ic_ir": {
+                "mean": 0.7282,
+                "sd": 0.0,
+                "range": [
+                  0.7282,
+                  0.7282
+                ]
+              },
+              "t_stat": {
+                "mean": 17.077,
+                "sd": 0.0,
+                "range": [
+                  17.077,
+                  17.077
+                ]
+              },
+              "ic_positive_rate": {
+                "mean": 0.8091,
+                "sd": 0.0,
+                "range": [
+                  0.8091,
+                  0.8091
+                ]
+              }
+            },
+            "directional_ic": {
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              },
+              "ic_mean": {
+                "mean": 0.019646,
+                "sd": 0.012691,
+                "range": [
+                  -0.00141,
+                  0.03246
+                ]
+              },
+              "ic_std": {
+                "mean": 0.168122,
+                "sd": 0.00541,
+                "range": [
+                  0.16271,
+                  0.17638
+                ]
+              },
+              "ic_ir": {
+                "mean": 0.11678,
+                "sd": 0.073939,
+                "range": [
+                  -0.0083,
+                  0.184
+                ]
+              },
+              "t_stat": {
+                "mean": 2.7386,
+                "sd": 1.734366,
+                "range": [
+                  -0.195,
+                  4.316
+                ]
+              },
+              "ic_positive_rate": {
+                "mean": 0.5211,
+                "sd": 0.041807,
+                "range": [
+                  0.4582,
+                  0.5618
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "ours": {
+      "checkpoint": "outputs/checkpoints/phase1_b113237e_seed42.pt",
+      "n": 106490,
+      "a1": {
+        "abstained": {
+          "n": 6460,
+          "pinball": 0.026828,
+          "abs_err": 0.082745,
+          "hit_rate": 0.5243
+        },
+        "retained": {
+          "n": 100030,
+          "pinball": 0.017316,
+          "abs_err": 0.051802,
+          "hit_rate": 0.5167
+        },
+        "paired": {
+          "n_dates": 545,
+          "mean_diff": 0.008402,
+          "t_stat": 21.169
+        }
+      },
+      "a4": {
+        "width": {
+          "rate": 6.07,
+          "pinball_abstained": 0.026828,
+          "pinball_retained": 0.017316,
+          "ratio": 1.549
+        },
+        "rvol_20": {
+          "rate": 5.66,
+          "pinball_abstained": 0.023476,
+          "pinball_retained": 0.017558,
+          "ratio": 1.337
+        }
+      },
+      "a5": {
+        "2": {
+          "rate_width": 2.07,
+          "rate_rvol_20": 2.07,
+          "ratio_width": 1.579,
+          "ratio_rvol_20": 1.482,
+          "diff": 0.097,
+          "diff_ci95": [
+            0.043,
+            0.15
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "5": {
+          "rate_width": 5.16,
+          "rate_rvol_20": 5.16,
+          "ratio_width": 1.495,
+          "ratio_rvol_20": 1.39,
+          "diff": 0.105,
+          "diff_ci95": [
+            0.072,
+            0.138
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "6": {
+          "rate_width": 6.2,
+          "rate_rvol_20": 6.2,
+          "ratio_width": 1.47,
+          "ratio_rvol_20": 1.362,
+          "diff": 0.108,
+          "diff_ci95": [
+            0.076,
+            0.139
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "10": {
+          "rate_width": 10.21,
+          "rate_rvol_20": 10.21,
+          "ratio_width": 1.405,
+          "ratio_rvol_20": 1.304,
+          "diff": 0.101,
+          "diff_ci95": [
+            0.079,
+            0.126
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "20": {
+          "rate_width": 20.21,
+          "rate_rvol_20": 20.21,
+          "ratio_width": 1.325,
+          "ratio_rvol_20": 1.256,
+          "diff": 0.069,
+          "diff_ci95": [
+            0.054,
+            0.083
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        },
+        "30": {
+          "rate_width": 30.24,
+          "rate_rvol_20": 30.24,
+          "ratio_width": 1.28,
+          "ratio_rvol_20": 1.216,
+          "diff": 0.064,
+          "diff_ci95": [
+            0.051,
+            0.078
+          ],
+          "diff_positive_rate": 1.0,
+          "n_dates": 550
+        }
+      },
+      "a6": {
+        "n_days": 244,
+        "date_first": "2025-10-10",
+        "date_last": "2026-10-08",
+        "threshold_first": 0.1861,
+        "threshold_last": 0.3332,
+        "change_pct": 79.1,
+        "mean_width": 0.1666
+      },
+      "a3": {
+        "75": {
+          "overall": 28.31,
+          "Q1": 1.54,
+          "Q2": 9.48,
+          "Q3": 32.86,
+          "Q4": 69.36
+        },
+        "90": {
+          "overall": 11.96,
+          "Q1": 0.35,
+          "Q2": 1.56,
+          "Q3": 8.15,
+          "Q4": 37.79
+        },
+        "95": {
+          "overall": 6.07,
+          "Q1": 0.14,
+          "Q2": 0.46,
+          "Q3": 2.42,
+          "Q4": 21.25
+        }
+      },
+      "a2": {
+        "width_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.17371,
+          "ic_std": 0.21373,
+          "ic_ir": 0.8127,
+          "t_stat": 19.06,
+          "ic_positive_rate": 0.8327
+        },
+        "rvol20_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.14498,
+          "ic_std": 0.19911,
+          "ic_ir": 0.7282,
+          "t_stat": 17.077,
+          "ic_positive_rate": 0.8091
+        },
+        "directional_ic": {
+          "n_dates": 550,
+          "ic_mean": 0.0128,
+          "ic_std": 0.15491,
+          "ic_ir": 0.0826,
+          "t_stat": 1.938,
+          "ic_positive_rate": 0.5273
+        }
+      },
+      "seeds": {
+        "n": 5,
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "outputs/checkpoints/phase1_b113237e_seed42.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 6460,
+                "pinball": 0.026828,
+                "abs_err": 0.082745,
+                "hit_rate": 0.5243
+              },
+              "retained": {
+                "n": 100030,
+                "pinball": 0.017316,
+                "abs_err": 0.051802,
+                "hit_rate": 0.5167
+              },
+              "paired": {
+                "n_dates": 545,
+                "mean_diff": 0.008402,
+                "t_stat": 21.169
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 6.07,
+                "pinball_abstained": 0.026828,
+                "pinball_retained": 0.017316,
+                "ratio": 1.549
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.023476,
+                "pinball_retained": 0.017558,
+                "ratio": 1.337
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.579,
+                "ratio_rvol_20": 1.482,
+                "diff": 0.097,
+                "diff_ci95": [
+                  0.043,
+                  0.15
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.495,
+                "ratio_rvol_20": 1.39,
+                "diff": 0.105,
+                "diff_ci95": [
+                  0.072,
+                  0.138
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.47,
+                "ratio_rvol_20": 1.362,
+                "diff": 0.108,
+                "diff_ci95": [
+                  0.076,
+                  0.139
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.405,
+                "ratio_rvol_20": 1.304,
+                "diff": 0.101,
+                "diff_ci95": [
+                  0.079,
+                  0.126
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.325,
+                "ratio_rvol_20": 1.256,
+                "diff": 0.069,
+                "diff_ci95": [
+                  0.054,
+                  0.083
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.28,
+                "ratio_rvol_20": 1.216,
+                "diff": 0.064,
+                "diff_ci95": [
+                  0.051,
+                  0.078
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1861,
+              "threshold_last": 0.3332,
+              "change_pct": 79.1,
+              "mean_width": 0.1666
+            },
+            "a3": {
+              "75": {
+                "overall": 28.31,
+                "Q1": 1.54,
+                "Q2": 9.48,
+                "Q3": 32.86,
+                "Q4": 69.36
+              },
+              "90": {
+                "overall": 11.96,
+                "Q1": 0.35,
+                "Q2": 1.56,
+                "Q3": 8.15,
+                "Q4": 37.79
+              },
+              "95": {
+                "overall": 6.07,
+                "Q1": 0.14,
+                "Q2": 0.46,
+                "Q3": 2.42,
+                "Q4": 21.25
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.17371,
+                "ic_std": 0.21373,
+                "ic_ir": 0.8127,
+                "t_stat": 19.06,
+                "ic_positive_rate": 0.8327
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.0128,
+                "ic_std": 0.15491,
+                "ic_ir": 0.0826,
+                "t_stat": 1.938,
+                "ic_positive_rate": 0.5273
+              }
+            }
+          },
+          {
+            "seed": 43,
+            "checkpoint": "outputs/checkpoints/phase1_b113237e_seed43.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 6208,
+                "pinball": 0.026051,
+                "abs_err": 0.07969,
+                "hit_rate": 0.566
+              },
+              "retained": {
+                "n": 100282,
+                "pinball": 0.017321,
+                "abs_err": 0.051764,
+                "hit_rate": 0.5532
+              },
+              "paired": {
+                "n_dates": 550,
+                "mean_diff": 0.007318,
+                "t_stat": 19.242
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.83,
+                "pinball_abstained": 0.026051,
+                "pinball_retained": 0.017321,
+                "ratio": 1.504
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.02344,
+                "pinball_retained": 0.017493,
+                "ratio": 1.34
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.545,
+                "ratio_rvol_20": 1.479,
+                "diff": 0.066,
+                "diff_ci95": [
+                  0.011,
+                  0.116
+                ],
+                "diff_positive_rate": 0.989,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.422,
+                "ratio_rvol_20": 1.389,
+                "diff": 0.033,
+                "diff_ci95": [
+                  -0.002,
+                  0.065
+                ],
+                "diff_positive_rate": 0.962,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.402,
+                "ratio_rvol_20": 1.363,
+                "diff": 0.039,
+                "diff_ci95": [
+                  0.007,
+                  0.069
+                ],
+                "diff_positive_rate": 0.991,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.367,
+                "ratio_rvol_20": 1.303,
+                "diff": 0.064,
+                "diff_ci95": [
+                  0.042,
+                  0.09
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.307,
+                "ratio_rvol_20": 1.254,
+                "diff": 0.053,
+                "diff_ci95": [
+                  0.036,
+                  0.07
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.252,
+                "ratio_rvol_20": 1.212,
+                "diff": 0.04,
+                "diff_ci95": [
+                  0.027,
+                  0.054
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1939,
+              "threshold_last": 0.294,
+              "change_pct": 51.6,
+              "mean_width": 0.16
+            },
+            "a3": {
+              "75": {
+                "overall": 27.94,
+                "Q1": 1.49,
+                "Q2": 10.16,
+                "Q3": 32.21,
+                "Q4": 67.91
+              },
+              "90": {
+                "overall": 11.72,
+                "Q1": 0.62,
+                "Q2": 1.95,
+                "Q3": 8.69,
+                "Q4": 35.62
+              },
+              "95": {
+                "overall": 5.83,
+                "Q1": 0.19,
+                "Q2": 0.75,
+                "Q3": 2.94,
+                "Q4": 19.44
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.1648,
+                "ic_std": 0.21521,
+                "ic_ir": 0.7658,
+                "t_stat": 17.959,
+                "ic_positive_rate": 0.8218
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.04195,
+                "ic_std": 0.12873,
+                "ic_ir": 0.3259,
+                "t_stat": 7.642,
+                "ic_positive_rate": 0.6309
+              }
+            }
+          },
+          {
+            "seed": 44,
+            "checkpoint": "outputs/checkpoints/phase1_b113237e_seed44.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 6225,
+                "pinball": 0.025813,
+                "abs_err": 0.079033,
+                "hit_rate": 0.5753
+              },
+              "retained": {
+                "n": 100265,
+                "pinball": 0.017364,
+                "abs_err": 0.051835,
+                "hit_rate": 0.5513
+              },
+              "paired": {
+                "n_dates": 550,
+                "mean_diff": 0.007174,
+                "t_stat": 18.678
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.85,
+                "pinball_abstained": 0.025813,
+                "pinball_retained": 0.017364,
+                "ratio": 1.487
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.023504,
+                "pinball_retained": 0.017519,
+                "ratio": 1.342
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.546,
+                "ratio_rvol_20": 1.479,
+                "diff": 0.067,
+                "diff_ci95": [
+                  0.014,
+                  0.121
+                ],
+                "diff_positive_rate": 0.992,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.421,
+                "ratio_rvol_20": 1.391,
+                "diff": 0.03,
+                "diff_ci95": [
+                  -0.003,
+                  0.064
+                ],
+                "diff_positive_rate": 0.959,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.412,
+                "ratio_rvol_20": 1.365,
+                "diff": 0.047,
+                "diff_ci95": [
+                  0.016,
+                  0.08
+                ],
+                "diff_positive_rate": 0.997,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.375,
+                "ratio_rvol_20": 1.304,
+                "diff": 0.071,
+                "diff_ci95": [
+                  0.047,
+                  0.097
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.31,
+                "ratio_rvol_20": 1.255,
+                "diff": 0.055,
+                "diff_ci95": [
+                  0.039,
+                  0.072
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.264,
+                "ratio_rvol_20": 1.212,
+                "diff": 0.052,
+                "diff_ci95": [
+                  0.039,
+                  0.066
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1823,
+              "threshold_last": 0.2824,
+              "change_pct": 54.9,
+              "mean_width": 0.1577
+            },
+            "a3": {
+              "75": {
+                "overall": 27.97,
+                "Q1": 1.46,
+                "Q2": 9.7,
+                "Q3": 32.12,
+                "Q4": 68.61
+              },
+              "90": {
+                "overall": 11.62,
+                "Q1": 0.58,
+                "Q2": 1.84,
+                "Q3": 8.08,
+                "Q4": 35.95
+              },
+              "95": {
+                "overall": 5.85,
+                "Q1": 0.24,
+                "Q2": 0.81,
+                "Q3": 2.73,
+                "Q4": 19.6
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.16928,
+                "ic_std": 0.21368,
+                "ic_ir": 0.7922,
+                "t_stat": 18.579,
+                "ic_positive_rate": 0.8236
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.02719,
+                "ic_std": 0.23785,
+                "ic_ir": 0.1143,
+                "t_stat": 2.681,
+                "ic_positive_rate": 0.5473
+              }
+            }
+          },
+          {
+            "seed": 45,
+            "checkpoint": "outputs/checkpoints/phase1_b113237e_seed45.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 6206,
+                "pinball": 0.025958,
+                "abs_err": 0.07986,
+                "hit_rate": 0.5617
+              },
+              "retained": {
+                "n": 100284,
+                "pinball": 0.01723,
+                "abs_err": 0.051655,
+                "hit_rate": 0.5536
+              },
+              "paired": {
+                "n_dates": 550,
+                "mean_diff": 0.007859,
+                "t_stat": 19.264
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.83,
+                "pinball_abstained": 0.025958,
+                "pinball_retained": 0.01723,
+                "ratio": 1.507
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.023269,
+                "pinball_retained": 0.017407,
+                "ratio": 1.337
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.593,
+                "ratio_rvol_20": 1.473,
+                "diff": 0.12,
+                "diff_ci95": [
+                  0.065,
+                  0.173
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.467,
+                "ratio_rvol_20": 1.386,
+                "diff": 0.081,
+                "diff_ci95": [
+                  0.046,
+                  0.114
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.438,
+                "ratio_rvol_20": 1.36,
+                "diff": 0.078,
+                "diff_ci95": [
+                  0.046,
+                  0.109
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.381,
+                "ratio_rvol_20": 1.301,
+                "diff": 0.08,
+                "diff_ci95": [
+                  0.055,
+                  0.106
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.322,
+                "ratio_rvol_20": 1.254,
+                "diff": 0.068,
+                "diff_ci95": [
+                  0.053,
+                  0.083
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.278,
+                "ratio_rvol_20": 1.213,
+                "diff": 0.065,
+                "diff_ci95": [
+                  0.052,
+                  0.079
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1954,
+              "threshold_last": 0.3083,
+              "change_pct": 57.8,
+              "mean_width": 0.1655
+            },
+            "a3": {
+              "75": {
+                "overall": 27.95,
+                "Q1": 1.33,
+                "Q2": 9.39,
+                "Q3": 32.44,
+                "Q4": 68.64
+              },
+              "90": {
+                "overall": 11.56,
+                "Q1": 0.59,
+                "Q2": 1.86,
+                "Q3": 8.03,
+                "Q4": 35.74
+              },
+              "95": {
+                "overall": 5.83,
+                "Q1": 0.2,
+                "Q2": 0.58,
+                "Q3": 2.48,
+                "Q4": 20.05
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.17166,
+                "ic_std": 0.21288,
+                "ic_ir": 0.8064,
+                "t_stat": 18.912,
+                "ic_positive_rate": 0.8255
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.04316,
+                "ic_std": 0.16836,
+                "ic_ir": 0.2564,
+                "t_stat": 6.012,
+                "ic_positive_rate": 0.6291
+              }
+            }
+          },
+          {
+            "seed": 46,
+            "checkpoint": "outputs/checkpoints/phase1_b113237e_seed46.pt",
+            "n": 106490,
+            "a1": {
+              "abstained": {
+                "n": 6349,
+                "pinball": 0.025973,
+                "abs_err": 0.079644,
+                "hit_rate": 0.5694
+              },
+              "retained": {
+                "n": 100141,
+                "pinball": 0.017291,
+                "abs_err": 0.051735,
+                "hit_rate": 0.5525
+              },
+              "paired": {
+                "n_dates": 550,
+                "mean_diff": 0.007425,
+                "t_stat": 18.695
+              }
+            },
+            "a4": {
+              "width": {
+                "rate": 5.96,
+                "pinball_abstained": 0.025973,
+                "pinball_retained": 0.017291,
+                "ratio": 1.502
+              },
+              "rvol_20": {
+                "rate": 5.66,
+                "pinball_abstained": 0.023483,
+                "pinball_retained": 0.017468,
+                "ratio": 1.344
+              }
+            },
+            "a5": {
+              "2": {
+                "rate_width": 2.07,
+                "rate_rvol_20": 2.07,
+                "ratio_width": 1.564,
+                "ratio_rvol_20": 1.485,
+                "diff": 0.079,
+                "diff_ci95": [
+                  0.026,
+                  0.134
+                ],
+                "diff_positive_rate": 0.999,
+                "n_dates": 550
+              },
+              "5": {
+                "rate_width": 5.16,
+                "rate_rvol_20": 5.16,
+                "ratio_width": 1.443,
+                "ratio_rvol_20": 1.395,
+                "diff": 0.048,
+                "diff_ci95": [
+                  0.01,
+                  0.083
+                ],
+                "diff_positive_rate": 0.996,
+                "n_dates": 550
+              },
+              "6": {
+                "rate_width": 6.2,
+                "rate_rvol_20": 6.2,
+                "ratio_width": 1.416,
+                "ratio_rvol_20": 1.369,
+                "diff": 0.047,
+                "diff_ci95": [
+                  0.014,
+                  0.081
+                ],
+                "diff_positive_rate": 0.999,
+                "n_dates": 550
+              },
+              "10": {
+                "rate_width": 10.21,
+                "rate_rvol_20": 10.21,
+                "ratio_width": 1.375,
+                "ratio_rvol_20": 1.306,
+                "diff": 0.069,
+                "diff_ci95": [
+                  0.045,
+                  0.093
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "20": {
+                "rate_width": 20.21,
+                "rate_rvol_20": 20.21,
+                "ratio_width": 1.323,
+                "ratio_rvol_20": 1.258,
+                "diff": 0.065,
+                "diff_ci95": [
+                  0.049,
+                  0.082
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              },
+              "30": {
+                "rate_width": 30.24,
+                "rate_rvol_20": 30.24,
+                "ratio_width": 1.28,
+                "ratio_rvol_20": 1.216,
+                "diff": 0.064,
+                "diff_ci95": [
+                  0.05,
+                  0.08
+                ],
+                "diff_positive_rate": 1.0,
+                "n_dates": 550
+              }
+            },
+            "a6": {
+              "n_days": 244,
+              "date_first": "2025-10-10",
+              "date_last": "2026-10-08",
+              "threshold_first": 0.1905,
+              "threshold_last": 0.3002,
+              "change_pct": 57.5,
+              "mean_width": 0.161
+            },
+            "a3": {
+              "75": {
+                "overall": 28.21,
+                "Q1": 1.54,
+                "Q2": 10.06,
+                "Q3": 32.15,
+                "Q4": 69.09
+              },
+              "90": {
+                "overall": 11.71,
+                "Q1": 0.62,
+                "Q2": 1.85,
+                "Q3": 8.38,
+                "Q4": 36.0
+              },
+              "95": {
+                "overall": 5.96,
+                "Q1": 0.26,
+                "Q2": 0.8,
+                "Q3": 2.79,
+                "Q4": 20.01
+              }
+            },
+            "a2": {
+              "width_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.1699,
+                "ic_std": 0.2102,
+                "ic_ir": 0.8083,
+                "t_stat": 18.956,
+                "ic_positive_rate": 0.8255
+              },
+              "rvol20_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.14498,
+                "ic_std": 0.19911,
+                "ic_ir": 0.7282,
+                "t_stat": 17.077,
+                "ic_positive_rate": 0.8091
+              },
+              "directional_ic": {
+                "n_dates": 550,
+                "ic_mean": 0.02226,
+                "ic_std": 0.15793,
+                "ic_ir": 0.141,
+                "t_stat": 3.306,
+                "ic_positive_rate": 0.5255
+              }
+            }
+          }
+        ],
+        "agg": {
+          "checkpoint": [
+            "outputs/checkpoints/phase1_b113237e_seed42.pt",
+            "outputs/checkpoints/phase1_b113237e_seed43.pt",
+            "outputs/checkpoints/phase1_b113237e_seed44.pt",
+            "outputs/checkpoints/phase1_b113237e_seed45.pt",
+            "outputs/checkpoints/phase1_b113237e_seed46.pt"
+          ],
+          "n": {
+            "mean": 106490.0,
+            "sd": 0.0,
+            "range": [
+              106490,
+              106490
+            ]
+          },
+          "a1": {
+            "abstained": {
+              "n": {
+                "mean": 6289.6,
+                "sd": 112.233239,
+                "range": [
+                  6206,
+                  6460
+                ]
+              },
+              "pinball": {
+                "mean": 0.026125,
+                "sd": 0.000402,
+                "range": [
+                  0.025813,
+                  0.026828
+                ]
+              },
+              "abs_err": {
+                "mean": 0.080194,
+                "sd": 0.00146,
+                "range": [
+                  0.079033,
+                  0.082745
+                ]
+              },
+              "hit_rate": {
+                "mean": 0.55934,
+                "sd": 0.020209,
+                "range": [
+                  0.5243,
+                  0.5753
+                ]
+              }
+            },
+            "retained": {
+              "n": {
+                "mean": 100200.4,
+                "sd": 112.233239,
+                "range": [
+                  100030,
+                  100284
+                ]
+              },
+              "pinball": {
+                "mean": 0.017304,
+                "sd": 4.9e-05,
+                "range": [
+                  0.01723,
+                  0.017364
+                ]
+              },
+              "abs_err": {
+                "mean": 0.051758,
+                "sd": 6.9e-05,
+                "range": [
+                  0.051655,
+                  0.051835
+                ]
+              },
+              "hit_rate": {
+                "mean": 0.54546,
+                "sd": 0.016101,
+                "range": [
+                  0.5167,
+                  0.5536
+                ]
+              }
+            },
+            "paired": {
+              "n_dates": {
+                "mean": 549.0,
+                "sd": 2.236068,
+                "range": [
+                  545,
+                  550
+                ]
+              },
+              "mean_diff": {
+                "mean": 0.007636,
+                "sd": 0.000499,
+                "range": [
+                  0.007174,
+                  0.008402
+                ]
+              },
+              "t_stat": {
+                "mean": 19.4096,
+                "sd": 1.023556,
+                "range": [
+                  18.678,
+                  21.169
+                ]
+              }
+            }
+          },
+          "a4": {
+            "width": {
+              "rate": {
+                "mean": 5.908,
+                "sd": 0.105451,
+                "range": [
+                  5.83,
+                  6.07
+                ]
+              },
+              "pinball_abstained": {
+                "mean": 0.026125,
+                "sd": 0.000402,
+                "range": [
+                  0.025813,
+                  0.026828
+                ]
+              },
+              "pinball_retained": {
+                "mean": 0.017304,
+                "sd": 4.9e-05,
+                "range": [
+                  0.01723,
+                  0.017364
+                ]
+              },
+              "ratio": {
+                "mean": 1.5098,
+                "sd": 0.023231,
+                "range": [
+                  1.487,
+                  1.549
+                ]
+              }
+            },
+            "rvol_20": {
+              "rate": {
+                "mean": 5.66,
+                "sd": 0.0,
+                "range": [
+                  5.66,
+                  5.66
+                ]
+              },
+              "pinball_abstained": {
+                "mean": 0.023434,
+                "sd": 9.5e-05,
+                "range": [
+                  0.023269,
+                  0.023504
+                ]
+              },
+              "pinball_retained": {
+                "mean": 0.017489,
+                "sd": 5.7e-05,
+                "range": [
+                  0.017407,
+                  0.017558
+                ]
+              },
+              "ratio": {
+                "mean": 1.34,
+                "sd": 0.003082,
+                "range": [
+                  1.337,
+                  1.344
+                ]
+              }
+            }
+          },
+          "a5": {
+            "2": {
+              "rate_width": {
+                "mean": 2.07,
+                "sd": 0.0,
+                "range": [
+                  2.07,
+                  2.07
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 2.07,
+                "sd": 0.0,
+                "range": [
+                  2.07,
+                  2.07
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.5654,
+                "sd": 0.020864,
+                "range": [
+                  1.545,
+                  1.593
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.4796,
+                "sd": 0.00445,
+                "range": [
+                  1.473,
+                  1.485
+                ]
+              },
+              "diff": {
+                "mean": 0.0858,
+                "sd": 0.022841,
+                "range": [
+                  0.066,
+                  0.12
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0318,
+                  "sd": 0.022421,
+                  "range": [
+                    0.011,
+                    0.065
+                  ]
+                },
+                {
+                  "mean": 0.1388,
+                  "sd": 0.02321,
+                  "range": [
+                    0.116,
+                    0.173
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 0.996,
+                "sd": 0.005148,
+                "range": [
+                  0.989,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "5": {
+              "rate_width": {
+                "mean": 5.16,
+                "sd": 0.0,
+                "range": [
+                  5.16,
+                  5.16
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 5.16,
+                "sd": 0.0,
+                "range": [
+                  5.16,
+                  5.16
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.4496,
+                "sd": 0.031572,
+                "range": [
+                  1.421,
+                  1.495
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.3902,
+                "sd": 0.003271,
+                "range": [
+                  1.386,
+                  1.395
+                ]
+              },
+              "diff": {
+                "mean": 0.0594,
+                "sd": 0.032547,
+                "range": [
+                  0.03,
+                  0.105
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0246,
+                  "sd": 0.033118,
+                  "range": [
+                    -0.003,
+                    0.072
+                  ]
+                },
+                {
+                  "mean": 0.0928,
+                  "sd": 0.032368,
+                  "range": [
+                    0.064,
+                    0.138
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 0.9834,
+                "sd": 0.020995,
+                "range": [
+                  0.959,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "6": {
+              "rate_width": {
+                "mean": 6.2,
+                "sd": 0.0,
+                "range": [
+                  6.2,
+                  6.2
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 6.2,
+                "sd": 0.0,
+                "range": [
+                  6.2,
+                  6.2
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.4276,
+                "sd": 0.027107,
+                "range": [
+                  1.402,
+                  1.47
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.3638,
+                "sd": 0.003421,
+                "range": [
+                  1.36,
+                  1.369
+                ]
+              },
+              "diff": {
+                "mean": 0.0638,
+                "sd": 0.028874,
+                "range": [
+                  0.039,
+                  0.108
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0318,
+                  "sd": 0.028883,
+                  "range": [
+                    0.007,
+                    0.076
+                  ]
+                },
+                {
+                  "mean": 0.0956,
+                  "sd": 0.028404,
+                  "range": [
+                    0.069,
+                    0.139
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 0.9974,
+                "sd": 0.003782,
+                "range": [
+                  0.991,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "10": {
+              "rate_width": {
+                "mean": 10.21,
+                "sd": 0.0,
+                "range": [
+                  10.21,
+                  10.21
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 10.21,
+                "sd": 0.0,
+                "range": [
+                  10.21,
+                  10.21
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.3806,
+                "sd": 0.014519,
+                "range": [
+                  1.367,
+                  1.405
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.3036,
+                "sd": 0.001817,
+                "range": [
+                  1.301,
+                  1.306
+                ]
+              },
+              "diff": {
+                "mean": 0.077,
+                "sd": 0.014612,
+                "range": [
+                  0.064,
+                  0.101
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0536,
+                  "sd": 0.014993,
+                  "range": [
+                    0.042,
+                    0.079
+                  ]
+                },
+                {
+                  "mean": 0.1024,
+                  "sd": 0.014502,
+                  "range": [
+                    0.09,
+                    0.126
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 1.0,
+                "sd": 0.0,
+                "range": [
+                  1.0,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "20": {
+              "rate_width": {
+                "mean": 20.21,
+                "sd": 0.0,
+                "range": [
+                  20.21,
+                  20.21
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 20.21,
+                "sd": 0.0,
+                "range": [
+                  20.21,
+                  20.21
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.3174,
+                "sd": 0.008264,
+                "range": [
+                  1.307,
+                  1.325
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.2554,
+                "sd": 0.001673,
+                "range": [
+                  1.254,
+                  1.258
+                ]
+              },
+              "diff": {
+                "mean": 0.062,
+                "sd": 0.007483,
+                "range": [
+                  0.053,
+                  0.069
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0462,
+                  "sd": 0.008228,
+                  "range": [
+                    0.036,
+                    0.054
+                  ]
+                },
+                {
+                  "mean": 0.078,
+                  "sd": 0.006442,
+                  "range": [
+                    0.07,
+                    0.083
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 1.0,
+                "sd": 0.0,
+                "range": [
+                  1.0,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            },
+            "30": {
+              "rate_width": {
+                "mean": 30.24,
+                "sd": 0.0,
+                "range": [
+                  30.24,
+                  30.24
+                ]
+              },
+              "rate_rvol_20": {
+                "mean": 30.24,
+                "sd": 0.0,
+                "range": [
+                  30.24,
+                  30.24
+                ]
+              },
+              "ratio_width": {
+                "mean": 1.2708,
+                "sd": 0.012458,
+                "range": [
+                  1.252,
+                  1.28
+                ]
+              },
+              "ratio_rvol_20": {
+                "mean": 1.2138,
+                "sd": 0.002049,
+                "range": [
+                  1.212,
+                  1.216
+                ]
+              },
+              "diff": {
+                "mean": 0.057,
+                "sd": 0.010909,
+                "range": [
+                  0.04,
+                  0.065
+                ]
+              },
+              "diff_ci95": [
+                {
+                  "mean": 0.0438,
+                  "sd": 0.010756,
+                  "range": [
+                    0.027,
+                    0.052
+                  ]
+                },
+                {
+                  "mean": 0.0714,
+                  "sd": 0.011261,
+                  "range": [
+                    0.054,
+                    0.08
+                  ]
+                }
+              ],
+              "diff_positive_rate": {
+                "mean": 1.0,
+                "sd": 0.0,
+                "range": [
+                  1.0,
+                  1.0
+                ]
+              },
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              }
+            }
+          },
+          "a6": {
+            "n_days": {
+              "mean": 244.0,
+              "sd": 0.0,
+              "range": [
+                244,
+                244
+              ]
+            },
+            "date_first": "2025-10-10",
+            "date_last": "2026-10-08",
+            "threshold_first": {
+              "mean": 0.18964,
+              "sd": 0.005442,
+              "range": [
+                0.1823,
+                0.1954
+              ]
+            },
+            "threshold_last": {
+              "mean": 0.30362,
+              "sd": 0.019049,
+              "range": [
+                0.2824,
+                0.3332
+              ]
+            },
+            "change_pct": {
+              "mean": 60.18,
+              "sd": 10.866324,
+              "range": [
+                51.6,
+                79.1
+              ]
+            },
+            "mean_width": {
+              "mean": 0.16216,
+              "sd": 0.003767,
+              "range": [
+                0.1577,
+                0.1666
+              ]
+            }
+          },
+          "a3": {
+            "75": {
+              "overall": {
+                "mean": 28.076,
+                "sd": 0.171988,
+                "range": [
+                  27.94,
+                  28.31
+                ]
+              },
+              "Q1": {
+                "mean": 1.472,
+                "sd": 0.086429,
+                "range": [
+                  1.33,
+                  1.54
+                ]
+              },
+              "Q2": {
+                "mean": 9.758,
+                "sd": 0.342374,
+                "range": [
+                  9.39,
+                  10.16
+                ]
+              },
+              "Q3": {
+                "mean": 32.356,
+                "sd": 0.308432,
+                "range": [
+                  32.12,
+                  32.86
+                ]
+              },
+              "Q4": {
+                "mean": 68.722,
+                "sd": 0.552512,
+                "range": [
+                  67.91,
+                  69.36
+                ]
+              }
+            },
+            "90": {
+              "overall": {
+                "mean": 11.714,
+                "sd": 0.152578,
+                "range": [
+                  11.56,
+                  11.96
+                ]
+              },
+              "Q1": {
+                "mean": 0.552,
+                "sd": 0.114324,
+                "range": [
+                  0.35,
+                  0.62
+                ]
+              },
+              "Q2": {
+                "mean": 1.812,
+                "sd": 0.147547,
+                "range": [
+                  1.56,
+                  1.95
+                ]
+              },
+              "Q3": {
+                "mean": 8.266,
+                "sd": 0.272268,
+                "range": [
+                  8.03,
+                  8.69
+                ]
+              },
+              "Q4": {
+                "mean": 36.22,
+                "sd": 0.891151,
+                "range": [
+                  35.62,
+                  37.79
+                ]
+              }
+            },
+            "95": {
+              "overall": {
+                "mean": 5.908,
+                "sd": 0.105451,
+                "range": [
+                  5.83,
+                  6.07
+                ]
+              },
+              "Q1": {
+                "mean": 0.206,
+                "sd": 0.04669,
+                "range": [
+                  0.14,
+                  0.26
+                ]
+              },
+              "Q2": {
+                "mean": 0.68,
+                "sd": 0.153786,
+                "range": [
+                  0.46,
+                  0.81
+                ]
+              },
+              "Q3": {
+                "mean": 2.672,
+                "sd": 0.217647,
+                "range": [
+                  2.42,
+                  2.94
+                ]
+              },
+              "Q4": {
+                "mean": 20.07,
+                "sd": 0.709613,
+                "range": [
+                  19.44,
+                  21.25
+                ]
+              }
+            }
+          },
+          "a2": {
+            "width_ic": {
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              },
+              "ic_mean": {
+                "mean": 0.16987,
+                "sd": 0.003317,
+                "range": [
+                  0.1648,
+                  0.17371
+                ]
+              },
+              "ic_std": {
+                "mean": 0.21314,
+                "sd": 0.001846,
+                "range": [
+                  0.2102,
+                  0.21521
+                ]
+              },
+              "ic_ir": {
+                "mean": 0.79708,
+                "sd": 0.019098,
+                "range": [
+                  0.7658,
+                  0.8127
+                ]
+              },
+              "t_stat": {
+                "mean": 18.6932,
+                "sd": 0.448211,
+                "range": [
+                  17.959,
+                  19.06
+                ]
+              },
+              "ic_positive_rate": {
+                "mean": 0.82582,
+                "sd": 0.004142,
+                "range": [
+                  0.8218,
+                  0.8327
+                ]
+              }
+            },
+            "rvol20_ic": {
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              },
+              "ic_mean": {
+                "mean": 0.14498,
+                "sd": 0.0,
+                "range": [
+                  0.14498,
+                  0.14498
+                ]
+              },
+              "ic_std": {
+                "mean": 0.19911,
+                "sd": 0.0,
+                "range": [
+                  0.19911,
+                  0.19911
+                ]
+              },
+              "ic_ir": {
+                "mean": 0.7282,
+                "sd": 0.0,
+                "range": [
+                  0.7282,
+                  0.7282
+                ]
+              },
+              "t_stat": {
+                "mean": 17.077,
+                "sd": 0.0,
+                "range": [
+                  17.077,
+                  17.077
+                ]
+              },
+              "ic_positive_rate": {
+                "mean": 0.8091,
+                "sd": 0.0,
+                "range": [
+                  0.8091,
+                  0.8091
+                ]
+              }
+            },
+            "directional_ic": {
+              "n_dates": {
+                "mean": 550.0,
+                "sd": 0.0,
+                "range": [
+                  550,
+                  550
+                ]
+              },
+              "ic_mean": {
+                "mean": 0.029472,
+                "sd": 0.013022,
+                "range": [
+                  0.0128,
+                  0.04316
+                ]
+              },
+              "ic_std": {
+                "mean": 0.169556,
+                "sd": 0.040872,
+                "range": [
+                  0.12873,
+                  0.23785
+                ]
+              },
+              "ic_ir": {
+                "mean": 0.18404,
+                "sd": 0.102916,
+                "range": [
+                  0.0826,
+                  0.3259
+                ]
+              },
+              "t_stat": {
+                "mean": 4.3158,
+                "sd": 2.412825,
+                "range": [
+                  1.938,
+                  7.642
+                ]
+              },
+              "ic_positive_rate": {
+                "mean": 0.57202,
+                "sd": 0.053619,
+                "range": [
+                  0.5255,
+                  0.6309
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

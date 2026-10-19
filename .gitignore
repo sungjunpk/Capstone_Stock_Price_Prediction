@@ -39,3 +39,6 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+
+# 캐글에서 내려받은 압축을 풀어 둔 자리 — outputs/ 로 복사한 뒤의 중복이다
+ktsde_rerun/

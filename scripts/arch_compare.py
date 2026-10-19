@@ -81,7 +81,7 @@ ARCHS: dict[str, dict] = {
 
 
 def arch_config(base: dict, arch: str, *, batch_size: int | None,
-                seed: int | None = None) -> dict:
+                seed: int | None = None, amp: bool = True) -> dict:
     """base 설정에서 **아키텍처와 손실만** 바꾼다. 나머지는 전부 고정 — 그게 통제다.
 
     `seed` 를 주면 시드 민감도 측정용이다. _config_hash 에 seed 가 들어가지 않으므로
@@ -95,6 +95,10 @@ def arch_config(base: dict, arch: str, *, batch_size: int | None,
     if seed is not None:
         c["project"]["seed"] = seed
         tag += f"_seed{seed}"
+    if not amp:
+        # 혼합정밀도를 끈 실행은 켠 실행과 같은 이름이 되면 안 된다 (논문 5.1절)
+        c["training"]["amp"] = False
+        tag += "_fp32"
     c["data"]["checkpoint_suffix"] = tag
     if batch_size:
         c["training"]["batch_size"] = batch_size
@@ -117,12 +121,12 @@ def find_checkpoint(arch: str, base: dict, *, smoke: bool) -> Path | None:
 
 # --------------------------------------------------------------------- 학습
 def do_train(names: list[str], base: dict, *, smoke: bool, epochs: int | None,
-             batch_size: int | None, seed: int | None = None) -> None:
+             batch_size: int | None, seed: int | None = None, amp: bool = True) -> None:
     for i, arch in enumerate(names, 1):
         log.info("=" * 66)
         log.info("[%d/%d] %s — %s", i, len(names), arch, ARCHS[arch]["label"])
         log.info("=" * 66)
-        cfg = arch_config(base, arch, batch_size=batch_size, seed=seed)
+        cfg = arch_config(base, arch, batch_size=batch_size, seed=seed, amp=amp)
         t0 = time.time()
         r = train(cfg, smoke=smoke, max_epochs=epochs)
         log.info(
@@ -293,6 +297,9 @@ def main() -> int:
     ap.add_argument("--months", type=int, default=24, help="백테스트 구간 (기본 최근 2년)")
     ap.add_argument("--seed", type=int,
                     help="config 의 seed 를 덮어쓴다. 체크포인트에 _seedN 태그가 붙는다")
+    ap.add_argument("--no-amp", action="store_true",
+                    help="혼합정밀도를 끈다 (CUDA 기본값이다). 대조군을 제안 모형과 "
+                         "같은 단정밀도로 맞춰 비교할 때 — 체크포인트에 _fp32 가 붙는다")
     args = ap.parse_args()
 
     setup_logging(run_name="arch_compare")
@@ -310,8 +317,8 @@ def main() -> int:
         if unknown:
             log.error("모르는 아키텍처: %s (가능: %s)", unknown, list(ARCHS))
             return 1
-        do_train(names, base, smoke=args.smoke,
-                 epochs=args.epochs, batch_size=args.batch_size, seed=args.seed)
+        do_train(names, base, smoke=args.smoke, epochs=args.epochs,
+                 batch_size=args.batch_size, seed=args.seed, amp=not args.no_amp)
 
     if args.eval is not None:
         names = args.eval or [*ARCHS, "ours"]

@@ -24,7 +24,9 @@
 
 from __future__ import annotations
 
+import argparse
 import json
+import statistics
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -46,11 +48,13 @@ REPORTS = PROJECT_ROOT / "outputs" / "reports"
 QUANTILES = [0.1, 0.5, 0.9]
 QCOLS = ["q10", "q50", "q90"]
 
+# tft·ours 는 <Table 4> 의 시드 42 실행을 쓴다 — 같은 GPU·같은 설정이라 장비가 섞이지
+# 않는다. patchtst 계열은 단일 MPS 실행뿐이므로 그대로 두고 표 주석에 밝힌다.
 MODELS = {
     "patchtst":   "outputs/checkpoints/phase1_7b693204_patchtst.pt",
     "patchtst_q": "outputs/checkpoints/phase1_5263fac6_patchtst_q.pt",
-    "tft":        "outputs/checkpoints/phase1_f5e8f4e4_tft.pt",
-    "ours":       "outputs/checkpoints/phase1_eadf265f.pt",
+    "tft":        "outputs/checkpoints/phase1_f5e8f4e4_tft_seed42.pt",
+    "ours":       "outputs/checkpoints/phase1_b113237e_seed42.pt",
 }
 PERCENTILES = [75, 90, 95]
 
@@ -143,79 +147,150 @@ def matched_rate_compare(p: pd.DataFrame, *, n_boot: int = 1000, seed: int = 42)
     return out
 
 
+def threshold_drift(p: pd.DataFrame, cfg_abstain: dict, *, n_days: int = 244) -> dict:
+    """검정구간 마지막 n_days 의 첫날·마지막날 임계값과 그 구간 평균 폭 (A6).
+
+    임계값은 직전 90일 폭 분포의 분위이므로, 그 값이 오르면 폭이 시장 변동성 상승에
+    반응했다는 뜻이다. 모형 간 상승률을 비교하려고 잰다.
+    """
+    scores = abstain_scores(p, cfg_abstain)
+    dates = p["date"].to_numpy()
+    last = sorted(pd.unique(dates))[-n_days:]
+    first, final = (recent_abstain_threshold(scores, dates, d, cfg_abstain)
+                    for d in (last[0], last[-1]))
+    width = (p["q90"] - p["q10"]).to_numpy()[np.isin(dates, last)]
+    return {
+        "n_days": len(last),
+        "date_first": str(pd.Timestamp(last[0]).date()),
+        "date_last": str(pd.Timestamp(last[-1]).date()),
+        "threshold_first": round(float(first), 4),
+        "threshold_last": round(float(final), 4),
+        "change_pct": round((final / first - 1) * 100, 1),
+        "mean_width": round(float(width.mean()), 4),
+    }
+
+
+SEEDS = [42, 43, 44, 45, 46]
+# 시드가 여러 개 있는 두 구조는 평균·표준편차까지 낸다 — 〈Table 6〉·〈Table 7〉이
+# 한 실행의 값이라는 한계를 지우려고. 체크포인트는 〈Table 4〉와 같은 것들이다.
+SEED_MODELS = {
+    "tft":  "outputs/checkpoints/phase1_f5e8f4e4_tft_seed{}.pt",
+    "ours": "outputs/checkpoints/phase1_b113237e_seed{}.pt",
+}
+
+
+def fold(vals: list):
+    """같은 구조의 기록 여러 개를 잎마다 평균·표준편차·범위로 접는다."""
+    v0 = vals[0]
+    if isinstance(v0, dict):
+        return {k: fold([v[k] for v in vals]) for k in v0}
+    if isinstance(v0, list):
+        return [fold([v[i] for v in vals]) for i in range(len(v0))]
+    if isinstance(v0, str):
+        return v0 if len(set(vals)) == 1 else list(vals)
+    return {"mean": round(statistics.fmean(vals), 6),
+            "sd": round(statistics.stdev(vals), 6) if len(vals) > 1 else 0.0,
+            "range": [min(vals), max(vals)]}
+
+
+def measure(ck: str, cfg: dict, base: dict, *, point: bool) -> dict:
+    """한 체크포인트의 기권·구간 지표 전부 (A1~A6)."""
+    loaded = load_model(find_checkpoint(ck, cfg))
+    bundle = load_features(cfg, loaded)
+    p, _ = predict_split(loaded, bundle, cfg, "test")
+    p = p.dropna(subset=["target"]).copy()
+    p["loss"] = pinball(p)
+    p["abs_err"] = (p["target"] - p["q50"]).abs()
+    p["hit"] = np.sign(p["q50"]) == np.sign(p["target"])
+    rec: dict = {"checkpoint": ck, "n": int(len(p))}
+
+    if not point:
+        # ── A1  기권 대 유지 (운용 설정 percentile)
+        f = abstain_flags(p, base)
+        rec["a1"] = {}
+        for lab, sub in (("abstained", p[f]), ("retained", p[~f])):
+            rec["a1"][lab] = {
+                "n": int(len(sub)),
+                "pinball": round(float(sub["loss"].mean()), 6),
+                "abs_err": round(float(sub["abs_err"].mean()), 6),
+                "hit_rate": round(float(sub["hit"].mean()), 4),
+            }
+        # 날짜별 쌍대 차이로 검정 — 같은 날 종목들은 시장 요인을 공유한다
+        daily = p.assign(ab=f).groupby(["date", "ab"])["loss"].mean().unstack()
+        daily = daily.dropna()
+        if len(daily) > 2:
+            d = (daily[True] - daily[False]).to_numpy()
+            t = d.mean() / (d.std(ddof=1) / np.sqrt(len(d)))
+            rec["a1"]["paired"] = {"n_dates": int(len(d)),
+                                   "mean_diff": round(float(d.mean()), 6),
+                                   "t_stat": round(float(t), 3)}
+
+        # ── A4  점수만 교체한 통제군 (규칙·분위는 동일)
+        fv = abstain_flags(p, base, score_col="rvol_20")
+        rec["a4"] = {}
+        for lab, (fl, sub) in (("width", (f, None)), ("rvol_20", (fv, None))):
+            ab, ke = p[fl], p[~fl]
+            rec["a4"][lab] = {
+                "rate": round(float(fl.mean()) * 100, 2),
+                "pinball_abstained": round(float(ab["loss"].mean()), 6),
+                "pinball_retained": round(float(ke["loss"].mean()), 6),
+                "ratio": round(float(ab["loss"].mean() / ke["loss"].mean()), 3),
+            }
+
+        # ── A5  기권율을 날짜별로 맞춘 비교
+        rec["a5"] = matched_rate_compare(p)
+
+        # ── A6  마지막 12개월 임계값 변화 — 폭이 변동성에 반응하는가
+        rec["a6"] = threshold_drift(p, base)
+
+        # ── A3  임계값 분위 민감도
+        rec["a3"] = {}
+        for pc in PERCENTILES:
+            fp = abstain_flags(p, {**base, "percentile": pc})
+            q = pd.qcut(p["rvol_20"], 4, labels=["Q1", "Q2", "Q3", "Q4"])
+            by = pd.Series(fp, index=p.index).groupby(q, observed=True).mean()
+            rec["a3"][str(pc)] = {
+                "overall": round(float(fp.mean()) * 100, 2),
+                **{k: round(float(v) * 100, 2) for k, v in by.items()},
+            }
+
+    # ── A2  폭 IC 대 단순 변동성 기준
+    tgt = pd.DataFrame({"date": p["date"], "target": p["target"].abs()})
+    rec["a2"] = {
+        "width_ic": rank_ic(tgt.assign(q50=p["q90"] - p["q10"])),
+        "rvol20_ic": rank_ic(tgt.assign(q50=p["rvol_20"])),
+        "directional_ic": rank_ic(p[["date", "q50", "target"]]),
+    }
+    return rec
+
+
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seeds", type=int, nargs="*", default=SEEDS,
+                    help="tft·ours 를 이 시드들로 반복해 평균·표준편차까지 낸다. "
+                         "빈 값을 주면 시드 42 한 실행만 (예전 동작)")
+    args = ap.parse_args()
+
     setup_logging(run_name="abstain_quality")
     cfg = load_config()
     base = dict(cfg["trading"]["abstain"])
     out = {"generated_at": datetime.now().isoformat(timespec="seconds"),
            "recent_days": base.get("recent_days"), "basis": base.get("basis"),
-           "models": {}}
+           "seeds": args.seeds, "models": {}}
 
     for name, ck in MODELS.items():
-        loaded = load_model(find_checkpoint(ck, cfg))
-        bundle = load_features(cfg, loaded)
-        p, _ = predict_split(loaded, bundle, cfg, "test")
-        p = p.dropna(subset=["target"]).copy()
-        p["loss"] = pinball(p)
-        p["abs_err"] = (p["target"] - p["q50"]).abs()
-        p["hit"] = np.sign(p["q50"]) == np.sign(p["target"])
-        rec: dict = {"checkpoint": ck, "n": int(len(p))}
-
         point = name == "patchtst"      # 점 예측 — 폭이 0 이라 기권이 정의되지 않는다
-        if not point:
-            # ── A1  기권 대 유지 (운용 설정 percentile)
-            f = abstain_flags(p, base)
-            rec["a1"] = {}
-            for lab, sub in (("abstained", p[f]), ("retained", p[~f])):
-                rec["a1"][lab] = {
-                    "n": int(len(sub)),
-                    "pinball": round(float(sub["loss"].mean()), 6),
-                    "abs_err": round(float(sub["abs_err"].mean()), 6),
-                    "hit_rate": round(float(sub["hit"].mean()), 4),
-                }
-            # 날짜별 쌍대 차이로 검정 — 같은 날 종목들은 시장 요인을 공유한다
-            daily = p.assign(ab=f).groupby(["date", "ab"])["loss"].mean().unstack()
-            daily = daily.dropna()
-            if len(daily) > 2:
-                d = (daily[True] - daily[False]).to_numpy()
-                t = d.mean() / (d.std(ddof=1) / np.sqrt(len(d)))
-                rec["a1"]["paired"] = {"n_dates": int(len(d)),
-                                       "mean_diff": round(float(d.mean()), 6),
-                                       "t_stat": round(float(t), 3)}
-
-            # ── A4  점수만 교체한 통제군 (규칙·분위는 동일)
-            fv = abstain_flags(p, base, score_col="rvol_20")
-            rec["a4"] = {}
-            for lab, (fl, sub) in (("width", (f, None)), ("rvol_20", (fv, None))):
-                ab, ke = p[fl], p[~fl]
-                rec["a4"][lab] = {
-                    "rate": round(float(fl.mean()) * 100, 2),
-                    "pinball_abstained": round(float(ab["loss"].mean()), 6),
-                    "pinball_retained": round(float(ke["loss"].mean()), 6),
-                    "ratio": round(float(ab["loss"].mean() / ke["loss"].mean()), 3),
-                }
-
-            # ── A5  기권율을 날짜별로 맞춘 비교
-            rec["a5"] = matched_rate_compare(p)
-
-            # ── A3  임계값 분위 민감도
-            rec["a3"] = {}
-            for pc in PERCENTILES:
-                fp = abstain_flags(p, {**base, "percentile": pc})
-                q = pd.qcut(p["rvol_20"], 4, labels=["Q1", "Q2", "Q3", "Q4"])
-                by = pd.Series(fp, index=p.index).groupby(q, observed=True).mean()
-                rec["a3"][str(pc)] = {
-                    "overall": round(float(fp.mean()) * 100, 2),
-                    **{k: round(float(v) * 100, 2) for k, v in by.items()},
-                }
-
-        # ── A2  폭 IC 대 단순 변동성 기준
-        tgt = pd.DataFrame({"date": p["date"], "target": p["target"].abs()})
-        rec["a2"] = {
-            "width_ic": rank_ic(tgt.assign(q50=p["q90"] - p["q10"])),
-            "rvol20_ic": rank_ic(tgt.assign(q50=p["rvol_20"])),
-            "directional_ic": rank_ic(p[["date", "q50", "target"]]),
-        }
+        rec = measure(ck, cfg, base, point=point)
+        if name in SEED_MODELS and len(args.seeds) > 1:
+            runs = []
+            for sd in args.seeds:
+                path = SEED_MODELS[name].format(sd)
+                r = rec if path == ck else measure(path, cfg, base, point=point)
+                runs.append({"seed": sd, **r})
+                log.info("%s seed %d 완료", name, sd)
+            rec["seeds"] = {"n": len(runs), "runs": runs,
+                            "agg": fold([{k: v for k, v in r.items() if k != "seed"}
+                                         for r in runs])}
         out["models"][name] = rec
         log.info("%s 완료", name)
 

@@ -4,9 +4,10 @@
 검증구간은 조기종료 판정에도 쓰이므로 그 값만으로 정확도를 주장하면 약하다.
 Diebold-Mariano 검정을 원고에서 뺀 뒤 검정구간 비교가 사라지는 것을 메운다.
 
-네 모형을 **같은 장비(MPS)·같은 패널**에서 평가하는 것이 요점이다. 제안 모형의
-공개 체크포인트는 외부 GPU 혼합정밀도 실행이라 대조군(MPS)과 섞이므로,
-`scripts/train.py --seed 42` 로 로컬에서 다시 학습한 것을 쓴다.
+⚠️ 이 스크립트는 `scripts/seed_aggregate.py` 로 대체되었다. Table 4 의 Test 열은
+5시드 집계(`outputs/reports/seed_aggregate_20261019_043046.json`)에서 나온다.
+여기 `ours` 가 가리키는 파일은 원래 로컬 MPS 재학습본이었으나 2026-10-19 에 같은
+이름의 캐글 실행본으로 교체되었다 — 더 이상 MPS 대조가 아니다.
 
 사용: python scripts/test_pinball.py
 """
@@ -36,7 +37,7 @@ MODELS = {
     "patchtst":   "outputs/checkpoints/phase1_7b693204_patchtst.pt",
     "patchtst_q": "outputs/checkpoints/phase1_5263fac6_patchtst_q.pt",
     "tft":        "outputs/checkpoints/phase1_f5e8f4e4_tft.pt",
-    "ours_mps":   "outputs/checkpoints/phase1_b113237e_seed42.pt",
+    "ours":       "outputs/checkpoints/phase1_b113237e_seed42.pt",
 }
 
 

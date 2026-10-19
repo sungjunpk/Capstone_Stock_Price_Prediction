@@ -33,6 +33,8 @@ def main() -> int:
     ap.add_argument("--lr", type=float)
     ap.add_argument("--profile", help="config 의 profiles.<이름> 을 덮어쓴다 (예: intraday)")
     ap.add_argument("--seed", type=int, help="config 의 seed 를 덮어쓴다 (시드 민감도 측정용)")
+    ap.add_argument("--tag", help="체크포인트 접미사에 덧붙인다 — 같은 설정·같은 시드의 다른 실행이 "
+                                  "서로를 덮어쓰지 않게 한다 (예: --tag mps_fp32)")
     args = ap.parse_args()
 
     setup_logging(run_name="train")
@@ -51,6 +53,10 @@ def main() -> int:
             cfg["data"].get("processed_suffix", "") + f"_seed{args.seed}")
         log.info("seed %d — 체크포인트에 _seed%d 태그를 붙인다 (실주문 경로 격리)",
                  args.seed, args.seed)
+    if args.tag:
+        cfg["data"]["checkpoint_suffix"] = (
+            cfg["data"].get("checkpoint_suffix", cfg["data"].get("processed_suffix", ""))
+            + f"_{args.tag}")
 
     report = train(cfg, smoke=args.smoke, max_epochs=args.epochs)
 

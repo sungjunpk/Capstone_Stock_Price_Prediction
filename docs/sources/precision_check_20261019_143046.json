@@ -1,0 +1,334 @@
+{
+  "generated_at": "2026-10-19T14:30:46",
+  "purpose": "혼합정밀도가 대조군 TFT 에 불리한지 — 같은 표본에서 fp32 체크포인트를 재평가한다",
+  "why": "src/training/train.py:70 use_amp() 는 CUDA 에서만 True 다. <Table 4> 의 5시드는 GPU 혼합정밀도이고, MPS 실행은 fp32 다. 정밀도 설정이 두 구조에 같은 영향을 주는지 확인하지 않으면 검정구간 격차 2.2배가 설정 효과일 수 있다.",
+  "device": "mps",
+  "amp": false,
+  "n_seeds_each": 1,
+  "pinball": "세 분위 평균 (합/3)",
+  "sample": {
+    "val": 23086,
+    "test": 106490,
+    "freeze_report": "freeze_panel_20261018.json"
+  },
+  "fp32": {
+    "ours_fp32": {
+      "checkpoint": "phase1_b113237e_seed42_mps_fp32.pt",
+      "val_loss_in_checkpoint": 0.011902766034159079,
+      "best_epoch": 7,
+      "val": {
+        "n": 23086,
+        "pinball": 0.011903,
+        "baseline": 0.012175,
+        "improvement_pct": 2.234
+      },
+      "test": {
+        "n": 106490,
+        "pinball": 0.01777,
+        "baseline": 0.018754,
+        "improvement_pct": 5.245
+      }
+    },
+    "tft_fp32": {
+      "checkpoint": "phase1_f5e8f4e4_tft.pt",
+      "val_loss_in_checkpoint": 0.011892635285057839,
+      "best_epoch": 2,
+      "val": {
+        "n": 23086,
+        "pinball": 0.011893,
+        "baseline": 0.012175,
+        "improvement_pct": 2.314
+      },
+      "test": {
+        "n": 106490,
+        "pinball": 0.018134,
+        "baseline": 0.018754,
+        "improvement_pct": 3.303
+      }
+    },
+    "patchtst_q": {
+      "checkpoint": "phase1_5263fac6_patchtst_q.pt",
+      "val_loss_in_checkpoint": 0.01214264326305376,
+      "best_epoch": 5,
+      "val": {
+        "n": 23086,
+        "pinball": 0.012143,
+        "baseline": 0.012175,
+        "improvement_pct": 0.264
+      },
+      "test": {
+        "n": 106490,
+        "pinball": 0.018332,
+        "baseline": 0.018754,
+        "improvement_pct": 2.249
+      }
+    }
+  },
+  "amp_reference": {
+    "source": "seed_aggregate_20261019_043046.json (GPU, 혼합정밀도, 5시드 평균)",
+    "ours": {
+      "stem": "phase1_b113237e",
+      "runs": [
+        {
+          "seed": 42,
+          "checkpoint": "phase1_b113237e_seed42.pt",
+          "val_loss_in_checkpoint": 0.011872920997645427,
+          "best_epoch": 10,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011873,
+            "baseline": 0.012175,
+            "improvement_pct": 2.479
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017895,
+            "baseline": 0.018754,
+            "improvement_pct": 4.58
+          }
+        },
+        {
+          "seed": 43,
+          "checkpoint": "phase1_b113237e_seed43.pt",
+          "val_loss_in_checkpoint": 0.01188697685366302,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011887,
+            "baseline": 0.012175,
+            "improvement_pct": 2.364
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.01783,
+            "baseline": 0.018754,
+            "improvement_pct": 4.923
+          }
+        },
+        {
+          "seed": 44,
+          "checkpoint": "phase1_b113237e_seed44.pt",
+          "val_loss_in_checkpoint": 0.011903888958502333,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011904,
+            "baseline": 0.012175,
+            "improvement_pct": 2.225
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017859,
+            "baseline": 0.018754,
+            "improvement_pct": 4.771
+          }
+        },
+        {
+          "seed": 45,
+          "checkpoint": "phase1_b113237e_seed45.pt",
+          "val_loss_in_checkpoint": 0.011884448707452602,
+          "best_epoch": 5,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011884,
+            "baseline": 0.012175,
+            "improvement_pct": 2.384
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017739,
+            "baseline": 0.018754,
+            "improvement_pct": 5.411
+          }
+        },
+        {
+          "seed": 46,
+          "checkpoint": "phase1_b113237e_seed46.pt",
+          "val_loss_in_checkpoint": 0.01189551732577832,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011896,
+            "baseline": 0.012175,
+            "improvement_pct": 2.293
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017808,
+            "baseline": 0.018754,
+            "improvement_pct": 5.041
+          }
+        }
+      ],
+      "val": {
+        "n_seeds": 5,
+        "pinball_mean": 0.011889,
+        "pinball_sd": 1.2e-05,
+        "pinball_range": [
+          0.011873,
+          0.011904
+        ],
+        "improvement_pct_mean": 2.349,
+        "best_epoch_range": [
+          2,
+          10
+        ]
+      },
+      "test": {
+        "n_seeds": 5,
+        "pinball_mean": 0.017826,
+        "pinball_sd": 5.9e-05,
+        "pinball_range": [
+          0.017739,
+          0.017895
+        ],
+        "improvement_pct_mean": 4.945,
+        "best_epoch_range": [
+          2,
+          10
+        ]
+      }
+    },
+    "tft": {
+      "stem": "phase1_f5e8f4e4_tft",
+      "runs": [
+        {
+          "seed": 42,
+          "checkpoint": "phase1_f5e8f4e4_tft_seed42.pt",
+          "val_loss_in_checkpoint": 0.011924691017127169,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011925,
+            "baseline": 0.012175,
+            "improvement_pct": 2.054
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018205,
+            "baseline": 0.018754,
+            "improvement_pct": 2.927
+          }
+        },
+        {
+          "seed": 43,
+          "checkpoint": "phase1_f5e8f4e4_tft_seed43.pt",
+          "val_loss_in_checkpoint": 0.011925244800950406,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011925,
+            "baseline": 0.012175,
+            "improvement_pct": 2.049
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018405,
+            "baseline": 0.018754,
+            "improvement_pct": 1.858
+          }
+        },
+        {
+          "seed": 44,
+          "checkpoint": "phase1_f5e8f4e4_tft_seed44.pt",
+          "val_loss_in_checkpoint": 0.011969870138112373,
+          "best_epoch": 1,
+          "val": {
+            "n": 23086,
+            "pinball": 0.01197,
+            "baseline": 0.012175,
+            "improvement_pct": 1.683
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018257,
+            "baseline": 0.018754,
+            "improvement_pct": 2.649
+          }
+        },
+        {
+          "seed": 45,
+          "checkpoint": "phase1_f5e8f4e4_tft_seed45.pt",
+          "val_loss_in_checkpoint": 0.01192244873502772,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011922,
+            "baseline": 0.012175,
+            "improvement_pct": 2.072
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018353,
+            "baseline": 0.018754,
+            "improvement_pct": 2.134
+          }
+        },
+        {
+          "seed": 46,
+          "checkpoint": "phase1_f5e8f4e4_tft_seed46.pt",
+          "val_loss_in_checkpoint": 0.011934458109936085,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011934,
+            "baseline": 0.012175,
+            "improvement_pct": 1.974
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018407,
+            "baseline": 0.018754,
+            "improvement_pct": 1.849
+          }
+        }
+      ],
+      "val": {
+        "n_seeds": 5,
+        "pinball_mean": 0.011935,
+        "pinball_sd": 2e-05,
+        "pinball_range": [
+          0.011922,
+          0.01197
+        ],
+        "improvement_pct_mean": 1.966,
+        "best_epoch_range": [
+          1,
+          2
+        ]
+      },
+      "test": {
+        "n_seeds": 5,
+        "pinball_mean": 0.018325,
+        "pinball_sd": 9.1e-05,
+        "pinball_range": [
+          0.018205,
+          0.018407
+        ],
+        "improvement_pct_mean": 2.283,
+        "best_epoch_range": [
+          1,
+          2
+        ]
+      }
+    }
+  },
+  "summary": {
+    "test_improvement_pct": {
+      "fp32": {
+        "ours_fp32": 5.245,
+        "tft_fp32": 3.303,
+        "patchtst_q": 2.249
+      },
+      "amp_5seed_mean": {
+        "ours": 4.945,
+        "tft": 2.283
+      }
+    },
+    "ratio_ours_over_tft": {
+      "fp32": 1.59,
+      "amp": 2.17
+    },
+    "finding": "fp32 에서도 검정구간 순서는 ours > TFT > PatchTST+분위 로 유지된다. 다만 배율이 1.59배로 좁아진다. TFT 의 fp32 검증값 0.011893 은 혼합정밀도 5시드 최저값 0.011922 보다 낮고, ours 의 fp32 검증값 0.011903 은 혼합정밀도 범위 [0.011873, 0.011904] 안에 있다 — 혼합정밀도는 TFT 에만 불리하게 작용한다."
+  }
+}
