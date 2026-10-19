@@ -77,6 +77,22 @@ ARCHS: dict[str, dict] = {
         "loss": "pinball",
         "note": "매크로를 채널당 토큰 하나로. 종목 경로는 패치 그대로",
     },
+    # 구성요소 제거 실험 — 하나만 빼고 나머지는 우리 모델 그대로
+    "abl_linear": {
+        "label": "제거: 변수선택망 → 선형 합치기",
+        "loss": "pinball",
+        "note": "종목 채널을 Linear(C·d→d) 로 합친다. 정적 문맥은 결합 뒤 더하기로 남는다",
+    },
+    "abl_nomacro": {
+        "label": "제거: 매크로 크로스어텐션",
+        "loss": "pinball",
+        "note": "매크로 경로와 크로스어텐션을 뺀다",
+    },
+    "abl_nostatic": {
+        "label": "제거: 정적 문맥",
+        "loss": "pinball",
+        "note": "문맥 0 — 변수선택 조건화와 결합 뒤 더하기가 모두 꺼진다",
+    },
 }
 
 

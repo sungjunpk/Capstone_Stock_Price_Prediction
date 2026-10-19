@@ -1,0 +1,209 @@
+{
+  "generated_at": "2026-10-19T15:33:56",
+  "model": "sklearn HistGradientBoostingRegressor(loss='quantile'), 분위별 1개",
+  "features": {
+    "n": 136,
+    "lags": [
+      1,
+      5,
+      20
+    ]
+  },
+  "trees_per_quantile": {
+    "q10": 75,
+    "q50": 25,
+    "q90": 275
+  },
+  "sample_from": "outputs/checkpoints/phase1_b113237e_seed42.pt",
+  "accuracy": {
+    "val": {
+      "n": 23086,
+      "pinball": 0.01189,
+      "baseline": 0.012175,
+      "improvement_pct": 2.338,
+      "crossings_sorted": 0
+    },
+    "test": {
+      "n": 106490,
+      "pinball": 0.018107,
+      "baseline": 0.018757,
+      "improvement_pct": 3.465,
+      "crossings_sorted": 0
+    }
+  },
+  "abstain": {
+    "checkpoint": "gbdt_quantile",
+    "n": 106490,
+    "a1": {
+      "abstained": {
+        "n": 5711,
+        "pinball": 0.02622,
+        "abs_err": 0.07941,
+        "hit_rate": 0.56
+      },
+      "retained": {
+        "n": 100779,
+        "pinball": 0.017647,
+        "abs_err": 0.05177,
+        "hit_rate": 0.56
+      },
+      "paired": {
+        "n_dates": 541,
+        "mean_diff": 0.008851,
+        "t_stat": 16.728
+      }
+    },
+    "a4": {
+      "width": {
+        "rate": 5.36,
+        "pinball_abstained": 0.02622,
+        "pinball_retained": 0.017647,
+        "ratio": 1.486
+      },
+      "rvol_20": {
+        "rate": 5.66,
+        "pinball_abstained": 0.02421,
+        "pinball_retained": 0.01774,
+        "ratio": 1.365
+      }
+    },
+    "a5": {
+      "2": {
+        "rate_width": 2.07,
+        "rate_rvol_20": 2.07,
+        "ratio_width": 1.592,
+        "ratio_rvol_20": 1.494,
+        "diff": 0.098,
+        "diff_ci95": [
+          0.026,
+          0.164
+        ],
+        "diff_positive_rate": 0.998,
+        "n_dates": 550
+      },
+      "5": {
+        "rate_width": 5.16,
+        "rate_rvol_20": 5.16,
+        "ratio_width": 1.458,
+        "ratio_rvol_20": 1.402,
+        "diff": 0.056,
+        "diff_ci95": [
+          0.01,
+          0.098
+        ],
+        "diff_positive_rate": 0.991,
+        "n_dates": 550
+      },
+      "6": {
+        "rate_width": 6.2,
+        "rate_rvol_20": 6.2,
+        "ratio_width": 1.447,
+        "ratio_rvol_20": 1.376,
+        "diff": 0.071,
+        "diff_ci95": [
+          0.033,
+          0.107
+        ],
+        "diff_positive_rate": 1.0,
+        "n_dates": 550
+      },
+      "10": {
+        "rate_width": 10.21,
+        "rate_rvol_20": 10.21,
+        "ratio_width": 1.402,
+        "ratio_rvol_20": 1.316,
+        "diff": 0.086,
+        "diff_ci95": [
+          0.056,
+          0.116
+        ],
+        "diff_positive_rate": 1.0,
+        "n_dates": 550
+      },
+      "20": {
+        "rate_width": 20.21,
+        "rate_rvol_20": 20.21,
+        "ratio_width": 1.355,
+        "ratio_rvol_20": 1.269,
+        "diff": 0.086,
+        "diff_ci95": [
+          0.065,
+          0.105
+        ],
+        "diff_positive_rate": 1.0,
+        "n_dates": 550
+      },
+      "30": {
+        "rate_width": 30.24,
+        "rate_rvol_20": 30.24,
+        "ratio_width": 1.312,
+        "ratio_rvol_20": 1.231,
+        "diff": 0.081,
+        "diff_ci95": [
+          0.065,
+          0.099
+        ],
+        "diff_positive_rate": 1.0,
+        "n_dates": 550
+      }
+    },
+    "a6": {
+      "n_days": 244,
+      "date_first": "2025-10-10",
+      "date_last": "2026-10-08",
+      "threshold_first": 0.1601,
+      "threshold_last": 0.1977,
+      "change_pct": 23.5,
+      "mean_width": 0.1382
+    },
+    "a3": {
+      "75": {
+        "overall": 26.14,
+        "Q1": 0.74,
+        "Q2": 10.04,
+        "Q3": 34.6,
+        "Q4": 59.17
+      },
+      "90": {
+        "overall": 10.6,
+        "Q1": 0.06,
+        "Q2": 1.61,
+        "Q3": 10.56,
+        "Q4": 30.15
+      },
+      "95": {
+        "overall": 5.36,
+        "Q1": 0.0,
+        "Q2": 0.42,
+        "Q3": 3.98,
+        "Q4": 17.04
+      }
+    },
+    "a2": {
+      "width_ic": {
+        "n_dates": 550,
+        "ic_mean": 0.1886,
+        "ic_std": 0.1906,
+        "ic_ir": 0.9895,
+        "t_stat": 23.205,
+        "ic_positive_rate": 0.8527
+      },
+      "rvol20_ic": {
+        "n_dates": 550,
+        "ic_mean": 0.14498,
+        "ic_std": 0.19911,
+        "ic_ir": 0.7282,
+        "t_stat": 17.077,
+        "ic_positive_rate": 0.8091
+      },
+      "directional_ic": {
+        "n_dates": 550,
+        "ic_mean": 0.02514,
+        "ic_std": 0.16329,
+        "ic_ir": 0.154,
+        "t_stat": 3.611,
+        "ic_positive_rate": 0.5473
+      }
+    }
+  }
+}

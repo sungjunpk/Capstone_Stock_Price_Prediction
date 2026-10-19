@@ -89,6 +89,17 @@ def apply_cqr(p: pd.DataFrame, e: float) -> pd.DataFrame:
     return out
 
 
+def cqr_additive(cal: pd.DataFrame, alpha: float) -> float:
+    """원 논문(Romano et al. 2019)의 가법 CQR — 구간 양끝에 같은 상수를 더한다.
+
+    적합도 점수 E_i = max(q10-y, y-q90) 의 (1-alpha) 분위. 폭에 상수 2E 가 더해지므로
+    폭의 순서는 그대로다.
+    """
+    e = np.maximum(cal["q10"] - cal["target"], cal["target"] - cal["q90"])
+    n = len(e)
+    return float(e.quantile(min(np.ceil((n + 1) * (1 - alpha)) / n, 1.0)))
+
+
 def width_predictive_power(p: pd.DataFrame) -> dict:
     """폭이 실현 변동성을 맞히는가 — 방향 IC 와 같은 함수로 잰다.
 
@@ -131,6 +142,8 @@ def main() -> int:
     e = cqr_scale(val, args.alpha)
     test_cal = apply_cqr(test, e)
     after = coverage_stats(test_cal)
+    e_add = cqr_additive(val, args.alpha)
+    after_add = coverage_stats(test.assign(q10=test["q10"] - e_add, q90=test["q90"] + e_add))
 
     # 보정이 기권 선택을 바꾸는가 — 순서가 보존되면 안 바뀌어야 한다
     acfg = cfg["trading"]["abstain"]
@@ -152,6 +165,8 @@ def main() -> int:
         "coverage_before": before,
         "cqr_scale_from_val": round(e, 4),
         "coverage_after_test": after,
+        "cqr_additive_from_val": round(e_add, 5),
+        "coverage_after_test_additive": after_add,
         "abstain_selection_unchanged": same,
         "width_rank_correlation": round(rank_corr, 6),
         "width_rank_ic": width_ic,
@@ -175,6 +190,8 @@ def main() -> int:
     print(f"\n  CQR 보정계수(val 에서): {e:+.4f} → test 커버리지 "
           f"{before['test']['coverage']:.1%} → {after['coverage']:.1%} "
           f"(평균 폭 {before['test']['width_mean']:.4f} → {after['width_mean']:.4f})")
+    print(f"  가법 CQR 상수(val 에서): {e_add:+.5f} → test 커버리지 "
+          f"{after_add['coverage']:.1%} (평균 폭 {after_add['width_mean']:.4f})")
     print(f"  기권 선택 변화 없음: {same} (폭 순위상관 {rank_corr:.6f})")
 
     print("\n  방향 vs 폭 — 같은 모델, 같은 평가 함수")

@@ -198,6 +198,11 @@ def measure(ck: str, cfg: dict, base: dict, *, point: bool) -> dict:
     loaded = load_model(find_checkpoint(ck, cfg))
     bundle = load_features(cfg, loaded)
     p, _ = predict_split(loaded, bundle, cfg, "test")
+    return measure_preds(p, ck, base, point=point)
+
+
+def measure_preds(p: pd.DataFrame, ck: str, base: dict, *, point: bool) -> dict:
+    """예측 표(code·date·q10·q50·q90·target·rvol_20)만으로 A1~A6 — 다른 모형도 같은 코드로 잰다."""
     p = p.dropna(subset=["target"]).copy()
     p["loss"] = pinball(p)
     p["abs_err"] = (p["target"] - p["q50"]).abs()

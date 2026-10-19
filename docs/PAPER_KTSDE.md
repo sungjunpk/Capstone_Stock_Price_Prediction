@@ -35,9 +35,9 @@ validation split that early stopping had used and the test split that it had not
 3.8 times and running inference 4.8 times faster and using 5.1 times less activation memory. Its
 prediction intervals widened in volatile markets, so withheld decisions concentrated there. The
 withheld forecasts carried about 1.5 times the error of those acted on, a sharper separation than
-a simple volatility rule achieved. Its directional accuracy was lower than that of a tree-based
-baseline. The model is therefore better suited to
-deciding when not to act than to picking stocks. Because the evaluation period informed parts of
+a simple volatility rule achieved. A quantile gradient-boosting baseline matched it on validation
+and in how well its intervals chose what to withhold, so that property is not unique to the
+transformer; on the test split the proposed model kept the lower loss. Because the evaluation period informed parts of
 the design, the figures are not fully out of sample. Section 6 states this and the remaining
 limitations.
 
@@ -66,9 +66,9 @@ TFT의 분위 예측 기능과 변수선택망을 결합한 경량 모형을 제
 TFT보다 각각 3.8배, 4.8배 짧았고 메모리는 5.1배 적었다. 시장
 변동성이 클수록 예측 구간이 넓어져, 판단 보류는 변동성 최상위 25% 후보의 20.1%, 최하위 25% 후보의 0.2%에서
 일어났다. 보류된 예측의 오차는 실행된 예측의 약 1.5배로, 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를
-잘 걸러냈다. 다만 오르내림 방향을 맞히는 능력은 트리
-기반 기준모형보다 낮았다. 따라서 제안 모형은 종목을 고르는 용도보다 판단을 미룰 시점을 정하는 용도에
-적합하다. 평가 기간 자료가 입력 설계와 기권 기준 선택에 참고되었으므로 보고 수치는 완전한 사후 검증 값이
+잘 걸러냈다. 분위 손실로 학습한 그래디언트 부스팅
+기준모형도 검증구간 오차와 보류 품질에서 제안 모형과 대등하여 이 성질은 트랜스포머에 고유하지 않았으나,
+평가구간 오차는 제안 모형이 더 작았다. 평가 기간 자료가 입력 설계와 기권 기준 선택에 참고되었으므로 보고 수치는 완전한 사후 검증 값이
 아니며, 이를 포함한 한계는 6장에서 다룬다.
 
 **키워드 :** 시계열 트랜스포머, 분위회귀, 변수선택망, 예측 불확실성, 기권
@@ -154,19 +154,14 @@ RevIN(reversible instance normalization)[11]은 입력 윈도우별 인스턴스
 
 ### 2.4 기준 모형과 본 연구의 위치
 
-매크로 지표를 주입하는 크로스어텐션 모듈은 본 연구에서 직접 설계하였다. 구체적으로 종목 시퀀스를
-질의로, 매크로 시퀀스를 키·값으로 두었다. 외생변수를 어텐션으로 주입하는 발상 자체는
-새롭지 않다. TimeXer[14]가 같은 문제를 다루었으며, 외생 변수를 변수 단위 토큰으로 요약해 내생 패치 토큰과
-교차시킨다. 본 연구의 모듈은 매크로 시퀀스를 패치 단위로 유지한 채 키와 값으로 둔다는 점이 다르다.
-
 1장에서 언급한 금융 시계열 딥러닝 연구[1] 가운데, 장단기기억 신경망으로 미국 주식의 방향을 예측한
-연구[15]와 다수의 머신러닝 기법을 자산가격 결정에 적용한 연구[16]가 대표적이다. 국내에서는 해외지수와
-투자자별 매매 동향을 입력으로 삼은 등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[17]가 보고되었다.
+연구[14]와 다수의 머신러닝 기법을 자산가격 결정에 적용한 연구[15]가 대표적이다. 국내에서는 해외지수와
+투자자별 매매 동향을 입력으로 삼은 등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[16]가 보고되었다.
 본 연구는 [2]와 마찬가지로 해외지수와 투자자 수급을 입력에 포함하되, 이를 별도 경로의 크로스어텐션으로
 주입하고 예측을 점이 아니라 분포로 산출한다는 점이 다르다.
 
 잘 조정된 단순 기준모형과의 비교가 부재하다는 점은 이 분야 문헌의 공통 약점이므로, 본 연구는 동일 조건의
-그래디언트 부스팅 기준모형을 함께 측정하여 그 결과를 6장의 한계에 밝혔다.
+그래디언트 부스팅 기준모형을 함께 측정하여 5장에 보고한다.
 
 ## 3. 연구 방법
 
@@ -216,7 +211,10 @@ in this work (teal) and the static context path (orange).
 
 #### 2) 매크로 크로스어텐션의 방향
 
-종목 표현을 질의로, 매크로 부호화를 키·값으로 설정하였다(식 4).
+매크로 지표를 주입하는 크로스어텐션 모듈은 본 연구에서 직접 설계하였다. 외생변수를 어텐션으로 주입하는
+발상 자체는 새롭지 않다. TimeXer[17]가 같은 문제를 다루었으며, 외생 변수를 변수 단위 토큰으로 요약해 내생
+패치 토큰과 교차시킨다. 본 연구의 모듈은 매크로 시퀀스를 패치 단위로 유지한 채 키와 값으로 둔다는 점이
+다르다. 종목 표현을 질의로, 매크로 부호화를 키·값으로 설정하였다(식 4).
 
 &nbsp;&nbsp;&nbsp;&nbsp;CrossAttn(*Z*, *H*_{m}) = softmax[ (*Z W*_{Q})(*H*_{m} *W*_{K})^{T} ∕ √*d*_{k} ] (*H*_{m} *W*_{V})&nbsp;&nbsp;&nbsp;&nbsp;(4)
 
@@ -310,7 +308,7 @@ Table 3. Input channels
 비교하는 모든 모형에 동일한 규칙을 적용한다. 예측 구간의 폭이 최근 분포의 일정 분위를 넘으면 기권한다.
 '최근 분포'는 판단일부터 거슬러 달력 90일, 거래일로는 약 60일 안에 들어온 폭을 모은 것이며, 종목별로 나누지
 않고 전 종목을 합친 분포다. 구간 전체의 폭 분포를 쓰면 뒤쪽 날짜의 폭이 앞쪽 날짜의 기권 판단에 흘러들어
-look-ahead가 생기기 때문이고, 모의투자에서 실제로 쓰는 방식과도 같다.
+미래 정보가 유입되기 때문이고, 모의투자에서 실제로 쓰는 방식과도 같다.
 
 ## 5. 실험 결과
 
@@ -322,12 +320,13 @@ look-ahead가 생기기 때문이고, 모의투자에서 실제로 쓰는 방식
 비교이다. 초매개변수는 제안 모형에 맞추어 조정된 값을 대조군에 동일하게 적용하였으므로 대조군의
 최적값이 아니다.
 
-Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42-46 with the standard deviation). TFT and the proposed model were trained on one GPU under identical mixed-precision settings; the PatchTST row is a single run. The unconditional-quantile baseline is 0.012175 on validation and 0.018754 on test. In a matched single-precision comparison, one run each, the test improvements are +5.25%, +3.30% and +2.25%, so the ordering is unchanged. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
+Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42-46 with the standard deviation). TFT and the proposed model were trained on one GPU under identical mixed-precision settings; the PatchTST row is a single single-precision run on Mac MPS, the same run that enters the single-precision comparison below. The quantile gradient-boosting row is a single run, since the fit has no random component. The unconditional-quantile baseline is 0.012175 on validation and 0.018754 on test. With all three models in single precision, one run each, the test improvements are +5.25% for the proposed model, +3.30% for TFT and +2.25% for PatchTST with the quantile head, so the ordering is unchanged. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
 
 | Model | Params | Validation | vs baseline | Test | vs baseline | Best epoch |
 |---|---|---|---|---|---|---|
 | PatchTST + quantile head | 0.035M | 0.012143 | +0.26% | 0.018332 | +2.25% | 5 |
 | TFT, original | 0.687M | 0.011935 ± 0.000020 | +1.97% | 0.018325 ± 0.000091 | +2.28% | 1-2 |
+| Quantile GBDT | 375 trees | 0.011890 | +2.34% | 0.018107 | +3.45% | - |
 | **Ours (PatchTST x TFT)** | 0.500M | 0.011889 ± 0.000012 | +2.35% | **0.017826 ± 0.000059** | **+4.95%** | 2-10 |
 
 제안 모형은 두 구간 모두에서 TFT 원본보다 손실이 낮았고, 다섯 시드를 짝지은 열 번의 비교 전부에서 그러하였다
@@ -343,6 +342,12 @@ PatchTST는 검증구간 +0.26%로 상수 예측을 간신히 상회하는 데 �
 함께 필요하다는 점을 보여준다. 격차가 검정구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
 1~2회차에서 최적값에 도달한 뒤 과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다. 다만
 격차의 일부는 수치 정밀도 설정에서 오며, 단정밀도로 맞추면 줄어든다(<Table 4> 캡션).
+
+트리 계열 기준모형으로 분위 손실을 쓰는 히스토그램 그래디언트 부스팅(LightGBM[18]의 방식을 따른
+scikit-learn 구현)을 같은 분할과 같은 윈도우 표본에서 평가하였다. 입력은 동적 30채널의 당일 값과 1·5·20일
+시차, 매크로 13채널, 정적 범주형 3종의 136개이고, 분위마다 모형을 하나씩 두어 검증구간 손실로 트리 수를
+정하였다(75·25·275개). 검증구간 손실은 제안 모형과 같았고(0.011890 대 0.011889), 검정구간 손실은 TFT
+원본보다 작고 제안 모형보다 컸다. 제안 모형의 다섯 시드는 모두 이 값보다 낮았다(최대 0.017895 대 0.018107).
 
 ### 5.2 계산 비용
 
@@ -375,11 +380,12 @@ its pinball loss falls far below the plotted range.
 세 분위 모형에 4.4절의 동일한 기권 규칙을 적용하고 검정구간 전체에서 집계하였다. 점 예측 모형은 임계할
 폭이 없어 기권이 정의되지 않으므로 제외하였다.
 
-Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation for TFT and the proposed model and a single run for PatchTST. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks; Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time. Pinball loss is reported separately for abstained and retained candidates
+Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation for TFT and the proposed model and a single run for PatchTST and the quantile GBDT. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks; Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time. Pinball loss is reported separately for abstained and retained candidates
 
 | Model | Abstain | Q1 | Q4 | Pinball, abstained | Pinball, retained |
 |---|---|---|---|---|---|
 | PatchTST + quantile | 4.70% | 0.40% | 12.91% | 0.02387 | 0.01806 |
+| Quantile GBDT | 5.36% | 0.00% | 17.04% | 0.02622 | 0.01765 |
 | TFT, original | 5.28 ± 0.13% | 0.00 ± 0.00% | 16.71 ± 0.41% | 0.02584 ± 0.00104 | 0.01791 ± 0.00014 |
 | **Ours** | 5.91 ± 0.11% | 0.21 ± 0.05% | **20.07 ± 0.71%** | 0.02612 ± 0.00040 | **0.01730 ± 0.00005** |
 
@@ -399,7 +405,10 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 통제군보다 높았고(차이 최소 +0.030, 6%에서 +0.064 ± 0.029), 날짜 블록 부트스트랩 1,000회의 95%
 신뢰구간도 0을 포함하지 않았다. TFT 원본은 2~6% 구간에서 시드에 따라 부호가 바뀌었고, 분위 헤드만 부착한
 모형은 통제군에 미치지 못하였다. 예측 폭이 단순 변동성 지표보다 나은 보류 기준이라는 결과는 분위 헤드를
-부착하는 것만으로는 생기지 않았다.
+부착하는 것만으로는 생기지 않았다. 분위 GBDT의 폭도 같은 비교에서 통제군보다 나았다(6%에서 +0.071, 95%
+신뢰구간 [+0.033, +0.107]). 제안 모형(+0.064 ± 0.029)과 차이가 없으므로 이 성질은 트랜스포머 구조에
+고유하지 않다. 제안 모형에 남는 차이는 최상위 변동성 분위로의 집중(20.07% 대 17.04%)과 남긴 후보의
+손실(0.01730 대 0.01765)이다.
 
 기권율의 절대 수준을 정하는 임계값 분위는 검정구간을 참조하여 선택되었으므로 5.91%라는 값은 표본 밖
 수치가 아니다. 다만 분위를 95에서 90, 75로 낮추면 전체 기권율이 11.71%, 28.08%로 오르는 동안 최상위
@@ -420,7 +429,8 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 날짜 단위 DM 검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 종목당 추론 시간은 4.8배 짧았고,
 활성값 메모리는 5.1배 적었다. 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
 집중되었다. 보류된 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 기권율을 맞춘 비교에서도 최근 변동성만
-보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 하나의 예측값만 내는 기존 패치 기반 모형으로는
+보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 다만 분위 GBDT도 같은 비교에서 대등한 보류 품질을
+보였으므로 이 성질은 트랜스포머 구조에 고유하지 않다. 하나의 예측값만 내는 기존 패치 기반 모형으로는
 이러한 판단 보류 자체를 할 수 없다.
 
 본 연구에는 다음 한계가 있다.
@@ -430,12 +440,14 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 - 유니버스를 현재 시점에서 추출하여 2015년 이후 상장폐지된 기업이 후보가 된 적이 없다. 시가총액 구간은 학습
 종료 시점의 값으로 고정하였으므로 학습 행에는 사후 값이다. 또한 구간을 옮겨 가며 재학습하는 walk-forward
 검증은 수행하지 않았다.
-- 오르내림 방향을 맞히는 능력은 동일 조건의 그래디언트 부스팅 기준모형보다 낮았다(LightGBM[18]의 방식을
-따른 구현, 공통 표본 101,745건에서 랭크 정보계수 +0.0288 대 +0.0197). 제안 모형은 종목을 고르는 데보다
-판단을 미룰 시점을 정하는 데 적합하다.
-- 구간의 절대 교정은 좋지 않다. 명목 80% 구간이 검정구간에서 실제로 포함한 비율은 71.6 ± 0.8%이다. 기권은
-폭의 절대 수준이 아니라 최근 분포 안에서의 상대 순위에 걸려 있어 영향을 받지 않으나, 구간을 신뢰구간으로
-읽어서는 안 된다.
+- 경량화는 트랜스포머 계열 안에서의 비교이다. 분위 GBDT는 검증구간 손실, 방향의 랭크 정보계수(+0.0251 대
++0.0295 ± 0.0130), 보류 품질에서 제안 모형과 대등하였고, 제안 모형의 우위는 검정구간 손실에 한정된다.
+두 계열의 계산 비용은 비교하지 않았다.
+- 구간의 절대 교정은 좋지 않다. 명목 80% 구간이 검정구간에서 실제로 포함한 비율은 71.6 ± 0.8%이다. 검증구간에서
+맞춘 등각 분위회귀(CQR)[13] 보정을 적용해도 73.9 ± 0.5%에 그쳤다. 검증구간의 포함률이 이미 76~78%여서
+보정량이 작았고, 검정구간에서는 실현값이 하위 분위 아래로 떨어진 비율이 명목 10%보다 높은 15~18%였다. 보정
+표본과 평가 표본의 분포가 다르면 CQR의 보장이 성립하지 않는다는 점과 일치한다. 보정은 모든 폭에 같은 상수를
+더하므로 폭의 순위와 기권 결과는 바뀌지 않는다. 그러나 구간을 신뢰구간으로 읽어서는 안 된다.
 
 본 논문의 결과는 과거 자료에 대한 평가이며 투자 권유를 의도하지 않는다. 향후 연구에서는 구성요소를 하나씩
 제거하는 실험으로 개선의 출처를 가리고, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러
@@ -451,7 +463,7 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 
 [4] H. Zhou, S. Zhang, J. Peng, S. Zhang, J. Li, H. Xiong, and W. Zhang, "Informer: Beyond efficient transformer for long sequence time-series forecasting," in Proceedings of the AAAI Conference on Artificial Intelligence, 2021, pp.11106-11115.
 
-[5] H. Wu, J. Xu, J. Wang, and M. Long, "Autoformer: Decomposition transformers with auto-correlation for long-term series forecasting," in Advances in Neural Information Processing Systems, 2021.
+[5] H. Wu, J. Xu, J. Wang, and M. Long, "Autoformer: Decomposition transformers with auto-correlation for long-term series forecasting," in Advances in Neural Information Processing Systems, 2021, pp.22419-22430.
 
 [6] A. Zeng, M. Chen, L. Zhang, and Q. Xu, "Are transformers effective for time series forecasting?," in Proceedings of the AAAI Conference on Artificial Intelligence, 2023, pp.11121-11128.
 
@@ -467,19 +479,17 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 
 [12] R. Koenker and G. Bassett, "Regression quantiles," Econometrica, Vol.46, No.1, pp.33-50, 1978.
 
-[13] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in Advances in Neural Information Processing Systems, 2019.
+[13] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in Advances in Neural Information Processing Systems, 2019, pp.3543-3553.
 
-[14] Y. Wang, H. Wu, J. Dong, G. Qin, H. Zhang, Y. Liu, Y. Qiu, J. Wang, and M. Long, "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in Advances in Neural Information Processing Systems, 2024.
+[14] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," European Journal of Operational Research, Vol.270, No.2, pp.654-669, 2018.
 
-[15] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," European Journal of Operational Research, Vol.270, No.2, pp.654-669, 2018.
+[15] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," The Review of Financial Studies, Vol.33, No.5, pp.2223-2273, 2020.
 
-[16] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," The Review of Financial Studies, Vol.33, No.5, pp.2223-2273, 2020.
+[16] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," KIPS Transactions on Software and Data Engineering, Vol.8, No.3, pp.123-128, 2019.
 
-[17] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," KIPS Transactions on Software and Data Engineering, Vol.8, No.3, pp.123-128, 2019.
+[17] Y. Wang, H. Wu, J. Dong, G. Qin, H. Zhang, Y. Liu, Y. Qiu, J. Wang, and M. Long, "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in Advances in Neural Information Processing Systems, 2024.
 
-
-
-[18] G. Ke, Q. Meng, T. Finley, T. Wang, W. Chen, W. Ma, Q. Ye, and T.-Y. Liu, "LightGBM: A highly efficient gradient boosting decision tree," Advances in Neural Information Processing Systems, Vol.30, pp.3146-3154, 2017.
+[18] G. Ke, Q. Meng, T. Finley, T. Wang, W. Chen, W. Ma, Q. Ye, and T.-Y. Liu, "LightGBM: A highly efficient gradient boosting decision tree," in Advances in Neural Information Processing Systems, 2017, pp.3146-3154.
 
 
 <!-- AUTHORS:BEGIN -->

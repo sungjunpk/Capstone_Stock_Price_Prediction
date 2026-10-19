@@ -261,7 +261,7 @@ def build_baseline(cfg: BaselineConfig) -> nn.Module:
 # 경로에 대조군용 분기를 다시 넣지 않으려는 것이다.
 # ──────────────────────────────────────────────────────────────────────────
 
-VARIANT_ARCHS = ("itrans", "timexer")
+VARIANT_ARCHS = ("itrans", "timexer", "abl_linear", "abl_nomacro", "abl_nostatic")
 
 
 class VariateEmbedding(nn.Module):
@@ -293,9 +293,13 @@ class _Phase1Variant(Phase1Model):
 
     ⚠️ `Phase1Model.forward` 를 **복사한 것**이다. 실거래 경로에 분기를 넣지 않으려고
     이렇게 뒀다 — 대신 `phase1.py` 의 forward 가 바뀌면 **여기도 같이 고쳐야 한다.**
-    원본과 다른 곳은 종목 경로(`_endog`)와 매크로 경로(`_exog`) 두 훅뿐이고,
-    기본 구현은 우리 모델과 완전히 같다.
+    원본과 다른 곳은 종목 경로(`_endog`)·매크로 경로(`_exog`)·정적 문맥(`_static`)·
+    결합(`_fuse`) 네 훅뿐이고, 기본 구현은 우리 모델과 완전히 같다.
     """
+
+    def _static(self, static: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """(B,n_static) → 문맥 (B,d), 가중치 (B,n_static)."""
+        return self.static_vsn(static)
 
     def _endog(self, x: torch.Tensor, ctx: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """(B,L,C) → (B,N,d), (B,N,C). VSN 이 인코더 앞이다 (TFT 순서)."""
@@ -305,10 +309,14 @@ class _Phase1Variant(Phase1Model):
 
     def _exog(self, m: torch.Tensor) -> torch.Tensor:
         """(B,L,M) → (B,N,d). 채널을 먼저 합치고 한 번만 인코딩한다."""
-        m = self.patch_mac(m)                            # (B,M,N,d)
+        m = self.patch_mac(self.revin_mac(m))            # (B,M,N,d)
         b, n_mac, n, d = m.shape
         m = self.macro_merge(m.permute(0, 2, 1, 3).reshape(b, n, n_mac * d))
         return self.encoder_mac(m)
+
+    def _fuse(self, x: torch.Tensor, m: torch.Tensor | None, need: bool):
+        """종목 (B,N,d) 과 매크로를 크로스어텐션으로 결합한다."""
+        return self.cross(x, m, need_weights=need)
 
     def forward(
         self,
@@ -330,11 +338,11 @@ class _Phase1Variant(Phase1Model):
             keep = torch.rand(x.shape[0], 1, x.shape[-1], device=x.device) < keep_p
             x = x * keep / keep_p
 
-        ctx, w_static = self.static_vsn(static)          # (B,d), (B,n_static)
+        ctx, w_static = self._static(static)             # (B,d), (B,n_static)
         x, w_dyn = self._endog(x, ctx)                   # ← 교체 지점 1
-        m = self._exog(self.revin_mac(macro))            # ← 교체 지점 2
+        m = self._exog(macro)                            # ← 교체 지점 2
 
-        z, w_cross = self.cross(x, m, need_weights=need_cross_weights)
+        z, w_cross = self._fuse(x, m, need_cross_weights)
         z = z + ctx.unsqueeze(1)                         # static 문맥을 한 번 더 주입
         pooled = z[:, -1]                                # 마지막 토큰 = 가장 최근 구간
 
@@ -393,7 +401,59 @@ class TimeXerVariant(_Phase1Variant):
         del self.encoder_mac
 
     def _exog(self, m: torch.Tensor) -> torch.Tensor:
-        return self.embed_mac(m)                         # (B,M,d)
+        return self.embed_mac(self.revin_mac(m))         # (B,M,d)
+
+
+# ── 구성요소 제거 실험 (논문 심사 대비) ───────────────────────────────────
+# 우리 모델에서 구성요소 하나만 빼거나 가장 단순한 대안으로 바꾼다. 나머지는 그대로다.
+
+class AblLinearVariant(_Phase1Variant):
+    """종목 채널의 변수선택망 → 선형 합치기 (매크로 경로의 `macro_merge` 와 같은 방식).
+
+    정적 문맥은 결합 뒤 더하기로 계속 쓰인다 — 빠지는 것은 채널 가중의 문맥 조건화다.
+    """
+
+    def __init__(self, cfg: Phase1Config):
+        super().__init__(cfg)
+        self.dyn_merge = nn.Linear(cfg.n_dynamic * cfg.d_model, cfg.d_model)
+        del self.dynamic_vsn
+
+    def _endog(self, x: torch.Tensor, ctx: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        h = self.patch_dyn(x)                            # (B,C,N,d)
+        b, c, n, d = h.shape
+        h = self.dyn_merge(h.permute(0, 2, 1, 3).reshape(b, n, c * d))
+        return self.encoder(h), h.new_full((b, n, c), 1.0 / c)
+
+
+class AblNoMacroVariant(_Phase1Variant):
+    """매크로 경로와 크로스어텐션을 뺀다 — 종목 표현이 그대로 헤드로 간다."""
+
+    def __init__(self, cfg: Phase1Config):
+        super().__init__(cfg)
+        for name in ("revin_mac", "patch_mac", "macro_merge", "encoder_mac", "cross"):
+            delattr(self, name)
+
+    def _exog(self, m: torch.Tensor) -> None:
+        return None
+
+    def _fuse(self, x: torch.Tensor, m: None, need: bool):
+        return x, None
+
+
+class AblNoStaticVariant(_Phase1Variant):
+    """정적 문맥을 뺀다 — 문맥이 0 이라 변수선택이 조건화되지 않고 결합 뒤 더하기도 없다.
+
+    변수선택망의 문맥 선형층은 bias 가 없어(`vsn.py`) 0 문맥은 조건화가 정확히 꺼진 것이다.
+    """
+
+    def __init__(self, cfg: Phase1Config):
+        super().__init__(cfg)
+        del self.static_vsn
+
+    def _static(self, static: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        b = static.shape[0]
+        ctx = torch.zeros(b, self.cfg.d_model, device=static.device)
+        return ctx, ctx.new_zeros(b, len(self.cfg.static_vocab))
 
 
 def build_variant(arch: str, cfg: Phase1Config) -> nn.Module:
@@ -404,4 +464,10 @@ def build_variant(arch: str, cfg: Phase1Config) -> nn.Module:
         return ItransVariant(cfg)
     if arch == "timexer":
         return TimeXerVariant(cfg)
+    if arch == "abl_linear":
+        return AblLinearVariant(cfg)
+    if arch == "abl_nomacro":
+        return AblNoMacroVariant(cfg)
+    if arch == "abl_nostatic":
+        return AblNoStaticVariant(cfg)
     raise ValueError(f"모르는 아키텍처: {arch!r} (가능: phase1, {list(VARIANT_ARCHS)})")

@@ -145,3 +145,41 @@ def test_variant_drops_replaced_module(arch, gone):
 def test_unknown_variant_raises():
     with pytest.raises(ValueError, match="모르는 아키텍처"):
         build_variant("mamba", _p1())
+
+
+# ── 구성요소 제거 실험 (abl_*) ────────────────────────────────────────────
+
+def test_variant_base_matches_phase1():
+    """훅을 더해도 교체 없는 뼈대는 우리 모델과 **같은 값**을 낸다 — 비교의 전제."""
+    from src.models.baselines import _Phase1Variant
+    from src.models.phase1 import Phase1Model
+
+    torch.manual_seed(0)
+    ours = Phase1Model(_p1()).eval()
+    base = _Phase1Variant(_p1()).eval()
+    base.load_state_dict(ours.state_dict())
+    batch = _batch()
+    with torch.no_grad():
+        assert torch.allclose(ours(*batch).quantiles, base(*batch).quantiles)
+
+
+@pytest.mark.parametrize("arch,gone", [
+    ("abl_linear", "dynamic_vsn"), ("abl_nomacro", "cross"),
+    ("abl_nomacro", "encoder_mac"), ("abl_nostatic", "static_vsn"),
+])
+def test_ablation_drops_module(arch, gone):
+    names = dict(build_variant(arch, _p1()).named_parameters())
+    assert not any(n.startswith(gone + ".") for n in names)
+
+
+@pytest.mark.parametrize("arch,which", [("abl_nomacro", 1), ("abl_nostatic", 2)])
+def test_ablation_ignores_removed_input(arch, which):
+    """뺀 입력을 바꿔도 출력이 같다 — 몰래 보고 있으면 제거 실험이 거짓이 된다."""
+    model = build_variant(arch, _p1()).eval()
+    batch = list(_batch())
+    with torch.no_grad():
+        a = model(*batch).quantiles
+        batch[which] = (torch.randn_like(batch[1]) if which == 1
+                        else torch.randint(0, 3, batch[2].shape))
+        b = model(*batch).quantiles
+    assert torch.allclose(a, b)
