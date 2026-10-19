@@ -37,7 +37,7 @@ based on recent volatility alone. Section 6 discusses the limitations of the eva
 
 <!-- 187 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
 
-**Keywords :** Time-Series Transformer, Quantile Regression, Patch-Based Transformer,
+**Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
 
 ## 판단 보류가 가능한 경량 주가 수익률 분위 예측 모형
@@ -59,7 +59,7 @@ Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패�
 예측의 약 1.5배였다. 이는 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 평가
 설계상의 한계는 6장에서 논의한다.
 
-**키워드 :** 시계열 트랜스포머, 분위회귀, 패치 기반 트랜스포머, 예측 불확실성, 기권
+**키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 기권
 
 <!-- AUTHORS:BEGIN -->
 † 비 회 원 : 동아대학교 컴퓨터공학과 학부생
