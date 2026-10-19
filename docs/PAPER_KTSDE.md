@@ -30,8 +30,10 @@ but produce only a single value. This paper combines the two. We equip a patch-b
 with the quantile forecasting of TFT and with its variable selection network, placed before the
 encoder so that the channel axis collapses into one and the encoder runs a single time. A rule
 withholds a decision when the prediction interval is unusually wide. On daily data for 201 KOSPI 200
-stocks since 2015, the model matched or slightly exceeded TFT in accuracy on the validation split across
-five repeated runs, while training ran 3.8 times and inference 4.8 times faster. Its prediction intervals widened in
+stocks since 2015, the model had a lower loss than TFT in all five
+repeated runs. On the validation split, which early stopping had already used, the two were
+comparable; on the held-out test split its improvement over the baseline was 2.2 times that of
+TFT. Training ran 3.8 times and inference 4.8 times faster. Its prediction intervals widened in
 volatile markets, so withheld decisions concentrated there. The withheld forecasts carried about
 1.5 times the error of those acted on, a sharper separation than a simple volatility rule
 achieved. Its intervals tracked volatility less closely than those of TFT, and its directional
@@ -40,7 +42,7 @@ deciding when not to act than to picking stocks. Because the evaluation period i
 the design, the figures are not fully out of sample. Section 6 states this and the remaining
 limitations.
 
-<!-- 256 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
+<!-- 281 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
 
 **Keywords :** Time-Series Transformer, Quantile Regression, Variable Selection Network,
 Forecast Uncertainty, Abstention
@@ -60,8 +62,9 @@ TFT의 분위 예측 기능과 변수선택망을 결합한 경량 모형을 제
 축약하여 인코더를 한 번만 실행시키는 장치로 쓴다. 여기에 예측 구간이 이례적으로 넓을 때 판단을 보류하는
 기권 규칙을 함께 적용하였다.
 
-2015년 이후 코스피200 구성종목 201개의 일별 자료로 평가하였다. 제안 모형은 검증구간에서 다섯 번의 반복 실험 모두 TFT와
-대등하거나 근소하게 높은 정확도를 보였고, 학습 시간과 추론 시간은 TFT보다 각각 3.8배, 4.8배 짧았다. 시장
+2015년 이후 코스피200 구성종목 201개의 일별 자료로 평가하였다. 다섯 번의 반복 실험 모두에서 제안 모형이
+TFT보다 오차가 작았다. 조기종료에 쓰인 검증구간에서는 두 모형이 대등했으나, 그 선택에 쓰이지 않은 평가
+구간에서는 기준선 대비 개선폭이 2.2배 벌어졌다. 학습 시간과 추론 시간은 TFT보다 각각 3.8배, 4.8배 짧았다. 시장
 변동성이 클수록 예측 구간이 넓어져, 판단 보류는 변동성 최상위 25% 후보의 20.6%, 최하위 25% 후보의 0.2%에서
 일어났다. 보류된 예측의 오차는 실행된 예측의 약 1.5배로, 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를
 잘 걸러냈다. 다만 예측 구간이 변동성을 따라가는 정도는 TFT보다 낮았고, 오르내림 방향을 맞히는 능력은 트리
@@ -314,13 +317,12 @@ Table 3. Input channels
 격리구간이 목표값 중첩을 막으므로 누수가 아니나, 그 경우 검증 표본의 입력 대부분이 학습에서 이미 관측된 행이
 되어 암기가 검증 성능을 부풀릴 여지가 남는다. 본 연구는 보수적으로 룩백 전체를 구간 안에 넣었고, 그 대가로
 각 구간의 처음 120거래일이 소모되어 검증 표본이 122거래일로 줄었다. 검증 표본은 2023년 7월 3일부터
-12월 28일까지 122거래일·190종목·23,086건, 검정 표본은 2024년 7월 3일부터 2026년 10월 6일까지
-548거래일·198종목·106,094건이다. 이후 절에서 구간 일수가 다르게 나타나는 것은 지표마다 모집단이 다르기
-때문이다. 예측 손실과 정보계수는 548일 위에서, 횡단면 상관은 그 가운데 526일에서
-산출된다.
+12월 28일까지 122거래일·190종목·23,086건, 검정 표본은 2024년 7월 3일부터 2026년 10월 8일까지
+550거래일·198종목·106,490건이다. 자료는 2026년 10월 16일 수집분으로 동결하였고, 파일 해시와 구간별 윈도우
+수를 기록하여 이후 모든 수치를 같은 표본에서 산출하였다.
 
-인접 표본은 120일 중 119일의 입력과 5일 중 4일의 목표를 공유한다. 명목 학습 행 260,339건 가운데 비중첩
-표본은 약 52,097건이고, 같은 날짜의 201개 종목이 시장 공통요인으로 묶이므로 날짜 단위로 세면 약 1,900거래일이다. 목표가 5일씩
+인접 표본은 120일 중 119일의 입력과 5일 중 4일의 목표를 공유한다. 명목 학습 행 264,653건 가운데 비중첩
+표본은 약 52,900건이고, 같은 날짜의 201개 종목이 시장 공통요인으로 묶이므로 날짜 단위로 세면 약 1,900거래일이다. 목표가 5일씩
 겹치는 것까지 반영해 비중첩으로 세면 약 380개로 줄어든다. 이전 설정(146종목·17채널)의 탐색에서 더 큰 설정은 1~2회차에 과적합되었고, 같은 구조를 30채널로 확장한
 결과가 0.50M이다.
 
@@ -346,32 +348,42 @@ look-ahead가 생기기 때문이고, 모의투자에서 실제로 쓰는 방식
 무엇을 포기하게 되는가의 비교이다. 초매개변수는 제안 모형에 맞추어 조정된 값을 대조군에 동일하게
 적용하였으므로 대조군의 최적값이 아니다. 기준선은 세 모형 모두 0.012175로 동일하게 산출되어 통제가
 작동하였음을 수치로 확인할 수 있다. TFT 원본과 제안 모형은 시드 42~46의 다섯 번씩을 같은 GPU·같은
-혼합정밀도 설정으로 학습하여 평균과 표준편차를 보고한다. 분위 헤드만 부착한 PatchTST는 기준선 대비 격차가
+혼합정밀도 설정으로 학습하여 검증·검정 두 구간의 평균과 표준편차를 보고한다. 분위 헤드만 부착한 PatchTST는 기준선 대비 격차가
 +0.26%로 시드 변동의 범위를 크게 벗어나므로 단일 실행값을 보고한다. <Table 4>가 예측 정확도이다.
 
-Table 4. Forecast accuracy on validation (three-quantile pinball loss). Every figure in this table is on the validation split. TFT and the proposed model are means over five seeds (42-46) trained on one GPU; the PatchTST row is a single run on a Mac MPS backend. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
+Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42-46 with the standard deviation). TFT and the proposed model were trained on one GPU under identical mixed-precision settings. The unconditional-quantile baseline is 0.012175 on validation and 0.018753 on test. The PatchTST row is a single run on a Mac MPS backend and its test figure was not computed. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
 
-| Model | Params | Pinball | Range | vs baseline | Best epoch |
-|---|---|---|---|---|---|
-| PatchTST + quantile head | 0.035M | 0.012143 | single run | +0.26% | 5 |
-| TFT, original | 0.687M | 0.011935 ± 0.000020 | 0.011922-0.011970 | +1.97% | 1-2 |
-| **Ours (PatchTST x TFT)** | 0.500M | 0.011889 ± 0.000012 | 0.011873-0.011904 | +2.35% | 2-10 |
+| Model | Params | Validation | vs baseline | Test | vs baseline | Best epoch |
+|---|---|---|---|---|---|---|
+| PatchTST + quantile head | 0.035M | 0.012143 | +0.26% | - | - | 5 |
+| TFT, original | 0.687M | 0.011935 ± 0.000020 | +1.97% | 0.018325 ± 0.000091 | +2.28% | 1-2 |
+| **Ours (PatchTST x TFT)** | 0.500M | 0.011889 ± 0.000012 | +2.35% | **0.017826 ± 0.000059** | **+4.95%** | 2-10 |
 
-결과는 두 가지로 해석된다. 첫째, 분위 헤드만 부착해서는 충분하지 않다. 해당 설정은 +0.26%로 상수 예측을
-간신히 상회하는 데 그쳤으며 변수선택·정적 문맥·매크로 입력이 결여되어 있다. 둘째, TFT 원본과 제안 모형의 격차는
-핀볼 손실 0.000046으로 기준선 대비 개선폭(0.000286)의 16%이다. <Table 4>가 보이듯 다섯 시드에서 두 분포의 범위는 겹치지 않으며, 시드를 짝지어 보아도 다섯 쌍 모두 제안 모형이 낮았다(부호검정 *p* = 0.031 단측, 0.063 양측). 평균 차이에 대한 Welch 검정은
-*t* = 4.47(자유도 6.5, *p* = 0.004 양측)이다. 초기화 변동을 통제하면 제안 모형이 체계적으로 낮은 쪽에 있다는
-뜻이나 격차의 절대 크기가 작으므로, 본 연구는 이를 우위가 아니라 대등하거나 근소하게 낫다는 수준으로
-해석한다. 두 검정의 근거도 넓지 않다. 검증 표본이 122거래일에 그쳐 검정력이 약하고, 시드 다섯은 작은
-표본이다. 두 검정은 격차의 방향을 보이는 근거이며 그 크기를 확정하는 근거는 아니다. 한편 TFT는 다섯 시드
-모두 1~2회차에서 최적값에 도달한 뒤 과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다.
+결과는 세 가지로 해석된다. 첫째, 분위 헤드만 부착해서는 충분하지 않다. 해당 설정은 +0.26%로 상수 예측을
+간신히 상회하는 데 그쳤으며 변수선택·정적 문맥·매크로 입력이 결여되어 있다.
 
-검증구간은 조기종료와 최적 회차 선택에 이미 쓰였으므로 세 모형 모두 낙관적으로 나온다. 같은 비교를
-검정구간에서 한 번 더 확인하였다. 같은 표본 위의 날짜별 손실 계열에 Diebold-Mariano 검정을 적용하면 제안
-모형의 핀볼 손실이 0.017689, TFT 원본이 0.017990으로 DM 통계량 −2.40, *p* = 0.018이다(548일, Newey-West
-4시차). 순서는 검증구간과 같다. 다만 이 값은 시드별 평균이 아니라 체크포인트 하나씩의 비교이고 두
-체크포인트의 학습 장비가 다르므로, 검정구간의 다섯 시드 평균은 산출하지 못하였다. <Table 4>의 수치는 모두
-검증구간 값이다. 비교의 실질은 <Table 5>의 비용으로 넘어간다.
+둘째, 검증구간에서 TFT 원본과 제안 모형은 대등하다. 격차는 핀볼 손실 0.000046으로 기준선 대비
+개선폭(0.000286)의 16%에 그친다. 다섯 시드에서 두 분포의 범위는 겹치지 않고, 시드를 짝지어 보아도 다섯 쌍
+모두 제안 모형이 낮았다(부호검정 *p* = 0.031 단측). 평균 차이에 대한 Welch 검정은 *t* = 4.47(자유도 6.5,
+*p* = 0.004 양측)이다. 초기화 변동을 통제하면 제안 모형이 체계적으로 낮은 쪽에 있다는 뜻이나 격차의 절대
+크기가 작으므로, 본 연구는 검증구간의 결과를 우위가 아니라 대등하거나 근소하게 낫다는 수준으로 해석한다.
+
+셋째, 검정구간에서는 격차가 분명해진다. 검증구간은 조기종료와 최적 회차 선택에 이미 쓰였으므로 세 모형
+모두 낙관적으로 나오는데, 그 선택에 쓰이지 않은 검정구간에서 기준선 대비 개선폭이 제안 모형 +4.95%,
+TFT 원본 +2.28%로 2.2배 벌어진다. 두 모형의 격차는 핀볼 손실 0.000499로 제안 모형 개선폭(0.000927)의
+54%이며, 다섯 시드의 범위도 겹치지 않는다(0.017739~0.017895 대 0.018205~0.018407). 시드를 짝지은 부호검정은
+다섯 쌍 모두 제안 모형이 낮고(*p* = 0.031 단측), Welch 검정은 *t* = 10.33(자유도 6.9, *p* < 0.001 양측)이다.
+
+같은 표본 위의 날짜별 손실 계열에 Diebold-Mariano 검정을 적용한 결과도 같은 방향이다. 검정구간에서는
+다섯 시드 모두 유의하였다(Harvey-Leybourne-Newbold 보정 후 *p* = 0.022, 0.001, 0.009, 0.003, 0.000.
+550일, Newey-West 4시차). 반면 검증구간에서는 다섯 시드 모두 유의하지 않았다(*p* = 0.16~0.56). DM 검정은
+날짜를 표본으로 보므로 122거래일인 검증구간에서는 검정력이 약하고, 550거래일인 검정구간에서는 격차를
+가려낸다. 시드 단위 검정과 날짜 단위 검정이 검정구간에서 함께 유의하다는 점이 이 비교의 근거다.
+
+격차가 검정구간에서 벌어지는 이유는 학습 곡선에 있다. TFT는 다섯 시드 모두 1~2회차에서 최적값에 도달한 뒤
+과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다. 다만 초매개변수가 제안 모형에 맞추어
+조정된 값이므로 이 격차의 일부는 대조군의 설정에서 올 수 있다(6장). 비교의 실질은 <Table 5>의 비용으로
+넘어간다.
 
 ### 5.2 계산 비용
 
@@ -502,8 +514,11 @@ Table 7. Interval calibration and width predictive power (23,086 validation and 
 사용하였다. 예측 구간이 이례적으로 넓을 때 판단을 보류하는 기권 규칙도 함께 적용하였다. 코스피200 구성종목
 201개의 일별 자료로 평가하여 다음 두 가지를 확인하였다.
 
-첫째, 제안 모형은 검증구간에서 TFT와 대등하거나 근소하게 높은 정확도를 약 4분의 1의 비용으로 달성하였다. 다섯 번의 반복 실험 모두에서 TFT보다 오차가 작았으나 그 차이는 크지 않다. 학습 시간은 3.8배, 종목당 추론 시간은
-4.8배 짧았고, 활성값 메모리는 5.1배 적었다. 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
+첫째, 제안 모형은 다섯 번의 반복 실험 모두에서 TFT보다 오차가 작았고, 그 정확도를 약 4분의 1의 비용으로
+달성하였다. 조기종료에 쓰인 검증구간에서는 격차가 개선폭의 16%로 작아 두 모형을 대등하다고 보았다. 그
+선택에 쓰이지 않은 평가 구간에서는 기준선 대비 개선폭이 +4.95% 대 +2.28%로 2.2배 벌어졌고, 날짜 단위 DM
+검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 종목당 추론 시간은 4.8배 짧았고, 활성값 메모리는
+5.1배 적었다. 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
 집중되었다. 보류된 예측은 실행된 예측보다 오차가 약 1.5배 컸다. 기권율을 맞춘 비교에서도 최근 변동성만 보고 보류하는
 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 하나의 예측값만 내는 기존 패치 기반 모형으로는 이러한 판단 보류
 자체를 할 수 없다.
@@ -517,15 +532,15 @@ Table 7. Interval calibration and width predictive power (23,086 validation and 
 적합하다.
 - 변수선택망의 가중치는 비용 절감 장치로만 사용하였다. 별도 진단에서 그 중요도는 개별 변수의 단변량
 예측력과 일치하지 않았고 연도 간 거의 변하지 않았으므로, 매매 근거로는 제시하지 않는다.
-- 검정구간의 Diebold-Mariano 결과와 <Table 6>의 기권 지표, 폭 정보계수는 모형마다 체크포인트 하나씩으로
-산출하였고, 그 학습 장비가 <Table 4>의 검증구간 값과 다르다.
+- <Table 6>의 기권 지표와 폭 정보계수는 모형마다 체크포인트 하나씩으로 산출한 값이다. <Table 4>와 DM
+검정은 두 모형을 같은 장비에서 다섯 시드씩 학습해 얻었으나, 기권·구간 지표는 시드 평균이 아니다.
 - 구성요소를 하나씩 제거하는 실험과 TFT의 크기를 맞춘 비교를 수행하지 않아 개선이 어느 부분에서 왔는지는
 가리지 못하였다. 종목 채널의 변수선택망을 매크로 경로와 같은 선형 합치기로 바꾼
 변형도 비교하지 않았으므로, 채널 축약에 게이트가 필요했는지는 열려 있다.
 - 유니버스를 현재 시점에서 추출하여 2015년 이후 상장폐지된 기업이 후보가 된 적이 없다. 시가총액 구간은 학습
 종료 시점의 값으로 고정하였으므로 검증·검정 구간에는 사전 정보이고 학습 행에는 사후 값이다.
 - 평가 기간은 한 시장의 한 구간이며, 구간을 옮겨 가며 재학습하는 walk-forward 검증은 수행하지 않았다.
-코스피200은 구간 전체로 +185.9%이나 2024년 하반기 −17.1%, 2026년 7월 고점 대비 −40.9% 하락을 포함한다.
+코스피200은 구간 전체로 +172.6%이나 2024년 하반기 −17.1%, 2026년 7월 고점 대비 −40.9% 하락을 포함한다.
 - 본 연구의 비교는 트랜스포머 계열 분위 모형 안으로 한정된다.
 - 입력이 모두 공개된 가격·거래량 지표여서, 같은 재료를 쓴 모형들이 같은 종목을 지목하기 쉽다. 이는 국내 선행
 연구[20]에서도 지적된 제약이다.

@@ -241,9 +241,23 @@ done
 학습 + 백테스트, 이쪽은 논문 수치 재산출). 백테스트·실주문과 무관하고, 모든 체크포인트에
 `_seedN` 태그가 붙어 실주문 경로로 새지 않는다.
 
-하는 일: 자료 동결 대조(`freeze_panel.py --verify docs/freeze_panel_20261018.json`) →
-배관 점검 → 제안 모형 5시드 → TFT 5시드 → `seed_aggregate.py` 집계 → 시드별 DM 검정 →
-`ktsde_rerun.zip`. 약 2시간 5분.
+**셀 3개다. `Run All` 로 끝난다.**
+
+| 셀 | 하는 일 | 시간 |
+|---|---|---|
+| 1 | GPU·클론·데이터 확인 + **자료 동결 대조**(`freeze_panel.py --verify`) | 1분 |
+| 2 | 배관 점검 → 제안 모형 5시드 → TFT 5시드 → `seed_aggregate.py` 집계 → 시드별 DM 검정 | 약 2시간 |
+| 3 | `ktsde_rerun.zip` 묶기 | 1분 |
+
+셀 2 는 **이미 끝난 시드를 건너뛴다** — 중간에 끊기면 셀 2 만 다시 실행하면 된다
+(셀 1 을 다시 돌리면 클론을 지우므로 체크포인트도 사라진다). 시드를 줄이려면 셀 2 맨 위의
+`SEEDS` 를 고친다.
+
+⚠️ **2시간짜리는 `Save Version → Save & Run All` 로 돌린다.** 인터랙티브 세션
+(`Shift+Enter`)으로 돌리고 자리를 비우면 세션이 끝나면서 `/kaggle/working` 이 비워진다 —
+2026-10-19 에 학습 10시드를 다 끝내고 체크포인트와 리포트를 전부 잃었다(로그만 남았다).
+커밋 실행은 배치 세션에서 처음부터 끝까지 돌리고 `/kaggle/working` 을 그 버전의 **Output** 으로
+영구 보존한다. Input·GPU·Internet 설정은 그대로 따라간다.
 
 ⚠️ **돌리기 전에 `git push` 가 필요하다.** 노트북이 GitHub 에서 클론하므로
 `scripts/freeze_panel.py`, `scripts/seed_aggregate.py`, `docs/freeze_panel_20261018.json`
