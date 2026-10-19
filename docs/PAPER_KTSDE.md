@@ -17,7 +17,7 @@ characters in length." 가 있으나, docs/kips/samples/ 의 게재본 5편 영�
 않는 규정으로 보여 게재본 관행과 국문 제목과의 대응을 택했다. 사무국 문의 시 함께 확인할 것. -->
 
 <!-- AUTHORS:BEGIN -->
-Sungjun Park†⋅Jimin Kim†⋅Ohjae Kwon†⋅Haeol Song†⋅Jeongil Seo††⋅Juhan Yoo†††
+Seongjun Park†⋅Jimin Kim†⋅Ohjae Kwon†⋅Haeol Song†⋅Jeongil Seo††⋅Juhan Yoo†††
 <!-- AUTHORS:END -->
 
 ## ABSTRACT
