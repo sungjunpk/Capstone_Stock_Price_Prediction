@@ -1,0 +1,1163 @@
+[{"stream_name":"stderr","time":6.60232268,"data":"/usr/local/lib/python3.13/dist-packages/nbformat/validator.py:434: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.\n"}
+,{"stream_name":"stderr","time":6.602360568,"data":"  _validate(nbdict, ref, version, version_minor, relax_add_props)\n"}
+,{"stream_name":"stderr","time":7.572312093,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.572341357,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.572346829,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.572350676,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.194078674,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.194127086,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.194137282,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.194140009,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":17.355656009,"data":"✅ GPU: Tesla T4\n"}
+,{"stream_name":"stdout","time":19.892709665,"data":"✅ 코드: baef9b3 구성요소 제거 3종·분위 GBDT·가법 CQR 추가 — 심사에서 지적될 개선 출처와 기준모형 공백을 메운다\n"}
+,{"stream_name":"stdout","time":23.206707473,"data":"✅ 데이터: ['.gitkeep', 'macro.parquet', 'panel.parquet', 'static.parquet']\n"}
+,{"stream_name":"stdout","time":23.206742265,"data":"✅ 설정: d_model=32 n_layers=1 dropout=0.5\n"}
+,{"stream_name":"stdout","time":23.206760022,"data":"\n"}
+,{"stream_name":"stdout","time":23.206763836,"data":"── 자료 동결 대조 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":28.69675171,"data":"06:43:03 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":28.696989452,"data":"06:43:03 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":28.899153921,"data":"06:43:03 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":28.899189933,"data":"06:43:03 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":29.24459329,"data":"06:43:03 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":29.244620444,"data":"06:43:03 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":29.447051145,"data":"06:43:03 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":29.447083788,"data":"06:43:03 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":30.081578557,"data":"06:43:04 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":30.081607231,"data":"06:43:04 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":30.284051361,"data":"06:43:04 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":30.284082622,"data":"06:43:04 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":30.286246617,"data":"  panel.parquet          62da91273abf73e1…    519,617행  38열 2015-01-02~2026-10-16\n"}
+,{"stream_name":"stdout","time":30.286266124,"data":"  macro.parquet          48c070406493322d…      2,892행  14열 2015-01-02~2026-10-16\n"}
+,{"stream_name":"stdout","time":30.286270777,"data":"  static.parquet         44833e9954797854…        201행  10열 None~None\n"}
+,{"stream_name":"stdout","time":30.286275002,"data":"  윈도우  train 264,653 / val 23,086 / test 106,490\n"}
+,{"stream_name":"stdout","time":30.286278611,"data":"\n"}
+,{"stream_name":"stdout","time":30.286281789,"data":"✅ freeze_panel_20261018.json 과 같은 자료다 (sha256 은 다르다 — 재패키징 때문이며 정상이다)\n"}
+,{"stream_name":"stdout","time":30.488608617,"data":"  panel.parquet          62da91273abf73e1…    519,617행  38열 2015-01-02~2026-10-16\n"}
+,{"stream_name":"stdout","time":30.488659119,"data":"  macro.parquet          48c070406493322d…      2,892행  14열 2015-01-02~2026-10-16\n"}
+,{"stream_name":"stdout","time":30.488666134,"data":"  static.parquet         44833e9954797854…        201행  10열 None~None\n"}
+,{"stream_name":"stdout","time":30.488670149,"data":"  윈도우  train 264,653 / val 23,086 / test 106,490\n"}
+,{"stream_name":"stdout","time":30.48867387,"data":"\n"}
+,{"stream_name":"stdout","time":30.488678945,"data":"✅ freeze_panel_20261018.json 과 같은 자료다 (sha256 은 다르다 — 재패키징 때문이며 정상이다)\n"}
+,{"stream_name":"stdout","time":33.736588947,"data":"\n"}
+,{"stream_name":"stdout","time":33.736689737,"data":"✅ 준비 끝 — 셀 2 를 실행한다\n"}
+,{"stream_name":"stdout","time":33.752478794,"data":"\n"}
+,{"stream_name":"stdout","time":33.752507395,"data":"── abl_linear seed 42 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":35.917013491,"data":"06:43:10 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":35.917266039,"data":"06:43:10 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":35.917282739,"data":"06:43:10 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":35.987645611,"data":"06:43:10 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":36.123396908,"data":"06:43:10 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":36.123429935,"data":"06:43:10 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":36.12343603,"data":"06:43:10 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":36.123440242,"data":"06:43:10 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":38.213794512,"data":"06:43:12 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":38.214797371,"data":"06:43:12 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":38.416079633,"data":"06:43:12 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":38.41611554,"data":"06:43:12 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":38.747590168,"data":"06:43:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":38.748079246,"data":"06:43:13 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":38.950024732,"data":"06:43:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":38.950055528,"data":"06:43:13 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":39.575525482,"data":"06:43:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":39.57587847,"data":"06:43:13 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":39.621145785,"data":"06:43:14 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":39.777726153,"data":"06:43:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":39.777755699,"data":"06:43:13 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":39.777760645,"data":"06:43:14 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":39.987904344,"data":"06:43:14 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":40.191050549,"data":"06:43:14 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":41.36492824,"data":"06:43:15 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":41.567358272999996,"data":"06:43:15 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":82.013359683,"data":"06:43:56 | INFO    | src.training.train | epoch  1/50 | train 0.011609 | val 0.011933 | pinball 0.011933 | 35s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":82.218400719,"data":"06:43:56 | INFO    | src.training.train | epoch  1/50 | train 0.011609 | val 0.011933 | pinball 0.011933 | 35s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":114.580957982,"data":"06:44:28 | INFO    | src.training.train | epoch  2/50 | train 0.011557 | val 0.011896 | pinball 0.011896 | 33s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":114.784703379,"data":"06:44:28 | INFO    | src.training.train | epoch  2/50 | train 0.011557 | val 0.011896 | pinball 0.011896 | 33s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":146.703570809,"data":"06:45:01 | INFO    | src.training.train | epoch  3/50 | train 0.011534 | val 0.011907 | pinball 0.011907 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":146.909196577,"data":"06:45:01 | INFO    | src.training.train | epoch  3/50 | train 0.011534 | val 0.011907 | pinball 0.011907 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":178.618573871,"data":"06:45:33 | INFO    | src.training.train | epoch  4/50 | train 0.011518 | val 0.011895 | pinball 0.011895 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":178.824147401,"data":"06:45:33 | INFO    | src.training.train | epoch  4/50 | train 0.011518 | val 0.011895 | pinball 0.011895 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":210.425574032,"data":"06:46:04 | INFO    | src.training.train | epoch  5/50 | train 0.011501 | val 0.011908 | pinball 0.011908 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":210.630364792,"data":"06:46:04 | INFO    | src.training.train | epoch  5/50 | train 0.011501 | val 0.011908 | pinball 0.011908 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":241.875972806,"data":"06:46:36 | INFO    | src.training.train | epoch  6/50 | train 0.011485 | val 0.011917 | pinball 0.011917 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":242.08060227,"data":"06:46:36 | INFO    | src.training.train | epoch  6/50 | train 0.011485 | val 0.011917 | pinball 0.011917 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":273.637296529,"data":"06:47:08 | INFO    | src.training.train | epoch  7/50 | train 0.011463 | val 0.011906 | pinball 0.011906 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":273.637330766,"data":"06:47:08 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":273.6385151,"data":"06:47:08 | INFO    | src.training.train | 리포트: outputs/reports/20261019_064708_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":273.63867727,"data":"06:47:08 | INFO    | src.training.train | ✅ 기준선 대비 2.29% 개선\n"}
+,{"stream_name":"stdout","time":273.72438689,"data":"06:47:08 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011896 (기준선 대비 +2.29%) | best epoch 2 | 4.0분\n"}
+,{"stream_name":"stdout","time":273.84218392,"data":"06:47:08 | INFO    | src.training.train | epoch  7/50 | train 0.011463 | val 0.011906 | pinball 0.011906 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":273.842207307,"data":"06:47:08 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":273.842212839,"data":"06:47:08 | INFO    | src.training.train | 리포트: outputs/reports/20261019_064708_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":273.842219187,"data":"06:47:08 | INFO    | src.training.train | ✅ 기준선 대비 2.29% 개선\n"}
+,{"stream_name":"stdout","time":273.842227279,"data":"06:47:08 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011896 (기준선 대비 +2.29%) | best epoch 2 | 4.0분\n"}
+,{"stream_name":"stdout","time":274.701325878,"data":"   abl_linear seed 42: 4.0분\n"}
+,{"stream_name":"stdout","time":274.701363641,"data":"\n"}
+,{"stream_name":"stdout","time":274.701368921,"data":"── abl_linear seed 43 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":276.770570842,"data":"06:47:11 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":276.770596869,"data":"06:47:11 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":276.770603431,"data":"06:47:11 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":276.825413045,"data":"06:47:11 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":276.976468261,"data":"06:47:11 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":276.97650016,"data":"06:47:11 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":276.976505578,"data":"06:47:11 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":276.976509268,"data":"06:47:11 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":278.976075051,"data":"06:47:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":278.976611654,"data":"06:47:13 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":279.179142698,"data":"06:47:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":279.17917437,"data":"06:47:13 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":279.505902928,"data":"06:47:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":279.506167547,"data":"06:47:13 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":279.708860582,"data":"06:47:13 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":279.708906944,"data":"06:47:13 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":280.310015662,"data":"06:47:14 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":280.310259592,"data":"06:47:14 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":280.35310972,"data":"06:47:14 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":280.513138875,"data":"06:47:14 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":280.51316888,"data":"06:47:14 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":280.513173958,"data":"06:47:14 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":280.606161105,"data":"06:47:15 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":280.808332274,"data":"06:47:15 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":281.986492522,"data":"06:47:16 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":282.188942133,"data":"06:47:16 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":315.72469236,"data":"06:47:50 | INFO    | src.training.train | epoch  1/50 | train 0.011607 | val 0.011920 | pinball 0.011920 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":315.930500265,"data":"06:47:50 | INFO    | src.training.train | epoch  1/50 | train 0.011607 | val 0.011920 | pinball 0.011920 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":347.891027948,"data":"06:48:22 | INFO    | src.training.train | epoch  2/50 | train 0.011555 | val 0.011944 | pinball 0.011944 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":348.09681741,"data":"06:48:22 | INFO    | src.training.train | epoch  2/50 | train 0.011555 | val 0.011944 | pinball 0.011944 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":379.943244289,"data":"06:48:54 | INFO    | src.training.train | epoch  3/50 | train 0.011530 | val 0.011908 | pinball 0.011908 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":380.149045676,"data":"06:48:54 | INFO    | src.training.train | epoch  3/50 | train 0.011530 | val 0.011908 | pinball 0.011908 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":411.866501085,"data":"06:49:26 | INFO    | src.training.train | epoch  4/50 | train 0.011503 | val 0.011940 | pinball 0.011940 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":412.073178112,"data":"06:49:26 | INFO    | src.training.train | epoch  4/50 | train 0.011503 | val 0.011940 | pinball 0.011940 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":444.143961881,"data":"06:49:58 | INFO    | src.training.train | epoch  5/50 | train 0.011469 | val 0.011951 | pinball 0.011951 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":444.350679294,"data":"06:49:58 | INFO    | src.training.train | epoch  5/50 | train 0.011469 | val 0.011951 | pinball 0.011951 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":476.271868871,"data":"06:50:30 | INFO    | src.training.train | epoch  6/50 | train 0.011441 | val 0.011976 | pinball 0.011976 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":476.477949137,"data":"06:50:30 | INFO    | src.training.train | epoch  6/50 | train 0.011441 | val 0.011976 | pinball 0.011976 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":508.279642689,"data":"06:51:02 | INFO    | src.training.train | epoch  7/50 | train 0.011416 | val 0.011967 | pinball 0.011967 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":508.485896061,"data":"06:51:02 | INFO    | src.training.train | epoch  7/50 | train 0.011416 | val 0.011967 | pinball 0.011967 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":540.309890801,"data":"06:51:34 | INFO    | src.training.train | epoch  8/50 | train 0.011401 | val 0.012000 | pinball 0.012000 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":540.31014563,"data":"06:51:34 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":540.310941976,"data":"06:51:34 | INFO    | src.training.train | 리포트: outputs/reports/20261019_065134_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":540.311085667,"data":"06:51:34 | INFO    | src.training.train | ✅ 기준선 대비 2.19% 개선\n"}
+,{"stream_name":"stdout","time":540.399383206,"data":"06:51:34 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011908 (기준선 대비 +2.19%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":540.515095004,"data":"06:51:34 | INFO    | src.training.train | epoch  8/50 | train 0.011401 | val 0.012000 | pinball 0.012000 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":540.515120555,"data":"06:51:34 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":540.515127134,"data":"06:51:34 | INFO    | src.training.train | 리포트: outputs/reports/20261019_065134_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":540.515142462,"data":"06:51:34 | INFO    | src.training.train | ✅ 기준선 대비 2.19% 개선\n"}
+,{"stream_name":"stdout","time":540.515146338,"data":"06:51:34 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011908 (기준선 대비 +2.19%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":541.349557598,"data":"   abl_linear seed 43: 4.4분\n"}
+,{"stream_name":"stdout","time":541.351071782,"data":"\n"}
+,{"stream_name":"stdout","time":541.351091396,"data":"── abl_linear seed 44 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":543.428164944,"data":"06:51:37 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":543.428194827,"data":"06:51:37 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":543.428198902,"data":"06:51:37 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":543.483219747,"data":"06:51:37 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":543.632721832,"data":"06:51:37 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":543.632761801,"data":"06:51:37 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":543.632770153,"data":"06:51:37 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":543.632775888,"data":"06:51:37 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":545.668976985,"data":"06:51:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":545.669054653,"data":"06:51:40 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":545.871171555,"data":"06:51:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":545.871203699,"data":"06:51:40 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":546.187984194,"data":"06:51:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":546.188017107,"data":"06:51:40 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":546.390309411,"data":"06:51:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":546.390378266,"data":"06:51:40 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":546.989277319,"data":"06:51:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":546.989515229,"data":"06:51:41 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":547.032562071,"data":"06:51:41 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":547.191574495,"data":"06:51:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":547.191606687,"data":"06:51:41 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":547.191630067,"data":"06:51:41 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":547.278216563,"data":"06:51:41 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":547.48130451,"data":"06:51:41 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":548.475861473,"data":"06:51:42 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":548.677967899,"data":"06:51:42 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":582.921316044,"data":"06:52:17 | INFO    | src.training.train | epoch  1/50 | train 0.011604 | val 0.011930 | pinball 0.011930 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":583.127894812,"data":"06:52:17 | INFO    | src.training.train | epoch  1/50 | train 0.011604 | val 0.011930 | pinball 0.011930 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":615.279920374,"data":"06:52:49 | INFO    | src.training.train | epoch  2/50 | train 0.011551 | val 0.011895 | pinball 0.011895 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":615.486044197,"data":"06:52:49 | INFO    | src.training.train | epoch  2/50 | train 0.011551 | val 0.011895 | pinball 0.011895 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":647.146993546,"data":"06:53:21 | INFO    | src.training.train | epoch  3/50 | train 0.011534 | val 0.011902 | pinball 0.011902 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":647.353538879,"data":"06:53:21 | INFO    | src.training.train | epoch  3/50 | train 0.011534 | val 0.011902 | pinball 0.011902 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":679.278893947,"data":"06:53:53 | INFO    | src.training.train | epoch  4/50 | train 0.011517 | val 0.011911 | pinball 0.011911 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":679.485239934,"data":"06:53:53 | INFO    | src.training.train | epoch  4/50 | train 0.011517 | val 0.011911 | pinball 0.011911 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":711.328998646,"data":"06:54:25 | INFO    | src.training.train | epoch  5/50 | train 0.011500 | val 0.011900 | pinball 0.011900 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":711.533609461,"data":"06:54:25 | INFO    | src.training.train | epoch  5/50 | train 0.011500 | val 0.011900 | pinball 0.011900 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":743.264378661,"data":"06:54:57 | INFO    | src.training.train | epoch  6/50 | train 0.011496 | val 0.011897 | pinball 0.011897 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":743.47125307,"data":"06:54:57 | INFO    | src.training.train | epoch  6/50 | train 0.011496 | val 0.011897 | pinball 0.011897 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":775.527610334,"data":"06:55:29 | INFO    | src.training.train | epoch  7/50 | train 0.011469 | val 0.011909 | pinball 0.011909 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":775.527685583,"data":"06:55:29 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":775.528572045,"data":"06:55:29 | INFO    | src.training.train | 리포트: outputs/reports/20261019_065529_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":775.528729669,"data":"06:55:29 | INFO    | src.training.train | ✅ 기준선 대비 2.30% 개선\n"}
+,{"stream_name":"stdout","time":775.622069512,"data":"06:55:30 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011895 (기준선 대비 +2.30%) | best epoch 2 | 3.9분\n"}
+,{"stream_name":"stdout","time":775.732556773,"data":"06:55:29 | INFO    | src.training.train | epoch  7/50 | train 0.011469 | val 0.011909 | pinball 0.011909 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":775.732583238,"data":"06:55:29 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":775.732588901,"data":"06:55:29 | INFO    | src.training.train | 리포트: outputs/reports/20261019_065529_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":775.732592669,"data":"06:55:29 | INFO    | src.training.train | ✅ 기준선 대비 2.30% 개선\n"}
+,{"stream_name":"stdout","time":775.732596464,"data":"06:55:30 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011895 (기준선 대비 +2.30%) | best epoch 2 | 3.9분\n"}
+,{"stream_name":"stdout","time":776.551973062,"data":"   abl_linear seed 44: 3.9분\n"}
+,{"stream_name":"stdout","time":776.553104454,"data":"\n"}
+,{"stream_name":"stdout","time":776.553125127,"data":"── abl_linear seed 45 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":778.628575474,"data":"06:55:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":778.628610812,"data":"06:55:33 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":778.628848792,"data":"06:55:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":778.685068308,"data":"06:55:33 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":778.832732827,"data":"06:55:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":778.832769153,"data":"06:55:33 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":778.832775291,"data":"06:55:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":778.832780099,"data":"06:55:33 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":780.796298477,"data":"06:55:35 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":780.796558963,"data":"06:55:35 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":780.999147657,"data":"06:55:35 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":780.999167575,"data":"06:55:35 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":781.386750062,"data":"06:55:35 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":781.386776206,"data":"06:55:35 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":781.589132754,"data":"06:55:35 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":781.589179487,"data":"06:55:35 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":782.182487878,"data":"06:55:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":782.182798611,"data":"06:55:36 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":782.229668823,"data":"06:55:36 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":782.384773708,"data":"06:55:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":782.384802692,"data":"06:55:36 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":782.384807725,"data":"06:55:36 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":782.478701453,"data":"06:55:36 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":782.681399689,"data":"06:55:36 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":783.641067185,"data":"06:55:38 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":783.843355264,"data":"06:55:38 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":817.103796859,"data":"06:56:11 | INFO    | src.training.train | epoch  1/50 | train 0.011601 | val 0.011905 | pinball 0.011905 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":817.310422926,"data":"06:56:11 | INFO    | src.training.train | epoch  1/50 | train 0.011601 | val 0.011905 | pinball 0.011905 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":848.846766692,"data":"06:56:43 | INFO    | src.training.train | epoch  2/50 | train 0.011549 | val 0.011915 | pinball 0.011915 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":849.057071984,"data":"06:56:43 | INFO    | src.training.train | epoch  2/50 | train 0.011549 | val 0.011915 | pinball 0.011915 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":880.713165818,"data":"06:57:15 | INFO    | src.training.train | epoch  3/50 | train 0.011532 | val 0.011890 | pinball 0.011890 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":880.920682293,"data":"06:57:15 | INFO    | src.training.train | epoch  3/50 | train 0.011532 | val 0.011890 | pinball 0.011890 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":912.933573849,"data":"06:57:47 | INFO    | src.training.train | epoch  4/50 | train 0.011515 | val 0.011903 | pinball 0.011903 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":913.139060186,"data":"06:57:47 | INFO    | src.training.train | epoch  4/50 | train 0.011515 | val 0.011903 | pinball 0.011903 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":944.836798085,"data":"06:58:19 | INFO    | src.training.train | epoch  5/50 | train 0.011498 | val 0.011892 | pinball 0.011892 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":945.041708499,"data":"06:58:19 | INFO    | src.training.train | epoch  5/50 | train 0.011498 | val 0.011892 | pinball 0.011892 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":976.546979862,"data":"06:58:50 | INFO    | src.training.train | epoch  6/50 | train 0.011472 | val 0.011928 | pinball 0.011928 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":976.754311237,"data":"06:58:50 | INFO    | src.training.train | epoch  6/50 | train 0.011472 | val 0.011928 | pinball 0.011928 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":1008.257252681,"data":"06:59:22 | INFO    | src.training.train | epoch  7/50 | train 0.011446 | val 0.012009 | pinball 0.012009 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":1008.462802902,"data":"06:59:22 | INFO    | src.training.train | epoch  7/50 | train 0.011446 | val 0.012009 | pinball 0.012009 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":1039.71982516,"data":"06:59:54 | INFO    | src.training.train | epoch  8/50 | train 0.011431 | val 0.011940 | pinball 0.011940 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":1039.719857904,"data":"06:59:54 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":1039.720826517,"data":"06:59:54 | INFO    | src.training.train | 리포트: outputs/reports/20261019_065954_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":1039.720984174,"data":"06:59:54 | INFO    | src.training.train | ✅ 기준선 대비 2.34% 개선\n"}
+,{"stream_name":"stdout","time":1039.806793864,"data":"06:59:54 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011890 (기준선 대비 +2.34%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":1039.925409333,"data":"06:59:54 | INFO    | src.training.train | epoch  8/50 | train 0.011431 | val 0.011940 | pinball 0.011940 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":1039.925436756,"data":"06:59:54 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":1039.925442706,"data":"06:59:54 | INFO    | src.training.train | 리포트: outputs/reports/20261019_065954_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":1039.92544693,"data":"06:59:54 | INFO    | src.training.train | ✅ 기준선 대비 2.34% 개선\n"}
+,{"stream_name":"stdout","time":1039.925451621,"data":"06:59:54 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011890 (기준선 대비 +2.34%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":1040.719875475,"data":"   abl_linear seed 45: 4.4분\n"}
+,{"stream_name":"stdout","time":1040.720247078,"data":"\n"}
+,{"stream_name":"stdout","time":1040.720266773,"data":"── abl_linear seed 46 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":1042.820123758,"data":"06:59:57 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1042.820153731,"data":"06:59:57 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":1042.820159749,"data":"06:59:57 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1042.875970852,"data":"06:59:57 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":1043.023785674,"data":"06:59:57 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1043.023824645,"data":"06:59:57 | INFO    | arch_compare | [1/1] abl_linear — 제거: 변수선택망 → 선형 합치기\n"}
+,{"stream_name":"stdout","time":1043.02383295,"data":"06:59:57 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1043.023838493,"data":"06:59:57 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":1045.019613217,"data":"06:59:59 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":1045.020174861,"data":"06:59:59 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1045.221743243,"data":"06:59:59 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":1045.221779913,"data":"06:59:59 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1045.54435578,"data":"06:59:59 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":1045.544653285,"data":"06:59:59 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1045.746631328,"data":"06:59:59 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":1045.746666332,"data":"06:59:59 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1046.348679096,"data":"07:00:00 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":1046.348704201,"data":"07:00:00 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1046.391080732,"data":"07:00:00 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":1046.550823831,"data":"07:00:00 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":1046.550853373,"data":"07:00:00 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1046.550858916,"data":"07:00:00 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":1046.633871594,"data":"07:00:01 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":1046.837139027,"data":"07:00:01 | INFO    | src.training.train | 아키텍처 abl_linear | 파라미터 0.12M\n"}
+,{"stream_name":"stdout","time":1047.839020905,"data":"07:00:02 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":1048.041130704,"data":"07:00:02 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":1081.385505466,"data":"07:00:35 | INFO    | src.training.train | epoch  1/50 | train 0.011607 | val 0.011915 | pinball 0.011915 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":1081.594256332,"data":"07:00:35 | INFO    | src.training.train | epoch  1/50 | train 0.011607 | val 0.011915 | pinball 0.011915 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":1113.571612972,"data":"07:01:07 | INFO    | src.training.train | epoch  2/50 | train 0.011550 | val 0.011898 | pinball 0.011898 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1113.780284215,"data":"07:01:07 | INFO    | src.training.train | epoch  2/50 | train 0.011550 | val 0.011898 | pinball 0.011898 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1145.333365668,"data":"07:01:39 | INFO    | src.training.train | epoch  3/50 | train 0.011529 | val 0.011900 | pinball 0.011900 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1145.540211062,"data":"07:01:39 | INFO    | src.training.train | epoch  3/50 | train 0.011529 | val 0.011900 | pinball 0.011900 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1177.267256383,"data":"07:02:11 | INFO    | src.training.train | epoch  4/50 | train 0.011501 | val 0.011883 | pinball 0.011883 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":1177.472452756,"data":"07:02:11 | INFO    | src.training.train | epoch  4/50 | train 0.011501 | val 0.011883 | pinball 0.011883 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":1209.456131521,"data":"07:02:43 | INFO    | src.training.train | epoch  5/50 | train 0.011466 | val 0.011997 | pinball 0.011997 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":1209.662696839,"data":"07:02:43 | INFO    | src.training.train | epoch  5/50 | train 0.011466 | val 0.011997 | pinball 0.011997 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":1241.550128091,"data":"07:03:15 | INFO    | src.training.train | epoch  6/50 | train 0.011432 | val 0.011929 | pinball 0.011929 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":1241.758708801,"data":"07:03:15 | INFO    | src.training.train | epoch  6/50 | train 0.011432 | val 0.011929 | pinball 0.011929 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":1273.496777842,"data":"07:03:47 | INFO    | src.training.train | epoch  7/50 | train 0.011398 | val 0.012067 | pinball 0.012067 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":1273.705303933,"data":"07:03:47 | INFO    | src.training.train | epoch  7/50 | train 0.011398 | val 0.012067 | pinball 0.012067 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":1305.217412597,"data":"07:04:19 | INFO    | src.training.train | epoch  8/50 | train 0.011373 | val 0.011977 | pinball 0.011977 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":1305.425984873,"data":"07:04:19 | INFO    | src.training.train | epoch  8/50 | train 0.011373 | val 0.011977 | pinball 0.011977 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":1336.581417033,"data":"07:04:50 | INFO    | src.training.train | epoch  9/50 | train 0.011354 | val 0.012030 | pinball 0.012030 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":1336.581770183,"data":"07:04:50 | INFO    | src.training.train | early stopping (patience 5) — best epoch 4\n"}
+,{"stream_name":"stdout","time":1336.582521361,"data":"07:04:50 | INFO    | src.training.train | 리포트: outputs/reports/20261019_070450_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":1336.582730689,"data":"07:04:50 | INFO    | src.training.train | ✅ 기준선 대비 2.40% 개선\n"}
+,{"stream_name":"stdout","time":1336.673892498,"data":"07:04:51 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011883 (기준선 대비 +2.40%) | best epoch 4 | 4.9분\n"}
+,{"stream_name":"stdout","time":1336.787318393,"data":"07:04:50 | INFO    | src.training.train | epoch  9/50 | train 0.011354 | val 0.012030 | pinball 0.012030 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":1336.787345506,"data":"07:04:50 | INFO    | src.training.train | early stopping (patience 5) — best epoch 4\n"}
+,{"stream_name":"stdout","time":1336.787351625,"data":"07:04:50 | INFO    | src.training.train | 리포트: outputs/reports/20261019_070450_9ee86ec0.json\n"}
+,{"stream_name":"stdout","time":1336.787357992,"data":"07:04:50 | INFO    | src.training.train | ✅ 기준선 대비 2.40% 개선\n"}
+,{"stream_name":"stdout","time":1336.787366921,"data":"07:04:51 | INFO    | arch_compare | abl_linear 완료 | 0.12M | val pinball 0.011883 (기준선 대비 +2.40%) | best epoch 4 | 4.9분\n"}
+,{"stream_name":"stdout","time":1337.611335232,"data":"   abl_linear seed 46: 4.9분\n"}
+,{"stream_name":"stdout","time":1337.612269863,"data":"\n"}
+,{"stream_name":"stdout","time":1337.612289017,"data":"── abl_nomacro seed 42 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":1339.669157783,"data":"07:04:54 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1339.669186718,"data":"07:04:54 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":1339.669192023,"data":"07:04:54 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1339.724843657,"data":"07:04:54 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":1339.873239039,"data":"07:04:54 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1339.873269559,"data":"07:04:54 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":1339.873275682,"data":"07:04:54 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1339.873279513,"data":"07:04:54 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":1341.955027241,"data":"07:04:56 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":1341.955217421,"data":"07:04:56 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1342.157809387,"data":"07:04:56 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":1342.157845868,"data":"07:04:56 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1342.488544197,"data":"07:04:56 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":1342.488588159,"data":"07:04:56 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1342.69166957,"data":"07:04:56 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":1342.691706831,"data":"07:04:56 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1343.305869572,"data":"07:04:57 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":1343.30589957,"data":"07:04:57 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1343.34779619,"data":"07:04:57 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":1343.508393533,"data":"07:04:57 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":1343.50842363,"data":"07:04:57 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1343.508429363,"data":"07:04:57 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":1343.591750091,"data":"07:04:57 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":1343.794860732,"data":"07:04:57 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":1344.831683446,"data":"07:04:59 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":1345.034350331,"data":"07:04:59 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":1378.452025767,"data":"07:05:32 | INFO    | src.training.train | epoch  1/50 | train 0.011609 | val 0.011945 | pinball 0.011945 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":1378.657892749,"data":"07:05:32 | INFO    | src.training.train | epoch  1/50 | train 0.011609 | val 0.011945 | pinball 0.011945 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":1409.885015521,"data":"07:06:04 | INFO    | src.training.train | epoch  2/50 | train 0.011573 | val 0.011938 | pinball 0.011938 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1410.095781389,"data":"07:06:04 | INFO    | src.training.train | epoch  2/50 | train 0.011573 | val 0.011938 | pinball 0.011938 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1441.105603251,"data":"07:06:35 | INFO    | src.training.train | epoch  3/50 | train 0.011536 | val 0.011903 | pinball 0.011903 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1441.317363032,"data":"07:06:35 | INFO    | src.training.train | epoch  3/50 | train 0.011536 | val 0.011903 | pinball 0.011903 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1472.227195935,"data":"07:07:06 | INFO    | src.training.train | epoch  4/50 | train 0.011514 | val 0.011893 | pinball 0.011893 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":1472.436596066,"data":"07:07:06 | INFO    | src.training.train | epoch  4/50 | train 0.011514 | val 0.011893 | pinball 0.011893 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":1503.320201662,"data":"07:07:37 | INFO    | src.training.train | epoch  5/50 | train 0.011508 | val 0.011894 | pinball 0.011894 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":1503.52969606,"data":"07:07:37 | INFO    | src.training.train | epoch  5/50 | train 0.011508 | val 0.011894 | pinball 0.011894 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":1534.602055893,"data":"07:08:08 | INFO    | src.training.train | epoch  6/50 | train 0.011495 | val 0.011900 | pinball 0.011900 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":1534.814134314,"data":"07:08:08 | INFO    | src.training.train | epoch  6/50 | train 0.011495 | val 0.011900 | pinball 0.011900 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":1565.674142265,"data":"07:08:40 | INFO    | src.training.train | epoch  7/50 | train 0.011489 | val 0.011897 | pinball 0.011897 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":1565.882041591,"data":"07:08:40 | INFO    | src.training.train | epoch  7/50 | train 0.011489 | val 0.011897 | pinball 0.011897 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":1596.549489418,"data":"07:09:10 | INFO    | src.training.train | epoch  8/50 | train 0.011476 | val 0.011892 | pinball 0.011892 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":1596.756028661,"data":"07:09:10 | INFO    | src.training.train | epoch  8/50 | train 0.011476 | val 0.011892 | pinball 0.011892 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":1627.5413053,"data":"07:09:41 | INFO    | src.training.train | epoch  9/50 | train 0.011468 | val 0.011875 | pinball 0.011875 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":1627.750462815,"data":"07:09:41 | INFO    | src.training.train | epoch  9/50 | train 0.011468 | val 0.011875 | pinball 0.011875 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":1658.547377824,"data":"07:10:12 | INFO    | src.training.train | epoch 10/50 | train 0.011458 | val 0.011872 | pinball 0.011872 | 31s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":1658.757782283,"data":"07:10:12 | INFO    | src.training.train | epoch 10/50 | train 0.011458 | val 0.011872 | pinball 0.011872 | 31s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":1689.601863215,"data":"07:10:43 | INFO    | src.training.train | epoch 11/50 | train 0.011450 | val 0.011911 | pinball 0.011911 | 31s | lr 1.83e-04\n"}
+,{"stream_name":"stdout","time":1689.809094789,"data":"07:10:43 | INFO    | src.training.train | epoch 11/50 | train 0.011450 | val 0.011911 | pinball 0.011911 | 31s | lr 1.83e-04\n"}
+,{"stream_name":"stdout","time":1720.781783839,"data":"07:11:15 | INFO    | src.training.train | epoch 12/50 | train 0.011442 | val 0.011865 | pinball 0.011865 | 31s | lr 1.79e-04\n"}
+,{"stream_name":"stdout","time":1720.992099944,"data":"07:11:15 | INFO    | src.training.train | epoch 12/50 | train 0.011442 | val 0.011865 | pinball 0.011865 | 31s | lr 1.79e-04\n"}
+,{"stream_name":"stdout","time":1751.375723693,"data":"07:11:45 | INFO    | src.training.train | epoch 13/50 | train 0.011431 | val 0.011890 | pinball 0.011890 | 31s | lr 1.75e-04\n"}
+,{"stream_name":"stdout","time":1751.584489873,"data":"07:11:45 | INFO    | src.training.train | epoch 13/50 | train 0.011431 | val 0.011890 | pinball 0.011890 | 31s | lr 1.75e-04\n"}
+,{"stream_name":"stdout","time":1781.665745546,"data":"07:12:16 | INFO    | src.training.train | epoch 14/50 | train 0.011425 | val 0.011870 | pinball 0.011870 | 30s | lr 1.71e-04\n"}
+,{"stream_name":"stdout","time":1781.871909575,"data":"07:12:16 | INFO    | src.training.train | epoch 14/50 | train 0.011425 | val 0.011870 | pinball 0.011870 | 30s | lr 1.71e-04\n"}
+,{"stream_name":"stdout","time":1812.312428694,"data":"07:12:46 | INFO    | src.training.train | epoch 15/50 | train 0.011416 | val 0.011906 | pinball 0.011906 | 31s | lr 1.66e-04\n"}
+,{"stream_name":"stdout","time":1812.521694423,"data":"07:12:46 | INFO    | src.training.train | epoch 15/50 | train 0.011416 | val 0.011906 | pinball 0.011906 | 31s | lr 1.66e-04\n"}
+,{"stream_name":"stdout","time":1843.246256744,"data":"07:13:17 | INFO    | src.training.train | epoch 16/50 | train 0.011411 | val 0.011889 | pinball 0.011889 | 31s | lr 1.61e-04\n"}
+,{"stream_name":"stdout","time":1843.456114788,"data":"07:13:17 | INFO    | src.training.train | epoch 16/50 | train 0.011411 | val 0.011889 | pinball 0.011889 | 31s | lr 1.61e-04\n"}
+,{"stream_name":"stdout","time":1874.391313683,"data":"07:13:48 | INFO    | src.training.train | epoch 17/50 | train 0.011396 | val 0.011886 | pinball 0.011886 | 31s | lr 1.56e-04\n"}
+,{"stream_name":"stdout","time":1874.39157312,"data":"07:13:48 | INFO    | src.training.train | early stopping (patience 5) — best epoch 12\n"}
+,{"stream_name":"stdout","time":1874.39248088,"data":"07:13:48 | INFO    | src.training.train | 리포트: outputs/reports/20261019_071348_f2578070.json\n"}
+,{"stream_name":"stdout","time":1874.392642999,"data":"07:13:48 | INFO    | src.training.train | ✅ 기준선 대비 2.54% 개선\n"}
+,{"stream_name":"stdout","time":1874.480354702,"data":"07:13:48 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011865 (기준선 대비 +2.54%) | best epoch 12 | 8.9분\n"}
+,{"stream_name":"stdout","time":1874.597922621,"data":"07:13:48 | INFO    | src.training.train | epoch 17/50 | train 0.011396 | val 0.011886 | pinball 0.011886 | 31s | lr 1.56e-04\n"}
+,{"stream_name":"stdout","time":1874.597952167,"data":"07:13:48 | INFO    | src.training.train | early stopping (patience 5) — best epoch 12\n"}
+,{"stream_name":"stdout","time":1874.597970251,"data":"07:13:48 | INFO    | src.training.train | 리포트: outputs/reports/20261019_071348_f2578070.json\n"}
+,{"stream_name":"stdout","time":1874.597974088,"data":"07:13:48 | INFO    | src.training.train | ✅ 기준선 대비 2.54% 개선\n"}
+,{"stream_name":"stdout","time":1874.59797745,"data":"07:13:48 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011865 (기준선 대비 +2.54%) | best epoch 12 | 8.9분\n"}
+,{"stream_name":"stdout","time":1875.338423154,"data":"   abl_nomacro seed 42: 9.0분\n"}
+,{"stream_name":"stdout","time":1875.339484344,"data":"\n"}
+,{"stream_name":"stdout","time":1875.339503924,"data":"── abl_nomacro seed 43 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":1877.397106698,"data":"07:13:51 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1877.397138319,"data":"07:13:51 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":1877.397370352,"data":"07:13:51 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1877.452916649,"data":"07:13:51 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":1877.600399491,"data":"07:13:51 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1877.600435141,"data":"07:13:51 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":1877.600442072,"data":"07:13:51 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":1877.600445766,"data":"07:13:51 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":1879.567874786,"data":"07:13:53 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":1879.56814072,"data":"07:13:53 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1879.770188893,"data":"07:13:53 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":1879.770226587,"data":"07:13:53 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1880.086287038,"data":"07:13:54 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":1880.086316697,"data":"07:13:54 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1880.28871064,"data":"07:13:54 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":1880.288744091,"data":"07:13:54 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1880.896703766,"data":"07:13:55 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":1880.89701663,"data":"07:13:55 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1880.940773084,"data":"07:13:55 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":1881.099794397,"data":"07:13:55 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":1881.099817235,"data":"07:13:55 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":1881.099822765,"data":"07:13:55 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":1881.186767164,"data":"07:13:55 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":1881.390372357,"data":"07:13:55 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":1882.420426463,"data":"07:13:56 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":1882.623063267,"data":"07:13:56 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":1915.396347078,"data":"07:14:29 | INFO    | src.training.train | epoch  1/50 | train 0.011613 | val 0.011958 | pinball 0.011958 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":1915.607724491,"data":"07:14:29 | INFO    | src.training.train | epoch  1/50 | train 0.011613 | val 0.011958 | pinball 0.011958 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":1946.35203252,"data":"07:15:00 | INFO    | src.training.train | epoch  2/50 | train 0.011576 | val 0.011900 | pinball 0.011900 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1946.56234615,"data":"07:15:00 | INFO    | src.training.train | epoch  2/50 | train 0.011576 | val 0.011900 | pinball 0.011900 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1977.416149171,"data":"07:15:31 | INFO    | src.training.train | epoch  3/50 | train 0.011541 | val 0.011897 | pinball 0.011897 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":1977.627009391,"data":"07:15:31 | INFO    | src.training.train | epoch  3/50 | train 0.011541 | val 0.011897 | pinball 0.011897 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2008.721110824,"data":"07:16:03 | INFO    | src.training.train | epoch  4/50 | train 0.011523 | val 0.011890 | pinball 0.011890 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":2008.930699323,"data":"07:16:03 | INFO    | src.training.train | epoch  4/50 | train 0.011523 | val 0.011890 | pinball 0.011890 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":2039.689097019,"data":"07:16:34 | INFO    | src.training.train | epoch  5/50 | train 0.011511 | val 0.011891 | pinball 0.011891 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":2039.899236322,"data":"07:16:34 | INFO    | src.training.train | epoch  5/50 | train 0.011511 | val 0.011891 | pinball 0.011891 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":2070.973110317,"data":"07:17:05 | INFO    | src.training.train | epoch  6/50 | train 0.011499 | val 0.011900 | pinball 0.011900 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":2071.185851365,"data":"07:17:05 | INFO    | src.training.train | epoch  6/50 | train 0.011499 | val 0.011900 | pinball 0.011900 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":2101.699882552,"data":"07:17:36 | INFO    | src.training.train | epoch  7/50 | train 0.011493 | val 0.011896 | pinball 0.011896 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":2101.700150129,"data":"07:17:36 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":2101.701149402,"data":"07:17:36 | INFO    | src.training.train | 리포트: outputs/reports/20261019_071736_f2578070.json\n"}
+,{"stream_name":"stdout","time":2101.701385094,"data":"07:17:36 | INFO    | src.training.train | ✅ 기준선 대비 2.26% 개선\n"}
+,{"stream_name":"stdout","time":2101.788775387,"data":"07:17:36 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011900 (기준선 대비 +2.26%) | best epoch 2 | 3.7분\n"}
+,{"stream_name":"stdout","time":2101.906818106,"data":"07:17:36 | INFO    | src.training.train | epoch  7/50 | train 0.011493 | val 0.011896 | pinball 0.011896 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":2101.90684628,"data":"07:17:36 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":2101.906851361,"data":"07:17:36 | INFO    | src.training.train | 리포트: outputs/reports/20261019_071736_f2578070.json\n"}
+,{"stream_name":"stdout","time":2101.906854977,"data":"07:17:36 | INFO    | src.training.train | ✅ 기준선 대비 2.26% 개선\n"}
+,{"stream_name":"stdout","time":2101.906858633,"data":"07:17:36 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011900 (기준선 대비 +2.26%) | best epoch 2 | 3.7분\n"}
+,{"stream_name":"stdout","time":2102.657921202,"data":"   abl_nomacro seed 43: 3.8분\n"}
+,{"stream_name":"stdout","time":2102.657947113,"data":"\n"}
+,{"stream_name":"stdout","time":2102.657966349,"data":"── abl_nomacro seed 44 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":2104.702528181,"data":"07:17:39 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2104.7025587,"data":"07:17:39 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":2104.702563044,"data":"07:17:39 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2104.757485811,"data":"07:17:39 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":2104.906695007,"data":"07:17:39 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2104.906730764,"data":"07:17:39 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":2104.906737202,"data":"07:17:39 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2104.906742073,"data":"07:17:39 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":2106.883271629,"data":"07:17:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":2106.883552712,"data":"07:17:41 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2107.085421619,"data":"07:17:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":2107.085453641,"data":"07:17:41 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2107.394495742,"data":"07:17:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":2107.394524374,"data":"07:17:41 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2107.597152615,"data":"07:17:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":2107.597184203,"data":"07:17:41 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2108.19733942,"data":"07:17:42 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":2108.197370371,"data":"07:17:42 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2108.240213196,"data":"07:17:42 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":2108.399599482,"data":"07:17:42 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":2108.399644734,"data":"07:17:42 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2108.399657915,"data":"07:17:42 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":2108.474223934,"data":"07:17:42 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":2108.677277517,"data":"07:17:42 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":2109.653678912,"data":"07:17:44 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":2109.855896499,"data":"07:17:44 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":2142.360499229,"data":"07:18:16 | INFO    | src.training.train | epoch  1/50 | train 0.011612 | val 0.011960 | pinball 0.011960 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":2142.571463643,"data":"07:18:16 | INFO    | src.training.train | epoch  1/50 | train 0.011612 | val 0.011960 | pinball 0.011960 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":2173.504114282,"data":"07:18:47 | INFO    | src.training.train | epoch  2/50 | train 0.011577 | val 0.011915 | pinball 0.011915 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2173.711343219,"data":"07:18:47 | INFO    | src.training.train | epoch  2/50 | train 0.011577 | val 0.011915 | pinball 0.011915 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2204.485418,"data":"07:19:18 | INFO    | src.training.train | epoch  3/50 | train 0.011538 | val 0.011899 | pinball 0.011899 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2204.701631233,"data":"07:19:18 | INFO    | src.training.train | epoch  3/50 | train 0.011538 | val 0.011899 | pinball 0.011899 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2235.010444232,"data":"07:19:49 | INFO    | src.training.train | epoch  4/50 | train 0.011517 | val 0.011908 | pinball 0.011908 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":2235.218841878,"data":"07:19:49 | INFO    | src.training.train | epoch  4/50 | train 0.011517 | val 0.011908 | pinball 0.011908 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":2265.808208795,"data":"07:20:20 | INFO    | src.training.train | epoch  5/50 | train 0.011499 | val 0.011897 | pinball 0.011897 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":2266.019291257,"data":"07:20:20 | INFO    | src.training.train | epoch  5/50 | train 0.011499 | val 0.011897 | pinball 0.011897 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":2296.617040094,"data":"07:20:51 | INFO    | src.training.train | epoch  6/50 | train 0.011494 | val 0.011891 | pinball 0.011891 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":2296.828031593,"data":"07:20:51 | INFO    | src.training.train | epoch  6/50 | train 0.011494 | val 0.011891 | pinball 0.011891 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":2327.720027617,"data":"07:21:22 | INFO    | src.training.train | epoch  7/50 | train 0.011482 | val 0.011882 | pinball 0.011882 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":2327.928496258,"data":"07:21:22 | INFO    | src.training.train | epoch  7/50 | train 0.011482 | val 0.011882 | pinball 0.011882 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":2358.310967336,"data":"07:21:52 | INFO    | src.training.train | epoch  8/50 | train 0.011471 | val 0.011895 | pinball 0.011895 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":2358.518368352,"data":"07:21:52 | INFO    | src.training.train | epoch  8/50 | train 0.011471 | val 0.011895 | pinball 0.011895 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":2388.726362383,"data":"07:22:23 | INFO    | src.training.train | epoch  9/50 | train 0.011462 | val 0.011866 | pinball 0.011866 | 30s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":2388.936812833,"data":"07:22:23 | INFO    | src.training.train | epoch  9/50 | train 0.011462 | val 0.011866 | pinball 0.011866 | 30s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":2418.794097841,"data":"07:22:53 | INFO    | src.training.train | epoch 10/50 | train 0.011450 | val 0.011872 | pinball 0.011872 | 30s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":2419.003118046,"data":"07:22:53 | INFO    | src.training.train | epoch 10/50 | train 0.011450 | val 0.011872 | pinball 0.011872 | 30s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":2449.303109817,"data":"07:23:23 | INFO    | src.training.train | epoch 11/50 | train 0.011442 | val 0.011868 | pinball 0.011868 | 31s | lr 1.83e-04\n"}
+,{"stream_name":"stdout","time":2449.5144005,"data":"07:23:23 | INFO    | src.training.train | epoch 11/50 | train 0.011442 | val 0.011868 | pinball 0.011868 | 31s | lr 1.83e-04\n"}
+,{"stream_name":"stdout","time":2479.887245393,"data":"07:23:54 | INFO    | src.training.train | epoch 12/50 | train 0.011431 | val 0.011861 | pinball 0.011861 | 31s | lr 1.79e-04\n"}
+,{"stream_name":"stdout","time":2480.098700248,"data":"07:23:54 | INFO    | src.training.train | epoch 12/50 | train 0.011431 | val 0.011861 | pinball 0.011861 | 31s | lr 1.79e-04\n"}
+,{"stream_name":"stdout","time":2510.533912996,"data":"07:24:24 | INFO    | src.training.train | epoch 13/50 | train 0.011419 | val 0.011896 | pinball 0.011896 | 31s | lr 1.75e-04\n"}
+,{"stream_name":"stdout","time":2510.744894447,"data":"07:24:24 | INFO    | src.training.train | epoch 13/50 | train 0.011419 | val 0.011896 | pinball 0.011896 | 31s | lr 1.75e-04\n"}
+,{"stream_name":"stdout","time":2541.389664491,"data":"07:24:55 | INFO    | src.training.train | epoch 14/50 | train 0.011410 | val 0.011869 | pinball 0.011869 | 31s | lr 1.71e-04\n"}
+,{"stream_name":"stdout","time":2541.389711374,"data":"07:24:55 | INFO    | src.training.train | early stopping (patience 5) — best epoch 9\n"}
+,{"stream_name":"stdout","time":2541.390557676,"data":"07:24:55 | INFO    | src.training.train | 리포트: outputs/reports/20261019_072455_f2578070.json\n"}
+,{"stream_name":"stdout","time":2541.390709028,"data":"07:24:55 | INFO    | src.training.train | ✅ 기준선 대비 2.54% 개선\n"}
+,{"stream_name":"stdout","time":2541.477751431,"data":"07:24:55 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011866 (기준선 대비 +2.54%) | best epoch 9 | 7.3분\n"}
+,{"stream_name":"stdout","time":2541.597137159,"data":"07:24:55 | INFO    | src.training.train | epoch 14/50 | train 0.011410 | val 0.011869 | pinball 0.011869 | 31s | lr 1.71e-04\n"}
+,{"stream_name":"stdout","time":2541.59717418,"data":"07:24:55 | INFO    | src.training.train | early stopping (patience 5) — best epoch 9\n"}
+,{"stream_name":"stdout","time":2541.597179816,"data":"07:24:55 | INFO    | src.training.train | 리포트: outputs/reports/20261019_072455_f2578070.json\n"}
+,{"stream_name":"stdout","time":2541.597183341,"data":"07:24:55 | INFO    | src.training.train | ✅ 기준선 대비 2.54% 개선\n"}
+,{"stream_name":"stdout","time":2541.597188798,"data":"07:24:55 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011866 (기준선 대비 +2.54%) | best epoch 9 | 7.3분\n"}
+,{"stream_name":"stdout","time":2542.342062308,"data":"   abl_nomacro seed 44: 7.3분\n"}
+,{"stream_name":"stdout","time":2542.343236104,"data":"\n"}
+,{"stream_name":"stdout","time":2542.343257993,"data":"── abl_nomacro seed 45 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":2544.409759716,"data":"07:24:58 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2544.409816148,"data":"07:24:58 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":2544.410017619,"data":"07:24:58 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2544.46523181,"data":"07:24:58 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":2544.614373769,"data":"07:24:58 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2544.614405174,"data":"07:24:58 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":2544.614411297,"data":"07:24:58 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2544.614415742,"data":"07:24:58 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":2546.593249403,"data":"07:25:00 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":2546.59334887,"data":"07:25:00 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2546.795751018,"data":"07:25:00 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":2546.79579495,"data":"07:25:00 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2547.1130986,"data":"07:25:01 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":2547.11337538,"data":"07:25:01 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2547.315869274,"data":"07:25:01 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":2547.315932262,"data":"07:25:01 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2547.896335867,"data":"07:25:02 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":2547.896382892,"data":"07:25:02 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2547.940123549,"data":"07:25:02 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":2548.099138065,"data":"07:25:02 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":2548.099171947,"data":"07:25:02 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2548.099175507,"data":"07:25:02 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":2548.174248941,"data":"07:25:02 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":2548.376367224,"data":"07:25:02 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":2549.380196737,"data":"07:25:03 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":2549.582457148,"data":"07:25:03 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":2581.936940789,"data":"07:25:36 | INFO    | src.training.train | epoch  1/50 | train 0.011614 | val 0.011952 | pinball 0.011952 | 31s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":2582.151762074,"data":"07:25:36 | INFO    | src.training.train | epoch  1/50 | train 0.011614 | val 0.011952 | pinball 0.011952 | 31s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":2612.929095669,"data":"07:26:07 | INFO    | src.training.train | epoch  2/50 | train 0.011584 | val 0.011930 | pinball 0.011930 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2613.143247402,"data":"07:26:07 | INFO    | src.training.train | epoch  2/50 | train 0.011584 | val 0.011930 | pinball 0.011930 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2643.914402585,"data":"07:26:38 | INFO    | src.training.train | epoch  3/50 | train 0.011542 | val 0.011910 | pinball 0.011910 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2644.128098857,"data":"07:26:38 | INFO    | src.training.train | epoch  3/50 | train 0.011542 | val 0.011910 | pinball 0.011910 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":2674.738339586,"data":"07:27:09 | INFO    | src.training.train | epoch  4/50 | train 0.011524 | val 0.011902 | pinball 0.011902 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":2674.951791022,"data":"07:27:09 | INFO    | src.training.train | epoch  4/50 | train 0.011524 | val 0.011902 | pinball 0.011902 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":2705.348732572,"data":"07:27:39 | INFO    | src.training.train | epoch  5/50 | train 0.011512 | val 0.011891 | pinball 0.011891 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":2705.56494194,"data":"07:27:39 | INFO    | src.training.train | epoch  5/50 | train 0.011512 | val 0.011891 | pinball 0.011891 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":2735.868087894,"data":"07:28:10 | INFO    | src.training.train | epoch  6/50 | train 0.011507 | val 0.011911 | pinball 0.011911 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":2736.077974515,"data":"07:28:10 | INFO    | src.training.train | epoch  6/50 | train 0.011507 | val 0.011911 | pinball 0.011911 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":2766.883525621,"data":"07:28:41 | INFO    | src.training.train | epoch  7/50 | train 0.011499 | val 0.011889 | pinball 0.011889 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":2767.094871945,"data":"07:28:41 | INFO    | src.training.train | epoch  7/50 | train 0.011499 | val 0.011889 | pinball 0.011889 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":2797.694650068,"data":"07:29:12 | INFO    | src.training.train | epoch  8/50 | train 0.011491 | val 0.011895 | pinball 0.011895 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":2797.902949346,"data":"07:29:12 | INFO    | src.training.train | epoch  8/50 | train 0.011491 | val 0.011895 | pinball 0.011895 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":2828.442212159,"data":"07:29:42 | INFO    | src.training.train | epoch  9/50 | train 0.011485 | val 0.011874 | pinball 0.011874 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":2828.65155043,"data":"07:29:42 | INFO    | src.training.train | epoch  9/50 | train 0.011485 | val 0.011874 | pinball 0.011874 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":2859.140029914,"data":"07:30:13 | INFO    | src.training.train | epoch 10/50 | train 0.011477 | val 0.011879 | pinball 0.011879 | 31s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":2859.349682452,"data":"07:30:13 | INFO    | src.training.train | epoch 10/50 | train 0.011477 | val 0.011879 | pinball 0.011879 | 31s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":2890.183488594,"data":"07:30:44 | INFO    | src.training.train | epoch 11/50 | train 0.011468 | val 0.011872 | pinball 0.011872 | 31s | lr 1.83e-04\n"}
+,{"stream_name":"stdout","time":2890.395221427,"data":"07:30:44 | INFO    | src.training.train | epoch 11/50 | train 0.011468 | val 0.011872 | pinball 0.011872 | 31s | lr 1.83e-04\n"}
+,{"stream_name":"stdout","time":2921.07818613,"data":"07:31:15 | INFO    | src.training.train | epoch 12/50 | train 0.011459 | val 0.011875 | pinball 0.011875 | 31s | lr 1.79e-04\n"}
+,{"stream_name":"stdout","time":2921.294214691,"data":"07:31:15 | INFO    | src.training.train | epoch 12/50 | train 0.011459 | val 0.011875 | pinball 0.011875 | 31s | lr 1.79e-04\n"}
+,{"stream_name":"stdout","time":2951.773318686,"data":"07:31:46 | INFO    | src.training.train | epoch 13/50 | train 0.011452 | val 0.011866 | pinball 0.011866 | 31s | lr 1.75e-04\n"}
+,{"stream_name":"stdout","time":2951.98495386,"data":"07:31:46 | INFO    | src.training.train | epoch 13/50 | train 0.011452 | val 0.011866 | pinball 0.011866 | 31s | lr 1.75e-04\n"}
+,{"stream_name":"stdout","time":2982.118474519,"data":"07:32:16 | INFO    | src.training.train | epoch 14/50 | train 0.011440 | val 0.011880 | pinball 0.011880 | 30s | lr 1.71e-04\n"}
+,{"stream_name":"stdout","time":2982.118512235,"data":"07:32:16 | INFO    | src.training.train | early stopping (patience 5) — best epoch 9\n"}
+,{"stream_name":"stdout","time":2982.119373064,"data":"07:32:16 | INFO    | src.training.train | 리포트: outputs/reports/20261019_073216_f2578070.json\n"}
+,{"stream_name":"stdout","time":2982.119497748,"data":"07:32:16 | INFO    | src.training.train | ✅ 기준선 대비 2.47% 개선\n"}
+,{"stream_name":"stdout","time":2982.204205215,"data":"07:32:16 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011874 (기준선 대비 +2.47%) | best epoch 9 | 7.3분\n"}
+,{"stream_name":"stdout","time":2982.327825413,"data":"07:32:16 | INFO    | src.training.train | epoch 14/50 | train 0.011440 | val 0.011880 | pinball 0.011880 | 30s | lr 1.71e-04\n"}
+,{"stream_name":"stdout","time":2982.32784818,"data":"07:32:16 | INFO    | src.training.train | early stopping (patience 5) — best epoch 9\n"}
+,{"stream_name":"stdout","time":2982.327854149,"data":"07:32:16 | INFO    | src.training.train | 리포트: outputs/reports/20261019_073216_f2578070.json\n"}
+,{"stream_name":"stdout","time":2982.327858977,"data":"07:32:16 | INFO    | src.training.train | ✅ 기준선 대비 2.47% 개선\n"}
+,{"stream_name":"stdout","time":2982.327863471,"data":"07:32:16 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011874 (기준선 대비 +2.47%) | best epoch 9 | 7.3분\n"}
+,{"stream_name":"stdout","time":2983.061736519,"data":"   abl_nomacro seed 45: 7.3분\n"}
+,{"stream_name":"stdout","time":2983.062731034,"data":"\n"}
+,{"stream_name":"stdout","time":2983.062752452,"data":"── abl_nomacro seed 46 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":2985.105372841,"data":"07:32:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2985.105402276,"data":"07:32:19 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":2985.10566352,"data":"07:32:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2985.161226129,"data":"07:32:19 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":2985.309747165,"data":"07:32:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2985.309780391,"data":"07:32:19 | INFO    | arch_compare | [1/1] abl_nomacro — 제거: 매크로 크로스어텐션\n"}
+,{"stream_name":"stdout","time":2985.309787164,"data":"07:32:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":2985.309791516,"data":"07:32:19 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":2987.259853915,"data":"07:32:21 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":2987.260809937,"data":"07:32:21 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2987.462523958,"data":"07:32:21 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":2987.462555596,"data":"07:32:21 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2987.778382201,"data":"07:32:22 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":2987.778419615,"data":"07:32:22 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2987.981280535,"data":"07:32:22 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":2987.981319335,"data":"07:32:22 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2988.584189572,"data":"07:32:22 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":2988.584218697,"data":"07:32:22 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2988.627212166,"data":"07:32:23 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":2988.787182214,"data":"07:32:22 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":2988.787219397,"data":"07:32:22 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":2988.78723613,"data":"07:32:23 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":2988.859765879,"data":"07:32:23 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":2989.061826341,"data":"07:32:23 | INFO    | src.training.train | 아키텍처 abl_nomacro | 파라미터 0.47M\n"}
+,{"stream_name":"stdout","time":2990.026256511,"data":"07:32:24 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":2990.228790276,"data":"07:32:24 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3022.321438875,"data":"07:32:56 | INFO    | src.training.train | epoch  1/50 | train 0.011611 | val 0.011946 | pinball 0.011946 | 31s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3022.534871551,"data":"07:32:56 | INFO    | src.training.train | epoch  1/50 | train 0.011611 | val 0.011946 | pinball 0.011946 | 31s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3052.620255231,"data":"07:33:27 | INFO    | src.training.train | epoch  2/50 | train 0.011579 | val 0.011922 | pinball 0.011922 | 30s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3052.831715711,"data":"07:33:27 | INFO    | src.training.train | epoch  2/50 | train 0.011579 | val 0.011922 | pinball 0.011922 | 30s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3083.179846103,"data":"07:33:57 | INFO    | src.training.train | epoch  3/50 | train 0.011550 | val 0.011893 | pinball 0.011893 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3083.38859183,"data":"07:33:57 | INFO    | src.training.train | epoch  3/50 | train 0.011550 | val 0.011893 | pinball 0.011893 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3113.589171244,"data":"07:34:27 | INFO    | src.training.train | epoch  4/50 | train 0.011525 | val 0.011911 | pinball 0.011911 | 30s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3113.804879621,"data":"07:34:27 | INFO    | src.training.train | epoch  4/50 | train 0.011525 | val 0.011911 | pinball 0.011911 | 30s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3144.207288045,"data":"07:34:58 | INFO    | src.training.train | epoch  5/50 | train 0.011508 | val 0.011888 | pinball 0.011888 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3144.42231197,"data":"07:34:58 | INFO    | src.training.train | epoch  5/50 | train 0.011508 | val 0.011888 | pinball 0.011888 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3175.066069926,"data":"07:35:29 | INFO    | src.training.train | epoch  6/50 | train 0.011496 | val 0.011884 | pinball 0.011884 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3175.276747854,"data":"07:35:29 | INFO    | src.training.train | epoch  6/50 | train 0.011496 | val 0.011884 | pinball 0.011884 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3205.882022716,"data":"07:36:00 | INFO    | src.training.train | epoch  7/50 | train 0.011485 | val 0.011883 | pinball 0.011883 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":3206.095146249,"data":"07:36:00 | INFO    | src.training.train | epoch  7/50 | train 0.011485 | val 0.011883 | pinball 0.011883 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":3236.845537677,"data":"07:36:31 | INFO    | src.training.train | epoch  8/50 | train 0.011478 | val 0.011890 | pinball 0.011890 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":3236.845789112,"data":"07:36:31 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":3236.846646203,"data":"07:36:31 | INFO    | src.training.train | 리포트: outputs/reports/20261019_073631_f2578070.json\n"}
+,{"stream_name":"stdout","time":3236.846823885,"data":"07:36:31 | INFO    | src.training.train | ✅ 기준선 대비 2.32% 개선\n"}
+,{"stream_name":"stdout","time":3236.940763703,"data":"07:36:31 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011893 (기준선 대비 +2.32%) | best epoch 3 | 4.2분\n"}
+,{"stream_name":"stdout","time":3237.054986135,"data":"07:36:31 | INFO    | src.training.train | epoch  8/50 | train 0.011478 | val 0.011890 | pinball 0.011890 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":3237.055009587,"data":"07:36:31 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":3237.055014651,"data":"07:36:31 | INFO    | src.training.train | 리포트: outputs/reports/20261019_073631_f2578070.json\n"}
+,{"stream_name":"stdout","time":3237.055018495,"data":"07:36:31 | INFO    | src.training.train | ✅ 기준선 대비 2.32% 개선\n"}
+,{"stream_name":"stdout","time":3237.055022193,"data":"07:36:31 | INFO    | arch_compare | abl_nomacro 완료 | 0.47M | val pinball 0.011893 (기준선 대비 +2.32%) | best epoch 3 | 4.2분\n"}
+,{"stream_name":"stdout","time":3237.803780884,"data":"   abl_nomacro seed 46: 4.2분\n"}
+,{"stream_name":"stdout","time":3237.803975529,"data":"\n"}
+,{"stream_name":"stdout","time":3237.803985581,"data":"── abl_nostatic seed 42 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":3239.853112411,"data":"07:36:34 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3239.853141128,"data":"07:36:34 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":3239.85337408,"data":"07:36:34 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3239.908954922,"data":"07:36:34 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":3240.057384252,"data":"07:36:34 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3240.057414005,"data":"07:36:34 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":3240.05741884,"data":"07:36:34 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3240.057422528,"data":"07:36:34 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":3242.058266194,"data":"07:36:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":3242.058298961,"data":"07:36:36 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3242.26046149,"data":"07:36:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":3242.260497172,"data":"07:36:36 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3242.57688345,"data":"07:36:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":3242.576907741,"data":"07:36:36 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3242.779261882,"data":"07:36:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":3242.779320358,"data":"07:36:36 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3243.342569298,"data":"07:36:37 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":3243.342595546,"data":"07:36:37 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3243.385229845,"data":"07:36:37 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":3243.544657106,"data":"07:36:37 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":3243.54468907,"data":"07:36:37 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3243.544694736,"data":"07:36:37 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":3243.627640642,"data":"07:36:38 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":3243.830738404,"data":"07:36:38 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":3244.826497488,"data":"07:36:39 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3245.02917023,"data":"07:36:39 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3278.208387157,"data":"07:37:12 | INFO    | src.training.train | epoch  1/50 | train 0.011609 | val 0.011936 | pinball 0.011936 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3278.421763013,"data":"07:37:12 | INFO    | src.training.train | epoch  1/50 | train 0.011609 | val 0.011936 | pinball 0.011936 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3309.80660959,"data":"07:37:44 | INFO    | src.training.train | epoch  2/50 | train 0.011573 | val 0.011914 | pinball 0.011914 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3310.015971641,"data":"07:37:44 | INFO    | src.training.train | epoch  2/50 | train 0.011573 | val 0.011914 | pinball 0.011914 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3341.667913333,"data":"07:38:16 | INFO    | src.training.train | epoch  3/50 | train 0.011540 | val 0.011901 | pinball 0.011901 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3341.87952631,"data":"07:38:16 | INFO    | src.training.train | epoch  3/50 | train 0.011540 | val 0.011901 | pinball 0.011901 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3374.365705456,"data":"07:38:48 | INFO    | src.training.train | epoch  4/50 | train 0.011521 | val 0.011889 | pinball 0.011889 | 33s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3374.578565532,"data":"07:38:48 | INFO    | src.training.train | epoch  4/50 | train 0.011521 | val 0.011889 | pinball 0.011889 | 33s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3406.840087727,"data":"07:39:21 | INFO    | src.training.train | epoch  5/50 | train 0.011502 | val 0.011918 | pinball 0.011918 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3407.054999205,"data":"07:39:21 | INFO    | src.training.train | epoch  5/50 | train 0.011502 | val 0.011918 | pinball 0.011918 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3439.808493048,"data":"07:39:54 | INFO    | src.training.train | epoch  6/50 | train 0.011479 | val 0.011939 | pinball 0.011939 | 33s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3440.017807221,"data":"07:39:54 | INFO    | src.training.train | epoch  6/50 | train 0.011479 | val 0.011939 | pinball 0.011939 | 33s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3472.113987795,"data":"07:40:26 | INFO    | src.training.train | epoch  7/50 | train 0.011456 | val 0.011927 | pinball 0.011927 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":3472.328079288,"data":"07:40:26 | INFO    | src.training.train | epoch  7/50 | train 0.011456 | val 0.011927 | pinball 0.011927 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":3504.411949133,"data":"07:40:58 | INFO    | src.training.train | epoch  8/50 | train 0.011444 | val 0.011937 | pinball 0.011937 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":3504.626967701,"data":"07:40:58 | INFO    | src.training.train | epoch  8/50 | train 0.011444 | val 0.011937 | pinball 0.011937 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":3536.462479857,"data":"07:41:30 | INFO    | src.training.train | epoch  9/50 | train 0.011423 | val 0.011928 | pinball 0.011928 | 32s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":3536.462711872,"data":"07:41:30 | INFO    | src.training.train | early stopping (patience 5) — best epoch 4\n"}
+,{"stream_name":"stdout","time":3536.463437776,"data":"07:41:30 | INFO    | src.training.train | 리포트: outputs/reports/20261019_074130_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":3536.463589407,"data":"07:41:30 | INFO    | src.training.train | ✅ 기준선 대비 2.35% 개선\n"}
+,{"stream_name":"stdout","time":3536.552169359,"data":"07:41:30 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011889 (기준선 대비 +2.35%) | best epoch 4 | 4.9분\n"}
+,{"stream_name":"stdout","time":3536.675543493,"data":"07:41:30 | INFO    | src.training.train | epoch  9/50 | train 0.011423 | val 0.011928 | pinball 0.011928 | 32s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":3536.675575578,"data":"07:41:30 | INFO    | src.training.train | early stopping (patience 5) — best epoch 4\n"}
+,{"stream_name":"stdout","time":3536.675580581,"data":"07:41:30 | INFO    | src.training.train | 리포트: outputs/reports/20261019_074130_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":3536.675583807,"data":"07:41:30 | INFO    | src.training.train | ✅ 기준선 대비 2.35% 개선\n"}
+,{"stream_name":"stdout","time":3536.675587091,"data":"07:41:30 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011889 (기준선 대비 +2.35%) | best epoch 4 | 4.9분\n"}
+,{"stream_name":"stdout","time":3537.442076465,"data":"   abl_nostatic seed 42: 5.0분\n"}
+,{"stream_name":"stdout","time":3537.443272696,"data":"\n"}
+,{"stream_name":"stdout","time":3537.443294523,"data":"── abl_nostatic seed 43 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":3539.465087027,"data":"07:41:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3539.465113885,"data":"07:41:33 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":3539.465119964,"data":"07:41:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3539.520090041,"data":"07:41:33 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":3539.670496052,"data":"07:41:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3539.670555204,"data":"07:41:33 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":3539.670562382,"data":"07:41:33 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3539.670566329,"data":"07:41:33 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":3541.698402409,"data":"07:41:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":3541.698452079,"data":"07:41:36 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3541.900654237,"data":"07:41:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":3541.900688733,"data":"07:41:36 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3542.220125328,"data":"07:41:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":3542.220159393,"data":"07:41:36 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3542.422295685,"data":"07:41:36 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":3542.422328316,"data":"07:41:36 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3543.020106923,"data":"07:41:37 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":3543.020154768,"data":"07:41:37 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3543.06370019,"data":"07:41:37 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":3543.222182626,"data":"07:41:37 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":3543.222211257,"data":"07:41:37 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3543.222217033,"data":"07:41:37 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":3543.295897442,"data":"07:41:37 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":3543.498046293,"data":"07:41:37 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":3544.482635891,"data":"07:41:38 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3544.685020713,"data":"07:41:38 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3577.845675455,"data":"07:42:12 | INFO    | src.training.train | epoch  1/50 | train 0.011610 | val 0.011942 | pinball 0.011942 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3578.058716848,"data":"07:42:12 | INFO    | src.training.train | epoch  1/50 | train 0.011610 | val 0.011942 | pinball 0.011942 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3609.495423399,"data":"07:42:43 | INFO    | src.training.train | epoch  2/50 | train 0.011571 | val 0.011880 | pinball 0.011880 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3609.708427436,"data":"07:42:43 | INFO    | src.training.train | epoch  2/50 | train 0.011571 | val 0.011880 | pinball 0.011880 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3640.619506322,"data":"07:43:15 | INFO    | src.training.train | epoch  3/50 | train 0.011541 | val 0.011904 | pinball 0.011904 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3640.833179141,"data":"07:43:15 | INFO    | src.training.train | epoch  3/50 | train 0.011541 | val 0.011904 | pinball 0.011904 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3672.008135851,"data":"07:43:46 | INFO    | src.training.train | epoch  4/50 | train 0.011512 | val 0.011921 | pinball 0.011921 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3672.220605392,"data":"07:43:46 | INFO    | src.training.train | epoch  4/50 | train 0.011512 | val 0.011921 | pinball 0.011921 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3703.706658535,"data":"07:44:18 | INFO    | src.training.train | epoch  5/50 | train 0.011492 | val 0.011902 | pinball 0.011902 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3703.920432779,"data":"07:44:18 | INFO    | src.training.train | epoch  5/50 | train 0.011492 | val 0.011902 | pinball 0.011902 | 32s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3734.649557974,"data":"07:44:49 | INFO    | src.training.train | epoch  6/50 | train 0.011471 | val 0.011909 | pinball 0.011909 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3734.864713015,"data":"07:44:49 | INFO    | src.training.train | epoch  6/50 | train 0.011471 | val 0.011909 | pinball 0.011909 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3766.120671547,"data":"07:45:20 | INFO    | src.training.train | epoch  7/50 | train 0.011451 | val 0.011920 | pinball 0.011920 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":3766.120708713,"data":"07:45:20 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":3766.121531274,"data":"07:45:20 | INFO    | src.training.train | 리포트: outputs/reports/20261019_074520_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":3766.121680438,"data":"07:45:20 | INFO    | src.training.train | ✅ 기준선 대비 2.42% 개선\n"}
+,{"stream_name":"stdout","time":3766.211754923,"data":"07:45:20 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011880 (기준선 대비 +2.42%) | best epoch 2 | 3.8분\n"}
+,{"stream_name":"stdout","time":3766.330187491,"data":"07:45:20 | INFO    | src.training.train | epoch  7/50 | train 0.011451 | val 0.011920 | pinball 0.011920 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":3766.330215077,"data":"07:45:20 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":3766.330221258,"data":"07:45:20 | INFO    | src.training.train | 리포트: outputs/reports/20261019_074520_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":3766.330225722,"data":"07:45:20 | INFO    | src.training.train | ✅ 기준선 대비 2.42% 개선\n"}
+,{"stream_name":"stdout","time":3766.330230292,"data":"07:45:20 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011880 (기준선 대비 +2.42%) | best epoch 2 | 3.8분\n"}
+,{"stream_name":"stdout","time":3767.079820724,"data":"   abl_nostatic seed 43: 3.8분\n"}
+,{"stream_name":"stdout","time":3767.080460351,"data":"\n"}
+,{"stream_name":"stdout","time":3767.080480043,"data":"── abl_nostatic seed 44 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":3769.135140745,"data":"07:45:23 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3769.135169995,"data":"07:45:23 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":3769.135376238,"data":"07:45:23 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3769.190495692,"data":"07:45:23 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":3769.339257014,"data":"07:45:23 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3769.339290178,"data":"07:45:23 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":3769.339296427,"data":"07:45:23 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":3769.339300978,"data":"07:45:23 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":3771.347160776,"data":"07:45:25 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":3771.347432752,"data":"07:45:25 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3771.549915636,"data":"07:45:25 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":3771.54995146,"data":"07:45:25 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3771.867553382,"data":"07:45:26 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":3771.867581328,"data":"07:45:26 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3772.06995455,"data":"07:45:26 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":3772.069986914,"data":"07:45:26 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3772.658546524,"data":"07:45:27 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":3772.658573572,"data":"07:45:27 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3772.703903453,"data":"07:45:27 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":3772.860896257,"data":"07:45:27 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":3772.860937906,"data":"07:45:27 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":3772.860945251,"data":"07:45:27 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":3772.937668142,"data":"07:45:27 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":3773.139644873,"data":"07:45:27 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":3774.159090664,"data":"07:45:28 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3774.361274217,"data":"07:45:28 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":3807.679410335,"data":"07:46:02 | INFO    | src.training.train | epoch  1/50 | train 0.011611 | val 0.011947 | pinball 0.011947 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3807.894860444,"data":"07:46:02 | INFO    | src.training.train | epoch  1/50 | train 0.011611 | val 0.011947 | pinball 0.011947 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":3839.723402507,"data":"07:46:34 | INFO    | src.training.train | epoch  2/50 | train 0.011579 | val 0.011925 | pinball 0.011925 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3839.939358129,"data":"07:46:34 | INFO    | src.training.train | epoch  2/50 | train 0.011579 | val 0.011925 | pinball 0.011925 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3871.68384295,"data":"07:47:06 | INFO    | src.training.train | epoch  3/50 | train 0.011542 | val 0.011896 | pinball 0.011896 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3871.897266831,"data":"07:47:06 | INFO    | src.training.train | epoch  3/50 | train 0.011542 | val 0.011896 | pinball 0.011896 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":3904.6004301,"data":"07:47:38 | INFO    | src.training.train | epoch  4/50 | train 0.011521 | val 0.011898 | pinball 0.011898 | 33s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3904.815022136,"data":"07:47:38 | INFO    | src.training.train | epoch  4/50 | train 0.011521 | val 0.011898 | pinball 0.011898 | 33s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":3935.820576869,"data":"07:48:10 | INFO    | src.training.train | epoch  5/50 | train 0.011496 | val 0.011919 | pinball 0.011919 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3936.032998859,"data":"07:48:10 | INFO    | src.training.train | epoch  5/50 | train 0.011496 | val 0.011919 | pinball 0.011919 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":3968.871857943,"data":"07:48:43 | INFO    | src.training.train | epoch  6/50 | train 0.011480 | val 0.011911 | pinball 0.011911 | 33s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":3969.085653208,"data":"07:48:43 | INFO    | src.training.train | epoch  6/50 | train 0.011480 | val 0.011911 | pinball 0.011911 | 33s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4000.892525577,"data":"07:49:15 | INFO    | src.training.train | epoch  7/50 | train 0.011463 | val 0.011894 | pinball 0.011894 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4001.110404064,"data":"07:49:15 | INFO    | src.training.train | epoch  7/50 | train 0.011463 | val 0.011894 | pinball 0.011894 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4032.454110669,"data":"07:49:46 | INFO    | src.training.train | epoch  8/50 | train 0.011445 | val 0.011923 | pinball 0.011923 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":4032.454144679,"data":"07:49:46 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":4032.455116745,"data":"07:49:46 | INFO    | src.training.train | 리포트: outputs/reports/20261019_074946_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":4032.455267415,"data":"07:49:46 | INFO    | src.training.train | ✅ 기준선 대비 2.29% 개선\n"}
+,{"stream_name":"stdout","time":4032.55065601,"data":"07:49:46 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011896 (기준선 대비 +2.29%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":4032.668450253,"data":"07:49:46 | INFO    | src.training.train | epoch  8/50 | train 0.011445 | val 0.011923 | pinball 0.011923 | 32s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":4032.668485136,"data":"07:49:46 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":4032.668505291,"data":"07:49:46 | INFO    | src.training.train | 리포트: outputs/reports/20261019_074946_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":4032.668509549,"data":"07:49:46 | INFO    | src.training.train | ✅ 기준선 대비 2.29% 개선\n"}
+,{"stream_name":"stdout","time":4032.668513234,"data":"07:49:46 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011896 (기준선 대비 +2.29%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":4033.410045564,"data":"   abl_nostatic seed 44: 4.4분\n"}
+,{"stream_name":"stdout","time":4033.411056646,"data":"\n"}
+,{"stream_name":"stdout","time":4033.411077686,"data":"── abl_nostatic seed 45 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":4035.457224859,"data":"07:49:49 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4035.45725341,"data":"07:49:49 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":4035.457460884,"data":"07:49:49 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4035.512369233,"data":"07:49:49 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4035.662184062,"data":"07:49:49 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4035.662250915,"data":"07:49:49 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":4035.662264909,"data":"07:49:49 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4035.662268246,"data":"07:49:49 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4037.651275911,"data":"07:49:52 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4037.651303741,"data":"07:49:52 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4037.853641625,"data":"07:49:52 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4037.853678598,"data":"07:49:52 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4038.162914618,"data":"07:49:52 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4038.162943445,"data":"07:49:52 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4038.365253035,"data":"07:49:52 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4038.365286211,"data":"07:49:52 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4038.949640579,"data":"07:49:53 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4038.949684736,"data":"07:49:53 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4038.995919464,"data":"07:49:53 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4039.151847297,"data":"07:49:53 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4039.151879172,"data":"07:49:53 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4039.151884654,"data":"07:49:53 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4039.228783618,"data":"07:49:53 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":4039.431753495,"data":"07:49:53 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":4040.463644988,"data":"07:49:54 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4040.666154176,"data":"07:49:54 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4074.768079341,"data":"07:50:29 | INFO    | src.training.train | epoch  1/50 | train 0.011613 | val 0.011948 | pinball 0.011948 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4074.983687041,"data":"07:50:29 | INFO    | src.training.train | epoch  1/50 | train 0.011613 | val 0.011948 | pinball 0.011948 | 33s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4107.189205274,"data":"07:51:01 | INFO    | src.training.train | epoch  2/50 | train 0.011574 | val 0.011912 | pinball 0.011912 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4107.408497924,"data":"07:51:01 | INFO    | src.training.train | epoch  2/50 | train 0.011574 | val 0.011912 | pinball 0.011912 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4139.900727782,"data":"07:51:34 | INFO    | src.training.train | epoch  3/50 | train 0.011539 | val 0.011883 | pinball 0.011883 | 33s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4140.120408313,"data":"07:51:34 | INFO    | src.training.train | epoch  3/50 | train 0.011539 | val 0.011883 | pinball 0.011883 | 33s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4171.946572865,"data":"07:52:06 | INFO    | src.training.train | epoch  4/50 | train 0.011525 | val 0.011918 | pinball 0.011918 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4172.162857833,"data":"07:52:06 | INFO    | src.training.train | epoch  4/50 | train 0.011525 | val 0.011918 | pinball 0.011918 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4204.731678434,"data":"07:52:39 | INFO    | src.training.train | epoch  5/50 | train 0.011516 | val 0.011881 | pinball 0.011881 | 33s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":4204.947666936,"data":"07:52:39 | INFO    | src.training.train | epoch  5/50 | train 0.011516 | val 0.011881 | pinball 0.011881 | 33s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":4236.772533919,"data":"07:53:11 | INFO    | src.training.train | epoch  6/50 | train 0.011501 | val 0.011898 | pinball 0.011898 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4236.983713028,"data":"07:53:11 | INFO    | src.training.train | epoch  6/50 | train 0.011501 | val 0.011898 | pinball 0.011898 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4268.943340545,"data":"07:53:43 | INFO    | src.training.train | epoch  7/50 | train 0.011483 | val 0.011892 | pinball 0.011892 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4269.167141925,"data":"07:53:43 | INFO    | src.training.train | epoch  7/50 | train 0.011483 | val 0.011892 | pinball 0.011892 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4302.112102283,"data":"07:54:16 | INFO    | src.training.train | epoch  8/50 | train 0.011467 | val 0.011917 | pinball 0.011917 | 33s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":4302.112399175,"data":"07:54:16 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":4302.113187723,"data":"07:54:16 | INFO    | src.training.train | 리포트: outputs/reports/20261019_075416_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":4302.113334812,"data":"07:54:16 | INFO    | src.training.train | ✅ 기준선 대비 2.39% 개선\n"}
+,{"stream_name":"stdout","time":4302.20603436,"data":"07:54:16 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011883 (기준선 대비 +2.39%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":4302.327056118,"data":"07:54:16 | INFO    | src.training.train | epoch  8/50 | train 0.011467 | val 0.011917 | pinball 0.011917 | 33s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":4302.327079158,"data":"07:54:16 | INFO    | src.training.train | early stopping (patience 5) — best epoch 3\n"}
+,{"stream_name":"stdout","time":4302.327085443,"data":"07:54:16 | INFO    | src.training.train | 리포트: outputs/reports/20261019_075416_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":4302.327090841,"data":"07:54:16 | INFO    | src.training.train | ✅ 기준선 대비 2.39% 개선\n"}
+,{"stream_name":"stdout","time":4302.327095361,"data":"07:54:16 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011883 (기준선 대비 +2.39%) | best epoch 3 | 4.4분\n"}
+,{"stream_name":"stdout","time":4303.072935469,"data":"   abl_nostatic seed 45: 4.5분\n"}
+,{"stream_name":"stdout","time":4303.073720672,"data":"\n"}
+,{"stream_name":"stdout","time":4303.073744297,"data":"── abl_nostatic seed 46 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":4305.138915724,"data":"07:54:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4305.139103835,"data":"07:54:19 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":4305.139186221,"data":"07:54:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4305.195251829,"data":"07:54:19 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4305.343246713,"data":"07:54:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4305.343280493,"data":"07:54:19 | INFO    | arch_compare | [1/1] abl_nostatic — 제거: 정적 문맥\n"}
+,{"stream_name":"stdout","time":4305.34328736,"data":"07:54:19 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4305.343293232,"data":"07:54:19 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4307.319952973,"data":"07:54:21 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4307.320833692,"data":"07:54:21 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4307.522035955,"data":"07:54:21 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4307.522083516,"data":"07:54:21 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4307.849871246,"data":"07:54:22 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4307.850131963,"data":"07:54:22 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4308.052099553,"data":"07:54:22 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4308.052134028,"data":"07:54:22 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4308.64444732,"data":"07:54:23 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4308.644477649,"data":"07:54:23 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4308.687418702,"data":"07:54:23 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4308.847244249,"data":"07:54:23 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4308.847275297,"data":"07:54:23 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4308.847285023,"data":"07:54:23 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4308.918880089,"data":"07:54:23 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":4309.121737095,"data":"07:54:23 | INFO    | src.training.train | 아키텍처 abl_nostatic | 파라미터 0.46M\n"}
+,{"stream_name":"stdout","time":4310.123288491,"data":"07:54:24 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4310.325558129,"data":"07:54:24 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4344.811187203,"data":"07:54:59 | INFO    | src.training.train | epoch  1/50 | train 0.011610 | val 0.011929 | pinball 0.011929 | 34s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4345.025768396,"data":"07:54:59 | INFO    | src.training.train | epoch  1/50 | train 0.011610 | val 0.011929 | pinball 0.011929 | 34s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4377.024921306,"data":"07:55:31 | INFO    | src.training.train | epoch  2/50 | train 0.011575 | val 0.011900 | pinball 0.011900 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4377.238950812,"data":"07:55:31 | INFO    | src.training.train | epoch  2/50 | train 0.011575 | val 0.011900 | pinball 0.011900 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4408.847552347,"data":"07:56:03 | INFO    | src.training.train | epoch  3/50 | train 0.011540 | val 0.011902 | pinball 0.011902 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4409.06091349,"data":"07:56:03 | INFO    | src.training.train | epoch  3/50 | train 0.011540 | val 0.011902 | pinball 0.011902 | 32s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4441.065797045,"data":"07:56:35 | INFO    | src.training.train | epoch  4/50 | train 0.011512 | val 0.011902 | pinball 0.011902 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4441.289165025,"data":"07:56:35 | INFO    | src.training.train | epoch  4/50 | train 0.011512 | val 0.011902 | pinball 0.011902 | 32s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4473.649327134,"data":"07:57:08 | INFO    | src.training.train | epoch  5/50 | train 0.011484 | val 0.011912 | pinball 0.011912 | 33s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":4473.863509717,"data":"07:57:08 | INFO    | src.training.train | epoch  5/50 | train 0.011484 | val 0.011912 | pinball 0.011912 | 33s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":4505.99844512,"data":"07:57:40 | INFO    | src.training.train | epoch  6/50 | train 0.011459 | val 0.011904 | pinball 0.011904 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4506.21388589,"data":"07:57:40 | INFO    | src.training.train | epoch  6/50 | train 0.011459 | val 0.011904 | pinball 0.011904 | 32s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4537.885191421,"data":"07:58:12 | INFO    | src.training.train | epoch  7/50 | train 0.011438 | val 0.011942 | pinball 0.011942 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4537.885246261,"data":"07:58:12 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":4537.886155682,"data":"07:58:12 | INFO    | src.training.train | 리포트: outputs/reports/20261019_075812_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":4537.886267238,"data":"07:58:12 | INFO    | src.training.train | ✅ 기준선 대비 2.26% 개선\n"}
+,{"stream_name":"stdout","time":4537.976819308,"data":"07:58:12 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011900 (기준선 대비 +2.26%) | best epoch 2 | 3.9분\n"}
+,{"stream_name":"stdout","time":4538.100026575,"data":"07:58:12 | INFO    | src.training.train | epoch  7/50 | train 0.011438 | val 0.011942 | pinball 0.011942 | 32s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4538.100053181,"data":"07:58:12 | INFO    | src.training.train | early stopping (patience 5) — best epoch 2\n"}
+,{"stream_name":"stdout","time":4538.10005901,"data":"07:58:12 | INFO    | src.training.train | 리포트: outputs/reports/20261019_075812_9e4bbc80.json\n"}
+,{"stream_name":"stdout","time":4538.100064067,"data":"07:58:12 | INFO    | src.training.train | ✅ 기준선 대비 2.26% 개선\n"}
+,{"stream_name":"stdout","time":4538.100069064,"data":"07:58:12 | INFO    | arch_compare | abl_nostatic 완료 | 0.46M | val pinball 0.011900 (기준선 대비 +2.26%) | best epoch 2 | 3.9분\n"}
+,{"stream_name":"stdout","time":4538.855042469,"data":"   abl_nostatic seed 46: 3.9분\n"}
+,{"stream_name":"stdout","time":4538.856548967,"data":"\n"}
+,{"stream_name":"stdout","time":4538.856574678,"data":"── patchtst_q seed 42 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":4540.932031044,"data":"07:58:15 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4540.9320571,"data":"07:58:15 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":4540.932063306,"data":"07:58:15 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4540.987785716,"data":"07:58:15 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4541.135232354,"data":"07:58:15 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4541.135265711,"data":"07:58:15 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":4541.135287902,"data":"07:58:15 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4541.13529238,"data":"07:58:15 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4543.145462774,"data":"07:58:17 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4543.145873265,"data":"07:58:17 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4543.348331022,"data":"07:58:17 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4543.348367817,"data":"07:58:17 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4543.675766849,"data":"07:58:18 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4543.675797348,"data":"07:58:18 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4543.878055535,"data":"07:58:18 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4543.878091063,"data":"07:58:18 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4544.478103529,"data":"07:58:18 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4544.478130387,"data":"07:58:18 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4544.520563149,"data":"07:58:18 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4544.680221383,"data":"07:58:18 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4544.680251928,"data":"07:58:18 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4544.680264197,"data":"07:58:18 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4544.749299019,"data":"07:58:19 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":4544.951490556,"data":"07:58:19 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":4545.944121231,"data":"07:58:20 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4546.146417325,"data":"07:58:20 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4579.267106805,"data":"07:58:53 | INFO    | src.training.train | epoch  1/50 | train 0.011746 | val 0.012176 | pinball 0.012176 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4579.486086259,"data":"07:58:53 | INFO    | src.training.train | epoch  1/50 | train 0.011746 | val 0.012176 | pinball 0.012176 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4610.685706231,"data":"07:59:25 | INFO    | src.training.train | epoch  2/50 | train 0.011743 | val 0.012171 | pinball 0.012171 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4610.90345235,"data":"07:59:25 | INFO    | src.training.train | epoch  2/50 | train 0.011743 | val 0.012171 | pinball 0.012171 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4641.857335764,"data":"07:59:56 | INFO    | src.training.train | epoch  3/50 | train 0.011700 | val 0.012147 | pinball 0.012147 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4642.077738083,"data":"07:59:56 | INFO    | src.training.train | epoch  3/50 | train 0.011700 | val 0.012147 | pinball 0.012147 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4673.245532974,"data":"08:00:27 | INFO    | src.training.train | epoch  4/50 | train 0.011666 | val 0.012187 | pinball 0.012187 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4673.461450504,"data":"08:00:27 | INFO    | src.training.train | epoch  4/50 | train 0.011666 | val 0.012187 | pinball 0.012187 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4704.478923263,"data":"08:00:58 | INFO    | src.training.train | epoch  5/50 | train 0.011656 | val 0.012127 | pinball 0.012127 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":4704.695676536,"data":"08:00:58 | INFO    | src.training.train | epoch  5/50 | train 0.011656 | val 0.012127 | pinball 0.012127 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":4735.718151254,"data":"08:01:30 | INFO    | src.training.train | epoch  6/50 | train 0.011647 | val 0.012121 | pinball 0.012121 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4735.939197339,"data":"08:01:30 | INFO    | src.training.train | epoch  6/50 | train 0.011647 | val 0.012121 | pinball 0.012121 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":4766.916430962,"data":"08:02:01 | INFO    | src.training.train | epoch  7/50 | train 0.011639 | val 0.012167 | pinball 0.012167 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4767.135324649,"data":"08:02:01 | INFO    | src.training.train | epoch  7/50 | train 0.011639 | val 0.012167 | pinball 0.012167 | 31s | lr 1.95e-04\n"}
+,{"stream_name":"stdout","time":4798.160395308,"data":"08:02:32 | INFO    | src.training.train | epoch  8/50 | train 0.011634 | val 0.012152 | pinball 0.012152 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":4798.371409287,"data":"08:02:32 | INFO    | src.training.train | epoch  8/50 | train 0.011634 | val 0.012152 | pinball 0.012152 | 31s | lr 1.92e-04\n"}
+,{"stream_name":"stdout","time":4829.505571501,"data":"08:03:03 | INFO    | src.training.train | epoch  9/50 | train 0.011629 | val 0.012118 | pinball 0.012118 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":4829.719680631,"data":"08:03:03 | INFO    | src.training.train | epoch  9/50 | train 0.011629 | val 0.012118 | pinball 0.012118 | 31s | lr 1.90e-04\n"}
+,{"stream_name":"stdout","time":4860.705371434,"data":"08:03:35 | INFO    | src.training.train | epoch 10/50 | train 0.011624 | val 0.012126 | pinball 0.012126 | 31s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":4860.705408015,"data":"08:03:35 | INFO    | src.training.train | early stopping (patience 5) — best epoch 5\n"}
+,{"stream_name":"stdout","time":4860.706328607,"data":"08:03:35 | INFO    | src.training.train | 리포트: outputs/reports/20261019_080335_5263fac6.json\n"}
+,{"stream_name":"stdout","time":4860.706498889,"data":"08:03:35 | WARNING | src.training.train | ⚠️ 기준선 대비 0.39% 개선에 그쳤다 — 사실상 무조건부 분포만 학습했다\n"}
+,{"stream_name":"stdout","time":4860.800164563,"data":"08:03:35 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012127 (기준선 대비 +0.39%) | best epoch 5 | 5.3분\n"}
+,{"stream_name":"stdout","time":4860.921797096,"data":"08:03:35 | INFO    | src.training.train | epoch 10/50 | train 0.011624 | val 0.012126 | pinball 0.012126 | 31s | lr 1.87e-04\n"}
+,{"stream_name":"stdout","time":4860.921826357,"data":"08:03:35 | INFO    | src.training.train | early stopping (patience 5) — best epoch 5\n"}
+,{"stream_name":"stdout","time":4860.92184635,"data":"08:03:35 | INFO    | src.training.train | 리포트: outputs/reports/20261019_080335_5263fac6.json\n"}
+,{"stream_name":"stdout","time":4860.921851071,"data":"08:03:35 | WARNING | src.training.train | ⚠️ 기준선 대비 0.39% 개선에 그쳤다 — 사실상 무조건부 분포만 학습했다\n"}
+,{"stream_name":"stdout","time":4860.921855629,"data":"08:03:35 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012127 (기준선 대비 +0.39%) | best epoch 5 | 5.3분\n"}
+,{"stream_name":"stdout","time":4861.712045976,"data":"   patchtst_q seed 42: 5.4분\n"}
+,{"stream_name":"stdout","time":4861.71306102,"data":"\n"}
+,{"stream_name":"stdout","time":4861.713083915,"data":"── patchtst_q seed 43 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":4863.782431586,"data":"08:03:38 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4863.782457294,"data":"08:03:38 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":4863.782462424,"data":"08:03:38 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4863.837481744,"data":"08:03:38 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4863.984641247,"data":"08:03:38 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4863.984673349,"data":"08:03:38 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":4863.984679154,"data":"08:03:38 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":4863.984683038,"data":"08:03:38 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":4865.9590214,"data":"08:03:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4865.959298541,"data":"08:03:40 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4866.16124966,"data":"08:03:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":4866.161284639,"data":"08:03:40 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4866.493283757,"data":"08:03:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4866.493312805,"data":"08:03:40 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4866.695522306,"data":"08:03:40 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":4866.695556965,"data":"08:03:40 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4867.301827388,"data":"08:03:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4867.302093577,"data":"08:03:41 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4867.344490498,"data":"08:03:41 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4867.503952488,"data":"08:03:41 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":4867.503986109,"data":"08:03:41 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":4867.504017317,"data":"08:03:41 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":4867.575030116,"data":"08:03:41 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":4867.778029744,"data":"08:03:41 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":4868.790583772,"data":"08:03:43 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4868.993129355,"data":"08:03:43 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":4901.918862658,"data":"08:04:16 | INFO    | src.training.train | epoch  1/50 | train 0.011747 | val 0.012176 | pinball 0.012176 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4902.136688882,"data":"08:04:16 | INFO    | src.training.train | epoch  1/50 | train 0.011747 | val 0.012176 | pinball 0.012176 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":4933.125882573,"data":"08:04:47 | INFO    | src.training.train | epoch  2/50 | train 0.011746 | val 0.012170 | pinball 0.012170 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4933.337393091,"data":"08:04:47 | INFO    | src.training.train | epoch  2/50 | train 0.011746 | val 0.012170 | pinball 0.012170 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4964.357018295,"data":"08:05:18 | INFO    | src.training.train | epoch  3/50 | train 0.011743 | val 0.012176 | pinball 0.012176 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4964.577687217,"data":"08:05:18 | INFO    | src.training.train | epoch  3/50 | train 0.011743 | val 0.012176 | pinball 0.012176 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":4995.559801574,"data":"08:05:49 | INFO    | src.training.train | epoch  4/50 | train 0.011735 | val 0.012186 | pinball 0.012186 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":4995.778499452,"data":"08:05:49 | INFO    | src.training.train | epoch  4/50 | train 0.011735 | val 0.012186 | pinball 0.012186 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5026.876691747,"data":"08:06:21 | INFO    | src.training.train | epoch  5/50 | train 0.011735 | val 0.012190 | pinball 0.012190 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5027.094094043,"data":"08:06:21 | INFO    | src.training.train | epoch  5/50 | train 0.011735 | val 0.012190 | pinball 0.012190 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5058.105577366,"data":"08:06:52 | INFO    | src.training.train | epoch  6/50 | train 0.011726 | val 0.012187 | pinball 0.012187 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5058.105641933,"data":"08:06:52 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5058.10650924,"data":"08:06:52 | INFO    | src.training.train | 리포트: outputs/reports/20261019_080652_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5058.10672523,"data":"08:06:52 | WARNING | src.training.train | ❌ 기준선(0.012175)을 못 이겼다 (-0.01%). 조건부 신호를 못 찾았다는 뜻 — 하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.\n"}
+,{"stream_name":"stdout","time":5058.198569587,"data":"08:06:52 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012176 (기준선 대비 -0.01%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5058.317327333,"data":"08:06:52 | INFO    | src.training.train | epoch  6/50 | train 0.011726 | val 0.012187 | pinball 0.012187 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5058.317353285,"data":"08:06:52 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5058.317358683,"data":"08:06:52 | INFO    | src.training.train | 리포트: outputs/reports/20261019_080652_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5058.317362471,"data":"08:06:52 | WARNING | src.training.train | ❌ 기준선(0.012175)을 못 이겼다 (-0.01%). 조건부 신호를 못 찾았다는 뜻 — 하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.\n"}
+,{"stream_name":"stdout","time":5058.317366701,"data":"08:06:52 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012176 (기준선 대비 -0.01%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5059.084586746,"data":"   patchtst_q seed 43: 3.3분\n"}
+,{"stream_name":"stdout","time":5059.085940494,"data":"\n"}
+,{"stream_name":"stdout","time":5059.085959597,"data":"── patchtst_q seed 44 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":5061.160327227,"data":"08:06:55 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5061.160352765,"data":"08:06:55 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":5061.160685777,"data":"08:06:55 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5061.216212515,"data":"08:06:55 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":5061.364137312,"data":"08:06:55 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5061.364168348,"data":"08:06:55 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":5061.364192572,"data":"08:06:55 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5061.364198119,"data":"08:06:55 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":5063.362718989,"data":"08:06:57 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":5063.363113167,"data":"08:06:57 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5063.565134506,"data":"08:06:57 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":5063.565171661,"data":"08:06:57 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5063.884565926,"data":"08:06:58 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":5063.884881775,"data":"08:06:58 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5064.08754997,"data":"08:06:58 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":5064.08760201,"data":"08:06:58 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5064.716585302,"data":"08:06:59 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":5064.71661109,"data":"08:06:59 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5064.758830245,"data":"08:06:59 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":5064.918981879,"data":"08:06:59 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":5064.919012889,"data":"08:06:59 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5064.919018814,"data":"08:06:59 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":5064.984066898,"data":"08:06:59 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":5065.186191817,"data":"08:06:59 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":5066.202201288,"data":"08:07:00 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":5066.404886918,"data":"08:07:00 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":5099.555097332,"data":"08:07:33 | INFO    | src.training.train | epoch  1/50 | train 0.011748 | val 0.012177 | pinball 0.012177 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":5099.782788375,"data":"08:07:33 | INFO    | src.training.train | epoch  1/50 | train 0.011748 | val 0.012177 | pinball 0.012177 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":5130.974925556,"data":"08:08:05 | INFO    | src.training.train | epoch  2/50 | train 0.011745 | val 0.012187 | pinball 0.012187 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5131.189580621,"data":"08:08:05 | INFO    | src.training.train | epoch  2/50 | train 0.011745 | val 0.012187 | pinball 0.012187 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5162.122419603,"data":"08:08:36 | INFO    | src.training.train | epoch  3/50 | train 0.011742 | val 0.012189 | pinball 0.012189 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5162.343349977,"data":"08:08:36 | INFO    | src.training.train | epoch  3/50 | train 0.011742 | val 0.012189 | pinball 0.012189 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5193.344987147,"data":"08:09:07 | INFO    | src.training.train | epoch  4/50 | train 0.011738 | val 0.012191 | pinball 0.012191 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5193.557404791,"data":"08:09:07 | INFO    | src.training.train | epoch  4/50 | train 0.011738 | val 0.012191 | pinball 0.012191 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5224.524066763,"data":"08:09:38 | INFO    | src.training.train | epoch  5/50 | train 0.011736 | val 0.012209 | pinball 0.012209 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5224.74178193,"data":"08:09:38 | INFO    | src.training.train | epoch  5/50 | train 0.011736 | val 0.012209 | pinball 0.012209 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5255.668898501,"data":"08:10:10 | INFO    | src.training.train | epoch  6/50 | train 0.011730 | val 0.012196 | pinball 0.012196 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5255.669153548,"data":"08:10:10 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5255.670114677,"data":"08:10:10 | INFO    | src.training.train | 리포트: outputs/reports/20261019_081010_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5255.67013627,"data":"08:10:10 | WARNING | src.training.train | ❌ 기준선(0.012175)을 못 이겼다 (-0.02%). 조건부 신호를 못 찾았다는 뜻 — 하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.\n"}
+,{"stream_name":"stdout","time":5255.759984864,"data":"08:10:10 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012177 (기준선 대비 -0.02%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5255.886782296,"data":"08:10:10 | INFO    | src.training.train | epoch  6/50 | train 0.011730 | val 0.012196 | pinball 0.012196 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5255.88680864,"data":"08:10:10 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5255.886813779,"data":"08:10:10 | INFO    | src.training.train | 리포트: outputs/reports/20261019_081010_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5255.886817598,"data":"08:10:10 | WARNING | src.training.train | ❌ 기준선(0.012175)을 못 이겼다 (-0.02%). 조건부 신호를 못 찾았다는 뜻 — 하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.\n"}
+,{"stream_name":"stdout","time":5255.886822759,"data":"08:10:10 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012177 (기준선 대비 -0.02%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5256.641675224,"data":"   patchtst_q seed 44: 3.3분\n"}
+,{"stream_name":"stdout","time":5256.642758032,"data":"\n"}
+,{"stream_name":"stdout","time":5256.642786611,"data":"── patchtst_q seed 45 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":5258.696695657,"data":"08:10:13 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5258.69672118,"data":"08:10:13 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":5258.696951319,"data":"08:10:13 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5258.751968108,"data":"08:10:13 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":5258.901014007,"data":"08:10:13 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5258.901047452,"data":"08:10:13 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":5258.90105411,"data":"08:10:13 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5258.901058959,"data":"08:10:13 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":5260.959500693,"data":"08:10:15 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":5260.960038997,"data":"08:10:15 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5261.162010203,"data":"08:10:15 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":5261.162057153,"data":"08:10:15 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5261.511904626,"data":"08:10:15 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":5261.512134419,"data":"08:10:15 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5261.714034161,"data":"08:10:15 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":5261.714067059,"data":"08:10:15 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5262.323238818,"data":"08:10:16 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":5262.323474359,"data":"08:10:16 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5262.371416864,"data":"08:10:16 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":5262.525420248,"data":"08:10:16 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":5262.52544861,"data":"08:10:16 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5262.52545372,"data":"08:10:16 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":5262.610181797,"data":"08:10:17 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":5262.813020796,"data":"08:10:17 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":5263.833163815,"data":"08:10:18 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":5264.0357653,"data":"08:10:18 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":5296.907745542,"data":"08:10:51 | INFO    | src.training.train | epoch  1/50 | train 0.011746 | val 0.012172 | pinball 0.012172 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":5297.12598498,"data":"08:10:51 | INFO    | src.training.train | epoch  1/50 | train 0.011746 | val 0.012172 | pinball 0.012172 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":5328.28915075,"data":"08:11:22 | INFO    | src.training.train | epoch  2/50 | train 0.011748 | val 0.012176 | pinball 0.012176 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5328.504578381,"data":"08:11:22 | INFO    | src.training.train | epoch  2/50 | train 0.011748 | val 0.012176 | pinball 0.012176 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5359.386131565,"data":"08:11:53 | INFO    | src.training.train | epoch  3/50 | train 0.011742 | val 0.012202 | pinball 0.012202 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5359.599539803,"data":"08:11:53 | INFO    | src.training.train | epoch  3/50 | train 0.011742 | val 0.012202 | pinball 0.012202 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5390.634200461,"data":"08:12:25 | INFO    | src.training.train | epoch  4/50 | train 0.011730 | val 0.012195 | pinball 0.012195 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5390.864687082,"data":"08:12:25 | INFO    | src.training.train | epoch  4/50 | train 0.011730 | val 0.012195 | pinball 0.012195 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5421.855153664,"data":"08:12:56 | INFO    | src.training.train | epoch  5/50 | train 0.011714 | val 0.012176 | pinball 0.012176 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5422.070059884,"data":"08:12:56 | INFO    | src.training.train | epoch  5/50 | train 0.011714 | val 0.012176 | pinball 0.012176 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5453.124575194,"data":"08:13:27 | INFO    | src.training.train | epoch  6/50 | train 0.011699 | val 0.012199 | pinball 0.012199 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5453.124603594,"data":"08:13:27 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5453.125578409,"data":"08:13:27 | INFO    | src.training.train | 리포트: outputs/reports/20261019_081327_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5453.125715168,"data":"08:13:27 | WARNING | src.training.train | ⚠️ 기준선 대비 0.02% 개선에 그쳤다 — 사실상 무조건부 분포만 학습했다\n"}
+,{"stream_name":"stdout","time":5453.216128313,"data":"08:13:27 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012172 (기준선 대비 +0.02%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5453.337727253,"data":"08:13:27 | INFO    | src.training.train | epoch  6/50 | train 0.011699 | val 0.012199 | pinball 0.012199 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5453.337753244,"data":"08:13:27 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5453.337759475,"data":"08:13:27 | INFO    | src.training.train | 리포트: outputs/reports/20261019_081327_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5453.337764031,"data":"08:13:27 | WARNING | src.training.train | ⚠️ 기준선 대비 0.02% 개선에 그쳤다 — 사실상 무조건부 분포만 학습했다\n"}
+,{"stream_name":"stdout","time":5453.337768705,"data":"08:13:27 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012172 (기준선 대비 +0.02%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5454.078562768,"data":"   patchtst_q seed 45: 3.3분\n"}
+,{"stream_name":"stdout","time":5454.079858093,"data":"\n"}
+,{"stream_name":"stdout","time":5454.079878143,"data":"── patchtst_q seed 46 ────────────────────────────────────────\n"}
+,{"stream_name":"stdout","time":5456.156272575,"data":"08:13:30 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5456.156306304,"data":"08:13:30 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":5456.156509527,"data":"08:13:30 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5456.211449398,"data":"08:13:30 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":5456.360690304,"data":"08:13:30 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5456.360727279,"data":"08:13:30 | INFO    | arch_compare | [1/1] patchtst_q — PatchTST + 분위헤드\n"}
+,{"stream_name":"stdout","time":5456.360735694,"data":"08:13:30 | INFO    | arch_compare | ==================================================================\n"}
+,{"stream_name":"stdout","time":5456.360741781,"data":"08:13:30 | INFO    | src.training.train | 디바이스: cuda | AMP: True\n"}
+,{"stream_name":"stdout","time":5458.342764894,"data":"08:13:32 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":5458.342796336,"data":"08:13:32 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5458.54555639,"data":"08:13:32 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 7개\n"}
+,{"stream_name":"stdout","time":5458.545608172,"data":"08:13:32 | INFO    | src.training.dataset | WindowDataset: 샘플 264,653개 / 종목 183개 / 배열 34MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5458.849649017,"data":"08:13:33 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":5458.849672971,"data":"08:13:33 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5459.05241291,"data":"08:13:33 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 4개\n"}
+,{"stream_name":"stdout","time":5459.052446169,"data":"08:13:33 | INFO    | src.training.dataset | WindowDataset: 샘플 23,086개 / 종목 190개 / 배열 5MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5459.63917699,"data":"08:13:34 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":5459.639479558,"data":"08:13:34 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5459.682292539,"data":"08:13:34 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":5459.841792293,"data":"08:13:34 | WARNING | src.training.dataset | 행이 lookback(120) 이하라 제외된 종목 3개\n"}
+,{"stream_name":"stdout","time":5459.841849404,"data":"08:13:34 | INFO    | src.training.dataset | WindowDataset: 샘플 106,490개 / 종목 198개 / 배열 16MB (윈도우 복제 없음)\n"}
+,{"stream_name":"stdout","time":5459.841856263,"data":"08:13:34 | INFO    | src.training.train | 샘플 수: {'train': 264653, 'val': 23086, 'test': 106490}\n"}
+,{"stream_name":"stdout","time":5459.905736555,"data":"08:13:34 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":5460.107767532,"data":"08:13:34 | INFO    | src.training.train | 아키텍처 patchtst_q | 파라미터 0.04M\n"}
+,{"stream_name":"stdout","time":5461.162665774,"data":"08:13:35 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":5461.365157355,"data":"08:13:35 | INFO    | src.training.train | 기준선(무조건부 분위수) val pinball = 0.012175\n"}
+,{"stream_name":"stdout","time":5494.255694656,"data":"08:14:08 | INFO    | src.training.train | epoch  1/50 | train 0.011746 | val 0.012178 | pinball 0.012178 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":5494.480085146,"data":"08:14:08 | INFO    | src.training.train | epoch  1/50 | train 0.011746 | val 0.012178 | pinball 0.012178 | 32s | lr 1.00e-04\n"}
+,{"stream_name":"stdout","time":5525.576949528,"data":"08:14:39 | INFO    | src.training.train | epoch  2/50 | train 0.011748 | val 0.012181 | pinball 0.012181 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5525.789809627,"data":"08:14:39 | INFO    | src.training.train | epoch  2/50 | train 0.011748 | val 0.012181 | pinball 0.012181 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5556.730208773,"data":"08:15:11 | INFO    | src.training.train | epoch  3/50 | train 0.011743 | val 0.012183 | pinball 0.012183 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5556.943166098,"data":"08:15:11 | INFO    | src.training.train | epoch  3/50 | train 0.011743 | val 0.012183 | pinball 0.012183 | 31s | lr 2.00e-04\n"}
+,{"stream_name":"stdout","time":5588.032065798,"data":"08:15:42 | INFO    | src.training.train | epoch  4/50 | train 0.011727 | val 0.012208 | pinball 0.012208 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5588.250961064,"data":"08:15:42 | INFO    | src.training.train | epoch  4/50 | train 0.011727 | val 0.012208 | pinball 0.012208 | 31s | lr 1.99e-04\n"}
+,{"stream_name":"stdout","time":5619.346536661,"data":"08:16:13 | INFO    | src.training.train | epoch  5/50 | train 0.011698 | val 0.012400 | pinball 0.012400 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5619.570719328,"data":"08:16:13 | INFO    | src.training.train | epoch  5/50 | train 0.011698 | val 0.012400 | pinball 0.012400 | 31s | lr 1.98e-04\n"}
+,{"stream_name":"stdout","time":5650.588573955,"data":"08:16:44 | INFO    | src.training.train | epoch  6/50 | train 0.011671 | val 0.012287 | pinball 0.012287 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5650.588610347,"data":"08:16:44 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5650.589513103,"data":"08:16:44 | INFO    | src.training.train | 리포트: outputs/reports/20261019_081644_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5650.589661378,"data":"08:16:44 | WARNING | src.training.train | ❌ 기준선(0.012175)을 못 이겼다 (-0.03%). 조건부 신호를 못 찾았다는 뜻 — 하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.\n"}
+,{"stream_name":"stdout","time":5650.681668035,"data":"08:16:45 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012178 (기준선 대비 -0.03%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5650.801038169,"data":"08:16:44 | INFO    | src.training.train | epoch  6/50 | train 0.011671 | val 0.012287 | pinball 0.012287 | 31s | lr 1.97e-04\n"}
+,{"stream_name":"stdout","time":5650.80106258,"data":"08:16:44 | INFO    | src.training.train | early stopping (patience 5) — best epoch 1\n"}
+,{"stream_name":"stdout","time":5650.801068998,"data":"08:16:44 | INFO    | src.training.train | 리포트: outputs/reports/20261019_081644_5263fac6.json\n"}
+,{"stream_name":"stdout","time":5650.801074471,"data":"08:16:44 | WARNING | src.training.train | ❌ 기준선(0.012175)을 못 이겼다 (-0.03%). 조건부 신호를 못 찾았다는 뜻 — 하이퍼파라미터보다 피처/타깃 설계를 먼저 볼 것.\n"}
+,{"stream_name":"stdout","time":5650.801079901,"data":"08:16:45 | INFO    | arch_compare | patchtst_q 완료 | 0.04M | val pinball 0.012178 (기준선 대비 -0.03%) | best epoch 1 | 3.2분\n"}
+,{"stream_name":"stdout","time":5651.601959484,"data":"   patchtst_q seed 46: 3.3분\n"}
+,{"stream_name":"stdout","time":5651.602631646,"data":"20261019_064708_9ee86ec0.json abl_linear None 2 0.011895959037964024 116738\n"}
+,{"stream_name":"stdout","time":5651.603375839,"data":"20261019_065134_9ee86ec0.json abl_linear None 3 0.011908090664875005 116738\n"}
+,{"stream_name":"stdout","time":5651.604704695,"data":"20261019_065529_9ee86ec0.json abl_linear None 2 0.01189508002037093 116738\n"}
+,{"stream_name":"stdout","time":5651.60552547,"data":"20261019_065954_9ee86ec0.json abl_linear None 3 0.01188982774752113 116738\n"}
+,{"stream_name":"stdout","time":5651.606342219,"data":"20261019_070450_9ee86ec0.json abl_linear None 4 0.01188260258289115 116738\n"}
+,{"stream_name":"stdout","time":5651.607214707,"data":"20261019_071348_f2578070.json abl_nomacro None 12 0.01186537878141827 467966\n"}
+,{"stream_name":"stdout","time":5651.608034546,"data":"20261019_071736_f2578070.json abl_nomacro None 2 0.011899629263603469 467966\n"}
+,{"stream_name":"stdout","time":5651.608998011,"data":"20261019_072455_f2578070.json abl_nomacro None 9 0.011866029703242985 467966\n"}
+,{"stream_name":"stdout","time":5651.609904348,"data":"20261019_073216_f2578070.json abl_nomacro None 9 0.011874153764156316 467966\n"}
+,{"stream_name":"stdout","time":5651.6107516,"data":"20261019_073631_f2578070.json abl_nomacro None 3 0.011892517077365657 467966\n"}
+,{"stream_name":"stdout","time":5651.611699666,"data":"20261019_074130_9e4bbc80.json abl_nostatic None 4 0.011888682188965296 455849\n"}
+,{"stream_name":"stdout","time":5651.61264978,"data":"20261019_074520_9e4bbc80.json abl_nostatic None 2 0.011879616258892639 455849\n"}
+,{"stream_name":"stdout","time":5651.613452348,"data":"20261019_074946_9e4bbc80.json abl_nostatic None 3 0.011896327726851482 455849\n"}
+,{"stream_name":"stdout","time":5651.61433533,"data":"20261019_075416_9e4bbc80.json abl_nostatic None 3 0.011883412006491121 455849\n"}
+,{"stream_name":"stdout","time":5651.61515298,"data":"20261019_075812_9e4bbc80.json abl_nostatic None 2 0.011899914076134019 455849\n"}
+,{"stream_name":"stdout","time":5651.615882388,"data":"20261019_080335_5263fac6.json patchtst_q None 5 0.012126724193516332 35422\n"}
+,{"stream_name":"stdout","time":5651.617732859,"data":"20261019_080652_5263fac6.json patchtst_q None 1 0.012176007232851045 35422\n"}
+,{"stream_name":"stdout","time":5651.617748971,"data":"20261019_081010_5263fac6.json patchtst_q None 1 0.012177373048227582 35422\n"}
+,{"stream_name":"stdout","time":5651.618605232,"data":"20261019_081327_5263fac6.json patchtst_q None 1 0.012172155403343694 35422\n"}
+,{"stream_name":"stdout","time":5651.619396236,"data":"20261019_081644_5263fac6.json patchtst_q None 1 0.01217771831850342 35422\n"}
+,{"stream_name":"stdout","time":5651.620722326,"data":"\n"}
+,{"stream_name":"stdout","time":5651.620735907,"data":"✅ 끝\n"}
+,{"stream_name":"stdout","time":5651.801076216,"data":"체크포인트 20개 / 리포트 20개\n"}
+,{"stream_name":"stdout","time":5651.801095369,"data":"저장소: /kaggle/working/Capstone_Stock_Price_Prediction\n"}
+,{"stream_name":"stdout","time":5651.801100684,"data":"  checkpoints: 21개\n"}
+,{"stream_name":"stdout","time":5651.801104292,"data":"  reports: 21개\n"}
+,{"stream_name":"stdout","time":5652.641276469,"data":"→ 우측 Output 패널에서 ktsde_rerun.zip 다운로드 (20.1 MB)\n"}
+,{"stream_name":"stdout","time":5652.641303051,"data":"   로컬에서: unzip -o ~/Downloads/ktsde_rerun.zip -d outputs/\n"}
+,{"stream_name":"stderr","time":5655.480277132,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":5655.480307885,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":5655.655056046,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":5655.655082327,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":5656.391155039,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":5656.504346523,"data":"[NbConvertApp] Writing 72921 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":5658.884719662,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":5659.406553986,"data":"[NbConvertApp] Writing 359117 bytes to __results__.html\n"}
+]

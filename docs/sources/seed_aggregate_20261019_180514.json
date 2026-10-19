@@ -1,0 +1,298 @@
+{
+  "generated_at": "2026-10-19T18:05:14",
+  "seeds_requested": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "seeds_missing": {},
+  "splits": [
+    "val",
+    "test"
+  ],
+  "pinball": "세 분위 평균 (합/3)",
+  "baseline": "학습구간 무조건부 분위수 세 상수, 같은 표본 위에서 평가",
+  "models": {
+    "a": {
+      "stem": "phase1_5263fac6_patchtst_q",
+      "runs": [
+        {
+          "seed": 42,
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed42.pt",
+          "val_loss_in_checkpoint": 0.012126724193516332,
+          "best_epoch": 5,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012127,
+            "baseline": 0.012175,
+            "improvement_pct": 0.394
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018458,
+            "baseline": 0.018754,
+            "improvement_pct": 1.575
+          }
+        },
+        {
+          "seed": 43,
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed43.pt",
+          "val_loss_in_checkpoint": 0.012176007232851045,
+          "best_epoch": 1,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012176,
+            "baseline": 0.012175,
+            "improvement_pct": -0.011
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018776,
+            "baseline": 0.018754,
+            "improvement_pct": -0.121
+          }
+        },
+        {
+          "seed": 44,
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed44.pt",
+          "val_loss_in_checkpoint": 0.012177373048227582,
+          "best_epoch": 1,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012177,
+            "baseline": 0.012175,
+            "improvement_pct": -0.022
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018747,
+            "baseline": 0.018754,
+            "improvement_pct": 0.036
+          }
+        },
+        {
+          "seed": 45,
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed45.pt",
+          "val_loss_in_checkpoint": 0.012172155403343694,
+          "best_epoch": 1,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012172,
+            "baseline": 0.012175,
+            "improvement_pct": 0.021
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018738,
+            "baseline": 0.018754,
+            "improvement_pct": 0.083
+          }
+        },
+        {
+          "seed": 46,
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed46.pt",
+          "val_loss_in_checkpoint": 0.01217771831850342,
+          "best_epoch": 1,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012178,
+            "baseline": 0.012175,
+            "improvement_pct": -0.025
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018711,
+            "baseline": 0.018754,
+            "improvement_pct": 0.229
+          }
+        }
+      ],
+      "val": {
+        "n_seeds": 5,
+        "pinball_mean": 0.012166,
+        "pinball_sd": 2.2e-05,
+        "pinball_range": [
+          0.012127,
+          0.012178
+        ],
+        "improvement_pct_mean": 0.071,
+        "best_epoch_range": [
+          1,
+          5
+        ]
+      },
+      "test": {
+        "n_seeds": 5,
+        "pinball_mean": 0.018686,
+        "pinball_sd": 0.00013,
+        "pinball_range": [
+          0.018458,
+          0.018776
+        ],
+        "improvement_pct_mean": 0.36,
+        "best_epoch_range": [
+          1,
+          5
+        ]
+      }
+    },
+    "b": {
+      "stem": "phase1_b113237e",
+      "runs": [
+        {
+          "seed": 42,
+          "checkpoint": "phase1_b113237e_seed42.pt",
+          "val_loss_in_checkpoint": 0.011872920997645427,
+          "best_epoch": 10,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011873,
+            "baseline": 0.012175,
+            "improvement_pct": 2.478
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017893,
+            "baseline": 0.018754,
+            "improvement_pct": 4.588
+          }
+        },
+        {
+          "seed": 43,
+          "checkpoint": "phase1_b113237e_seed43.pt",
+          "val_loss_in_checkpoint": 0.01188697685366302,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011887,
+            "baseline": 0.012175,
+            "improvement_pct": 2.364
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.01783,
+            "baseline": 0.018754,
+            "improvement_pct": 4.926
+          }
+        },
+        {
+          "seed": 44,
+          "checkpoint": "phase1_b113237e_seed44.pt",
+          "val_loss_in_checkpoint": 0.011903888958502333,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011904,
+            "baseline": 0.012175,
+            "improvement_pct": 2.226
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017858,
+            "baseline": 0.018754,
+            "improvement_pct": 4.775
+          }
+        },
+        {
+          "seed": 45,
+          "checkpoint": "phase1_b113237e_seed45.pt",
+          "val_loss_in_checkpoint": 0.011884448707452602,
+          "best_epoch": 5,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011884,
+            "baseline": 0.012175,
+            "improvement_pct": 2.384
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017739,
+            "baseline": 0.018754,
+            "improvement_pct": 5.411
+          }
+        },
+        {
+          "seed": 46,
+          "checkpoint": "phase1_b113237e_seed46.pt",
+          "val_loss_in_checkpoint": 0.01189551732577832,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011896,
+            "baseline": 0.012175,
+            "improvement_pct": 2.293
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017809,
+            "baseline": 0.018754,
+            "improvement_pct": 5.039
+          }
+        }
+      ],
+      "val": {
+        "n_seeds": 5,
+        "pinball_mean": 0.011889,
+        "pinball_sd": 1.2e-05,
+        "pinball_range": [
+          0.011873,
+          0.011904
+        ],
+        "improvement_pct_mean": 2.349,
+        "best_epoch_range": [
+          2,
+          10
+        ]
+      },
+      "test": {
+        "n_seeds": 5,
+        "pinball_mean": 0.017826,
+        "pinball_sd": 5.8e-05,
+        "pinball_range": [
+          0.017739,
+          0.017893
+        ],
+        "improvement_pct_mean": 4.948,
+        "best_epoch_range": [
+          2,
+          10
+        ]
+      }
+    }
+  },
+  "data": {
+    "freeze_report": "freeze_panel_20261018.json",
+    "sha256": {
+      "panel.parquet": "365628cd44271feae6f615887f6c4163b8725ada6ae8f39ddd3ae8f14507bd2f",
+      "macro.parquet": "39eea5dff72015ec00daf4c5ab092f2cd277b4efbd9da6fca1a4929e61ae54e5",
+      "static.parquet": "9d4c524c017e953db1bb98a6d98239dd6f8d6d30fe66214186eaa955e8707211"
+    },
+    "windows": {
+      "train": 264653,
+      "val": 23086,
+      "test": 106490
+    }
+  },
+  "comparison": {
+    "val": {
+      "a_wins": 0,
+      "n_pairs": 5,
+      "sign_test_p_one_sided": 1.0,
+      "welch_t": 24.889,
+      "welch_df": 6.14,
+      "welch_p_two_sided": 0.0,
+      "mean_gap": -0.000277
+    },
+    "test": {
+      "a_wins": 0,
+      "n_pairs": 5,
+      "sign_test_p_one_sided": 1.0,
+      "welch_t": 13.557,
+      "welch_df": 5.53,
+      "welch_p_two_sided": 0.0,
+      "mean_gap": -0.00086
+    }
+  }
+}

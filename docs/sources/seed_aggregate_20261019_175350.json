@@ -1,0 +1,298 @@
+{
+  "generated_at": "2026-10-19T17:53:50",
+  "seeds_requested": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "seeds_missing": {},
+  "splits": [
+    "val",
+    "test"
+  ],
+  "pinball": "세 분위 평균 (합/3)",
+  "baseline": "학습구간 무조건부 분위수 세 상수, 같은 표본 위에서 평가",
+  "models": {
+    "a": {
+      "stem": "phase1_9ee86ec0_abl_linear",
+      "runs": [
+        {
+          "seed": 42,
+          "checkpoint": "phase1_9ee86ec0_abl_linear_seed42.pt",
+          "val_loss_in_checkpoint": 0.011895959037964024,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011896,
+            "baseline": 0.012175,
+            "improvement_pct": 2.29
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017766,
+            "baseline": 0.018754,
+            "improvement_pct": 5.266
+          }
+        },
+        {
+          "seed": 43,
+          "checkpoint": "phase1_9ee86ec0_abl_linear_seed43.pt",
+          "val_loss_in_checkpoint": 0.011908090664875005,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011908,
+            "baseline": 0.012175,
+            "improvement_pct": 2.191
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017868,
+            "baseline": 0.018754,
+            "improvement_pct": 4.72
+          }
+        },
+        {
+          "seed": 44,
+          "checkpoint": "phase1_9ee86ec0_abl_linear_seed44.pt",
+          "val_loss_in_checkpoint": 0.01189508002037093,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011895,
+            "baseline": 0.012175,
+            "improvement_pct": 2.297
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017791,
+            "baseline": 0.018754,
+            "improvement_pct": 5.132
+          }
+        },
+        {
+          "seed": 45,
+          "checkpoint": "phase1_9ee86ec0_abl_linear_seed45.pt",
+          "val_loss_in_checkpoint": 0.01188982774752113,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.01189,
+            "baseline": 0.012175,
+            "improvement_pct": 2.34
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017801,
+            "baseline": 0.018754,
+            "improvement_pct": 5.078
+          }
+        },
+        {
+          "seed": 46,
+          "checkpoint": "phase1_9ee86ec0_abl_linear_seed46.pt",
+          "val_loss_in_checkpoint": 0.01188260258289115,
+          "best_epoch": 4,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011883,
+            "baseline": 0.012175,
+            "improvement_pct": 2.4
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017958,
+            "baseline": 0.018754,
+            "improvement_pct": 4.244
+          }
+        }
+      ],
+      "val": {
+        "n_seeds": 5,
+        "pinball_mean": 0.011894,
+        "pinball_sd": 9e-06,
+        "pinball_range": [
+          0.011883,
+          0.011908
+        ],
+        "improvement_pct_mean": 2.304,
+        "best_epoch_range": [
+          2,
+          4
+        ]
+      },
+      "test": {
+        "n_seeds": 5,
+        "pinball_mean": 0.017837,
+        "pinball_sd": 7.8e-05,
+        "pinball_range": [
+          0.017766,
+          0.017958
+        ],
+        "improvement_pct_mean": 4.888,
+        "best_epoch_range": [
+          2,
+          4
+        ]
+      }
+    },
+    "b": {
+      "stem": "phase1_b113237e",
+      "runs": [
+        {
+          "seed": 42,
+          "checkpoint": "phase1_b113237e_seed42.pt",
+          "val_loss_in_checkpoint": 0.011872920997645427,
+          "best_epoch": 10,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011873,
+            "baseline": 0.012175,
+            "improvement_pct": 2.478
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017893,
+            "baseline": 0.018754,
+            "improvement_pct": 4.588
+          }
+        },
+        {
+          "seed": 43,
+          "checkpoint": "phase1_b113237e_seed43.pt",
+          "val_loss_in_checkpoint": 0.01188697685366302,
+          "best_epoch": 2,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011887,
+            "baseline": 0.012175,
+            "improvement_pct": 2.364
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.01783,
+            "baseline": 0.018754,
+            "improvement_pct": 4.926
+          }
+        },
+        {
+          "seed": 44,
+          "checkpoint": "phase1_b113237e_seed44.pt",
+          "val_loss_in_checkpoint": 0.011903888958502333,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011904,
+            "baseline": 0.012175,
+            "improvement_pct": 2.226
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017858,
+            "baseline": 0.018754,
+            "improvement_pct": 4.775
+          }
+        },
+        {
+          "seed": 45,
+          "checkpoint": "phase1_b113237e_seed45.pt",
+          "val_loss_in_checkpoint": 0.011884448707452602,
+          "best_epoch": 5,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011884,
+            "baseline": 0.012175,
+            "improvement_pct": 2.384
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017739,
+            "baseline": 0.018754,
+            "improvement_pct": 5.411
+          }
+        },
+        {
+          "seed": 46,
+          "checkpoint": "phase1_b113237e_seed46.pt",
+          "val_loss_in_checkpoint": 0.01189551732577832,
+          "best_epoch": 3,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011896,
+            "baseline": 0.012175,
+            "improvement_pct": 2.293
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017809,
+            "baseline": 0.018754,
+            "improvement_pct": 5.039
+          }
+        }
+      ],
+      "val": {
+        "n_seeds": 5,
+        "pinball_mean": 0.011889,
+        "pinball_sd": 1.2e-05,
+        "pinball_range": [
+          0.011873,
+          0.011904
+        ],
+        "improvement_pct_mean": 2.349,
+        "best_epoch_range": [
+          2,
+          10
+        ]
+      },
+      "test": {
+        "n_seeds": 5,
+        "pinball_mean": 0.017826,
+        "pinball_sd": 5.8e-05,
+        "pinball_range": [
+          0.017739,
+          0.017893
+        ],
+        "improvement_pct_mean": 4.948,
+        "best_epoch_range": [
+          2,
+          10
+        ]
+      }
+    }
+  },
+  "data": {
+    "freeze_report": "freeze_panel_20261018.json",
+    "sha256": {
+      "panel.parquet": "365628cd44271feae6f615887f6c4163b8725ada6ae8f39ddd3ae8f14507bd2f",
+      "macro.parquet": "39eea5dff72015ec00daf4c5ab092f2cd277b4efbd9da6fca1a4929e61ae54e5",
+      "static.parquet": "9d4c524c017e953db1bb98a6d98239dd6f8d6d30fe66214186eaa955e8707211"
+    },
+    "windows": {
+      "train": 264653,
+      "val": 23086,
+      "test": 106490
+    }
+  },
+  "comparison": {
+    "val": {
+      "a_wins": 2,
+      "n_pairs": 5,
+      "sign_test_p_one_sided": 0.8125,
+      "welch_t": 0.837,
+      "welch_df": 7.54,
+      "welch_p_two_sided": 0.4285,
+      "mean_gap": -6e-06
+    },
+    "test": {
+      "a_wins": 2,
+      "n_pairs": 5,
+      "sign_test_p_one_sided": 0.8125,
+      "welch_t": 0.254,
+      "welch_df": 7.4,
+      "welch_p_two_sided": 0.8062,
+      "mean_gap": -1.1e-05
+    }
+  }
+}

@@ -274,7 +274,15 @@ def main() -> int:
     ap.add_argument("--seeds", type=int, nargs="*", default=SEEDS,
                     help="tft·ours 를 이 시드들로 반복해 평균·표준편차까지 낸다. "
                          "빈 값을 주면 시드 42 한 실행만 (예전 동작)")
+    ap.add_argument("--only", nargs="+", metavar="NAME=PATTERN",
+                    help="기본 네 모형 대신 이것만 잰다. PATTERN 의 {} 에 시드가 들어간다 "
+                         "(예: abl_linear=outputs/checkpoints/phase1_x_abl_linear_seed{}.pt)")
     args = ap.parse_args()
+    models, seed_models = MODELS, SEED_MODELS
+    if args.only:
+        seed_models = dict(x.split("=", 1) for x in args.only)
+        models = {k: v.format(args.seeds[0] if args.seeds else 42)
+                  for k, v in seed_models.items()}
 
     setup_logging(run_name="abstain_quality")
     cfg = load_config()
@@ -283,13 +291,13 @@ def main() -> int:
            "recent_days": base.get("recent_days"), "basis": base.get("basis"),
            "seeds": args.seeds, "models": {}}
 
-    for name, ck in MODELS.items():
+    for name, ck in models.items():
         point = name == "patchtst"      # 점 예측 — 폭이 0 이라 기권이 정의되지 않는다
         rec = measure(ck, cfg, base, point=point)
-        if name in SEED_MODELS and len(args.seeds) > 1:
+        if name in seed_models and len(args.seeds) > 1:
             runs = []
             for sd in args.seeds:
-                path = SEED_MODELS[name].format(sd)
+                path = seed_models[name].format(sd)
                 r = rec if path == ck else measure(path, cfg, base, point=point)
                 runs.append({"seed": sd, **r})
                 log.info("%s seed %d 완료", name, sd)

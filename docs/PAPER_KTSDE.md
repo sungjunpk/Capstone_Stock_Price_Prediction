@@ -36,12 +36,13 @@ validation split that early stopping had used and the test split that it had not
 prediction intervals widened in volatile markets, so withheld decisions concentrated there. The
 withheld forecasts carried about 1.5 times the error of those acted on, a sharper separation than
 a simple volatility rule achieved. A quantile gradient-boosting baseline matched it on validation
-and in how well its intervals chose what to withhold, so that property is not unique to the
-transformer; on the test split the proposed model kept the lower loss. Because the evaluation period informed parts of
+and in choosing what to withhold, though not on the test split. Removing the variable selection
+network, macro cross-attention or static context one at a time changed neither accuracy nor
+abstention, so no single component explains the gain. Because the evaluation period informed parts of
 the design, the figures are not fully out of sample. Section 6 states this and the remaining
 limitations.
 
-<!-- 281 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
+<!-- 285 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
 
 **Keywords :** Time-Series Transformer, Quantile Regression, Variable Selection Network,
 Forecast Uncertainty, Abstention
@@ -68,7 +69,8 @@ TFT보다 각각 3.8배, 4.8배 짧았고 메모리는 5.1배 적었다. 시장
 일어났다. 보류된 예측의 오차는 실행된 예측의 약 1.5배로, 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를
 잘 걸러냈다. 분위 손실로 학습한 그래디언트 부스팅
 기준모형도 검증구간 오차와 보류 품질에서 제안 모형과 대등하여 이 성질은 트랜스포머에 고유하지 않았으나,
-평가구간 오차는 제안 모형이 더 작았다. 평가 기간 자료가 입력 설계와 기권 기준 선택에 참고되었으므로 보고 수치는 완전한 사후 검증 값이
+평가구간 오차는 제안 모형이 더 작았다. 변수선택망·매크로 크로스어텐션·정적 문맥을 하나씩 제거해도 정확도와
+보류 행태는 바뀌지 않아, 분위 헤드만 단 패치 기반 모형 대비 개선은 어느 한 구성요소에서 오지 않았다. 평가 기간 자료가 입력 설계와 기권 기준 선택에 참고되었으므로 보고 수치는 완전한 사후 검증 값이
 아니며, 이를 포함한 한계는 6장에서 다룬다.
 
 **키워드 :** 시계열 트랜스포머, 분위회귀, 변수선택망, 예측 불확실성, 기권
@@ -206,8 +208,9 @@ in this work (teal) and the static context path (orange).
 
 변수선택망을 인코더 뒤에 두면 인코더가 채널 수만큼 반복 실행되는 반면, 앞에 두면 채널이 먼저 하나로
 축약되어 1회만 실행된다. 이전 설정(17채널)에서 순전파를 실측한 결과 259ms에서 52ms로 5배 단축되었다.
-*α*는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않으며, 종목 채널까지 선형
-합치기로 바꾼 변형과 비교하지 않았으므로 게이트가 이 비용만큼의 값을 했는지도 가리지 못하였다(6장).
+*α*는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않는다. 종목 채널까지 선형
+합치기로 바꾼 변형은 모수가 0.12M으로 줄면서도 정확도와 보류 행태가 같았다(5.4절). 인코더 앞에서 채널을
+하나로 합치는 것이 비용 절감의 원인이며, 게이트는 그 이상의 정확도를 더하지 않았다.
 
 #### 2) 매크로 크로스어텐션의 방향
 
@@ -320,11 +323,11 @@ Table 3. Input channels
 비교이다. 초매개변수는 제안 모형에 맞추어 조정된 값을 대조군에 동일하게 적용하였으므로 대조군의
 최적값이 아니다.
 
-Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42-46 with the standard deviation). TFT and the proposed model were trained on one GPU under identical mixed-precision settings; the PatchTST row is a single single-precision run on Mac MPS, the same run that enters the single-precision comparison below. The quantile gradient-boosting row is a single run, since the fit has no random component. The unconditional-quantile baseline is 0.012175 on validation and 0.018754 on test. With all three models in single precision, one run each, the test improvements are +5.25% for the proposed model, +3.30% for TFT and +2.25% for PatchTST with the quantile head, so the ordering is unchanged. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
+Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42-46 with the standard deviation). All transformer rows were trained on Kaggle GPUs under identical mixed-precision settings and evaluated on one device. The quantile gradient-boosting row is a single run, since the fit has no random component. The unconditional-quantile baseline is 0.012175 on validation and 0.018754 on test. With all three models in single precision, one run each, the test improvements are +5.25% for the proposed model, +3.30% for TFT and +2.25% for PatchTST with the quantile head, so the ordering is unchanged. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
 
 | Model | Params | Validation | vs baseline | Test | vs baseline | Best epoch |
 |---|---|---|---|---|---|---|
-| PatchTST + quantile head | 0.035M | 0.012143 | +0.26% | 0.018332 | +2.25% | 5 |
+| PatchTST + quantile head | 0.035M | 0.012166 ± 0.000022 | +0.07% | 0.018686 ± 0.000130 | +0.36% | 1-5 |
 | TFT, original | 0.687M | 0.011935 ± 0.000020 | +1.97% | 0.018325 ± 0.000091 | +2.28% | 1-2 |
 | Quantile GBDT | 375 trees | 0.011890 | +2.34% | 0.018107 | +3.45% | - |
 | **Ours (PatchTST x TFT)** | 0.500M | 0.011889 ± 0.000012 | +2.35% | **0.017826 ± 0.000059** | **+4.95%** | 2-10 |
@@ -338,8 +341,8 @@ Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42
 Harvey-Leybourne-Newbold 보정)을 적용하면 550거래일의 검정구간에서는 다섯 시드 모두 유의하나
 (*p* = 0.022, 0.001, 0.009, 0.003, < 0.001) 122거래일의 검증구간에서는 다섯 시드 모두 유의하지 않다
 (*p* = 0.16~0.56) — 날짜를 표본으로 보는 검정이므로 짧은 구간에서는 검정력이 약하다. 분위 헤드만 부착한
-PatchTST는 검증구간 +0.26%로 상수 예측을 간신히 상회하는 데 그쳐, 변수선택·정적 문맥·매크로 입력이
-함께 필요하다는 점을 보여준다. 격차가 검정구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
+PatchTST는 검증구간 +0.07%, 검정구간 +0.36%로 상수 예측을 간신히 상회하는 데 그쳤고, 다섯 시드 가운데
+네 시드는 첫 회차에서 최적값에 도달하였다. 격차가 검정구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
 1~2회차에서 최적값에 도달한 뒤 과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다. 다만
 격차의 일부는 수치 정밀도 설정에서 오며, 단정밀도로 맞추면 줄어든다(<Table 4> 캡션).
 
@@ -380,18 +383,18 @@ its pinball loss falls far below the plotted range.
 세 분위 모형에 4.4절의 동일한 기권 규칙을 적용하고 검정구간 전체에서 집계하였다. 점 예측 모형은 임계할
 폭이 없어 기권이 정의되지 않으므로 제외하였다.
 
-Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation for TFT and the proposed model and a single run for PatchTST and the quantile GBDT. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks; Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time. Pinball loss is reported separately for abstained and retained candidates
+Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation for TFT and the proposed model and a single run for the quantile GBDT. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks; Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time. Pinball loss is reported separately for abstained and retained candidates
 
 | Model | Abstain | Q1 | Q4 | Pinball, abstained | Pinball, retained |
 |---|---|---|---|---|---|
-| PatchTST + quantile | 4.70% | 0.40% | 12.91% | 0.02387 | 0.01806 |
+| PatchTST + quantile | 5.24 ± 0.32% | 3.45 ± 2.04% | 8.02 ± 2.75% | 0.02127 ± 0.00171 | 0.01855 ± 0.00022 |
 | Quantile GBDT | 5.36% | 0.00% | 17.04% | 0.02622 | 0.01765 |
 | TFT, original | 5.28 ± 0.13% | 0.00 ± 0.00% | 16.71 ± 0.41% | 0.02584 ± 0.00104 | 0.01791 ± 0.00014 |
 | **Ours** | 5.91 ± 0.11% | 0.21 ± 0.05% | **20.07 ± 0.71%** | 0.02612 ± 0.00040 | **0.01730 ± 0.00005** |
 
 <Table 6>은 기권 요구사항이 규칙이 아니라 구조에 의해 충족되었음을 보여준다. 세 행의 기권 규칙은 동일하며
 예측 분포만 다르다. 분위 헤드를 부착하면 기권이 작동하기 시작하고, 변수선택·정적 문맥·매크로 입력이
-더해지면 최상위 변동성 분위의 기권율이 20.07%인 반면 최하위 분위는 0.21%에 머물러 기권이 고변동 구간에
+더해지면 최상위 변동성 분위의 기권율이 20.07%인 반면 최하위 분위는 0.21%에 머물러(셋 중 하나를 빼도 유지된다, 5.4절) 기권이 고변동 구간에
 집중된다. 다만 예측 폭과 실현 변동의 상관 자체는 TFT 원본이 더 높았다(0.186 대 0.170). 기권이 고변동
 구간에 더 몰리는 것과 폭이 변동을 더 잘 따라가는 것은 별개의 성질이다. 보류된 판단은 실제로 더 나빴다. 제안 모형이 기권한 예측의 핀볼 손실은 남긴 예측의
 1.510 ± 0.023배이며, 날짜 단위로 짝지은 손실차의 *t* 값은 19.41 ± 1.02이다. 반면 중앙값 부호의 방향
@@ -416,12 +419,38 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 기권율의 모형 간 순서(제안 모형 > TFT 원본 > 분위 헤드)도 보존된다. 임계값 선택이 기권 행태에 관한 결론을
 만들어낸 것은 아니다.
 
+### 5.4 구성요소 제거
+
+분위 헤드만 단 PatchTST와 제안 모형 사이에는 변수선택망, 정적 문맥, 매크로 크로스어텐션이 한꺼번에 더해져
+있다. 개선이 어디서 오는지 가리기 위해 셋을 하나씩 제거한 변형을 같은 설정과 시드로 학습하였다. 변수선택망은
+매크로 경로와 같은 선형 합치기로 바꾸었고, 매크로 제거 변형은 크로스어텐션 없이 종목 표현을 헤드로 보내며,
+정적 문맥 제거 변형은 문맥 벡터를 0으로 두어 변수선택의 조건화와 결합 뒤 더하기를 함께 껐다. 초매개변수는
+<Table 2> 그대로이며, 보고 지표는 실험 전에 검정구간 핀볼 손실, 최상위 변동성 분위의 기권율, 기권율 6%에서
+맞춘 통제군 대비 비 차이의 셋으로 정하였다.
+
+Table 7. Removing one component at a time (test split, mean over five seeds 42-46 with the standard deviation). The sign test counts the seeds on which the proposed model has the lower test loss. The last column is the difference between the abstained-to-retained loss ratio of the width rule and that of the trailing 20-day volatility control at a matched 6% abstention rate (Section 5.3)
+
+| Variant | Params | Test pinball | vs baseline | Ours lower | Q4 abstain | Ratio gap at 6% |
+|---|---|---|---|---|---|---|
+| Ours | 0.500M | 0.017826 ± 0.000058 | +4.95% | - | 20.07 ± 0.71% | +0.064 ± 0.029 |
+| VSN to linear merge | 0.117M | 0.017837 ± 0.000078 | +4.89% | 3/5 | 19.90 ± 0.18% | +0.057 ± 0.007 |
+| No macro cross-attention | 0.468M | 0.017786 ± 0.000029 | +5.16% | 2/5 | 20.51 ± 0.46% | +0.080 ± 0.035 |
+| No static context | 0.456M | 0.017797 ± 0.000010 | +5.10% | 1/5 | 20.18 ± 0.30% | +0.067 ± 0.021 |
+
+세 변형 모두 세 지표에서 제안 모형과 구별되지 않았다. 검정 손실의 Welch 검정은 *p* = 0.81, 0.21, 0.33이고,
+짝지은 비교에서 제안 모형이 낮은 시드는 다섯 가운데 셋, 둘, 하나였다. 기권율 6%의 통제군 비교는 열다섯
+실행 가운데 열넷에서 95% 신뢰구간이 0을 포함하지 않았다. 따라서 PatchTST에 분위 헤드만 단 모형 대비 개선은
+어느 한 구성요소에서 오지 않는다. 남는 설명은 둘이다. 세 변형이 공유하는 것, 즉 패치 임베딩을 인코더 앞에서
+채널 축으로 합치는 구조 자체가 개선의 원인이거나, 구성요소들이 서로를 대신하여 하나를 빼도 나머지가
+보완하는 경우이다. 둘 이상을 함께 제거하지 않았으므로 이 둘은 가려지지 않는다. 선형 합치기 변형은 모수가
+4분의 1이면서 결과가 같았으므로, 변수선택망의 정확도상 이점은 이 자료에서 확인되지 않는다.
+
 ## 6. 결론 및 향후 연구
 
 본 연구는 주가 예측에서 "지금 판단해도 되는가"를 함께 답하는 모형을, 매일 201종목을 평가할 수 있는 비용
 안에서 만드는 것을 목표로 하였다. 계산이 가벼운 패치 기반 트랜스포머에 TFT의 분위 예측 기능과 변수선택망을
 결합하고, 변수선택망을 인코더 앞에 두어 인코더 실행 횟수를 1회로 줄였다. 예측 구간이 이례적으로 넓을 때
-판단을 보류하는 기권 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 두 가지를
+판단을 보류하는 기권 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 세 가지를
 확인하였다.
 
 첫째, 제안 모형은 TFT 원본과 대등하거나 근소하게 낮은 오차를 약 4분의 1의 비용으로 달성하였다. 다섯 번의
@@ -431,7 +460,9 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 집중되었다. 보류된 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 기권율을 맞춘 비교에서도 최근 변동성만
 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 다만 분위 GBDT도 같은 비교에서 대등한 보류 품질을
 보였으므로 이 성질은 트랜스포머 구조에 고유하지 않다. 하나의 예측값만 내는 기존 패치 기반 모형으로는
-이러한 판단 보류 자체를 할 수 없다.
+이러한 판단 보류 자체를 할 수 없다. 셋째, 변수선택망·매크로 크로스어텐션·정적 문맥은 하나씩 제거해도
+정확도와 보류 행태가 바뀌지 않았다. 개선은 어느 한 구성요소가 아니라 패치 임베딩을 인코더 앞에서 채널
+축으로 합치는 구조, 또는 구성요소 간의 대체에서 온다.
 
 본 연구에는 다음 한계가 있다.
 
@@ -449,8 +480,8 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 표본과 평가 표본의 분포가 다르면 CQR의 보장이 성립하지 않는다는 점과 일치한다. 보정은 모든 폭에 같은 상수를
 더하므로 폭의 순위와 기권 결과는 바뀌지 않는다. 그러나 구간을 신뢰구간으로 읽어서는 안 된다.
 
-본 논문의 결과는 과거 자료에 대한 평가이며 투자 권유를 의도하지 않는다. 향후 연구에서는 구성요소를 하나씩
-제거하는 실험으로 개선의 출처를 가리고, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러
+본 논문의 결과는 과거 자료에 대한 평가이며 투자 권유를 의도하지 않는다. 향후 연구에서는 구성요소를 둘 이상
+함께 제거하는 실험으로 개선의 출처를 가리고, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러
 시장 국면에서 다시 검증한다.
 
 ## References

@@ -61,6 +61,9 @@ def load():
     #    성립하지 않았다(<Table 4> 캡션과 6.1절 셋째 한계). 같은 GPU 5시드 평균:
     #    ours 0.011889 → +2.348%, tft 0.011935 → +1.967% (기준선 0.012174728).
     acc.update({"tft": 1.967, "ours": 2.348})
+    # 2026-10-19: patchtst_q 도 같은 혼합정밀도 5시드 평균으로 (0.012166 → +0.071%).
+    #    위 JSON 의 +0.26% 는 MPS 단정밀도 단일 실행이었다.
+    acc["patchtst_q"] = 0.071
     # ⚠️ 2026-10-18: 비용은 `scripts/cost_measure.py` 의 최신 리포트에서 읽는다.
     #    data.js 의 값은 장비·배치가 기록되지 않은 임시 측정이었다(<Table 5> 재측정).
     cm = json.loads(sorted(REP.glob("cost_measure_*.json"))[-1].read_text(encoding="utf-8"))
