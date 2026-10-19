@@ -273,7 +273,12 @@ def build(blind):
     in_bio = False    # References 이후는 저자 소개 블록
     in_body = False   # 본문(2단) 시작 여부
 
-    for kind, payload in blocks:
+    def next_is_wide_table(i):
+        """다음 블록이 전폭이 필요한 표인가 — 캡션부터 1단으로 넘기려고 미리 본다."""
+        nxt = blocks[i + 1] if i + 1 < len(blocks) else None
+        return bool(nxt and nxt[0] == "table" and len(nxt[1][0]) >= 5)
+
+    for bi, (kind, payload) in enumerate(blocks):
         was_author, expect_author = expect_author, False
         # --- 표제부 ---
         if kind == "h1":
@@ -371,17 +376,22 @@ def build(blind):
         # --- 표: 열이 많으면 1단 구간 ---
         if kind == "table":
             wide = len(payload[0]) >= 5
-            want = 1 if wide else mode if in_body else 1
             if wide and mode != 1:
                 switch(doc, 1)
                 mode = 1
             add_table(doc, payload, FULL_W if mode == 1 else COL_W)
             doc.add_paragraph().paragraph_format.space_after = Pt(4)
+            if wide and in_body:
+                switch(doc, 2)      # 전폭 표가 끝나면 곧바로 2단 본문으로 되돌린다
+                mode = 2
             continue
 
         # --- 본문 단락 ---
         text = payload
         if text.startswith(("Table ", "Fig. ")):
+            if text.startswith("Table ") and next_is_wide_table(bi) and mode != 1:
+                switch(doc, 1)
+                mode = 1
             if text.startswith("Fig. ") and mode == 1:
                 add_para(doc, text, "caption", WD_ALIGN_PARAGRAPH.LEFT, 8)
                 switch(doc, 2)      # 그림 캡션 다음은 본문으로 복귀
