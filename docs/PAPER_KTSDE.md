@@ -187,13 +187,13 @@ in this work (teal) and the static context path (orange).
 조건화되어 섹터와 시가총액 구간에 따라 다른 가중을 주기 때문이다. 변수선택망은 그 게이트를 채널 축에
 적용한다(식 2, 3).
 
-&nbsp;&nbsp;&nbsp;&nbsp;*α* = softmax( GRN( [ flat(*E*) ; *c*_{s} ] ) ) ∈ ℝ^{C}&nbsp;&nbsp;&nbsp;&nbsp;(2)
+&nbsp;&nbsp;&nbsp;&nbsp;*v*_{n} = softmax( GRN( [ flat(*E*_{n}) ; *c*_{s} ] ) ) ∈ ℝ^{C},&nbsp;&nbsp; *n* = 1, …, *N*&nbsp;&nbsp;&nbsp;&nbsp;(2)
 
-&nbsp;&nbsp;&nbsp;&nbsp;*Z* = Σ *α*_{i} · GRN_{i}(*E*_{i})&nbsp;&nbsp;&nbsp;&nbsp;(3)
+&nbsp;&nbsp;&nbsp;&nbsp;*Z*_{n} = Σ_{i} *v*_{n,i} · GRN_{i}(*E*_{n,i})&nbsp;&nbsp;&nbsp;&nbsp;(3)
 
 변수선택망을 인코더 뒤에 두면 인코더가 채널 수만큼 반복 실행되는 반면, 앞에 두면 채널이 먼저 하나로
 축약되어 1회만 실행된다.
-*α*는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않는다. 종목 채널까지 선형
+패치마다 산출되는 *v* ∈ ℝ^{N×C}는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않는다. 종목 채널까지 선형
 합치기로 바꾼 변형은 모수가 0.12M으로 줄면서도 정확도와 보류 행태가 같았다(5.4절). 인코더 앞에서 채널을
 하나로 합치는 것이 비용 절감의 원인이며, 게이트는 그 이상의 정확도를 더하지 않았다.
 

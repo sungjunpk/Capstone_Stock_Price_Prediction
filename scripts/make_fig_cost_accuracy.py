@@ -68,7 +68,9 @@ def load():
     #    data.js 의 값은 장비·배치가 기록되지 않은 임시 측정이었다(<Table 5> 재측정).
     cm = json.loads(sorted(REP.glob("cost_measure_*.json"))[-1].read_text(encoding="utf-8"))
     cost = {COST_KEY[k]: {"latency": m["latency_per_stock_ms"],
-                          "secPerEpoch": m["sec_per_epoch"],
+                          # <Table 5> 와 같은 계산: 배치 시간 중앙값 × 에폭 배치 수 4,135.
+                          # 리포트의 sec_per_epoch 는 옛 학습 표본의 배치 수로 곱한 값이다.
+                          "secPerEpoch": m["sec_per_batch_median"] * 4135,
                           "act": {"120": m["activation_mb"]}}
             for k, m in ((k, cm["models"][a]) for k, a in
                          (("patchtst_q", "patchtst_q"), ("tft", "tft"), ("ours", "phase1")))}
@@ -84,7 +86,7 @@ def main() -> int:
         c = cost[COST_KEY[k]]
         x, y, mem = c["latency"], acc[k], c["act"]["120"]
         ax.scatter(x, y, s=mem * 2.2, zorder=3, linewidths=0.8, **STYLE[k])
-        ax.annotate(f"{LABEL[k]}\n{c['secPerEpoch']:.0f} s/epoch | {mem:.0f} MB",
+        ax.annotate(f"{LABEL[k]}\n{c['secPerEpoch']:.1f} s/epoch | {mem:.1f} MB",
                     (x, y), textcoords="offset points", xytext=OFFSET[k][:2],
                     fontsize=6.0, linespacing=1.25, ha=OFFSET[k][2])
 
