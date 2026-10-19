@@ -22,24 +22,20 @@ Sungjun Park†⋅Jimin Kim†⋅Ohjae Kwon†⋅Haeol Song†⋅Jeongil Seo†�
 
 ## ABSTRACT
 
-Most stock forecasting models give a single answer to whether a price will rise or fall. In
-practice, an investor also needs to know how far that answer can be trusted and when to hold
-off. The Temporal Fusion Transformer (TFT) forecasts quantiles rather than a single value, but it
-attends to every time step and is therefore expensive. Patch-based transformers are inexpensive
-but produce only a single value. This paper combines the two. We equip a patch-based transformer
-with the quantile forecasting of TFT and with its variable selection network, placed before the
-encoder so that the channel axis collapses into one and the encoder runs a single time. A rule
-withholds a decision when the prediction interval is unusually wide. On daily data for 201 KOSPI 200
-stocks since 2015, the model had a lower loss than TFT in all five repeated runs, on both the
-validation split that early stopping had used and the test split that it had not, while training
-3.8 times and running inference 4.8 times faster and using 5.1 times less activation memory. Its
-prediction intervals widened in volatile markets, so withheld decisions concentrated there. The
-withheld forecasts carried about 1.5 times the error of those acted on, a sharper separation than
-a simple volatility rule achieved. Because the evaluation period informed parts of
-the design, the figures are not fully out of sample. Section 6 states this and the remaining
-limitations.
+Stock forecasting has long been studied for investment and risk management, yet most forecasting
+models give a single value, which leaves no way to judge how far that forecast can be trusted. In
+practice, an investor needs to weigh uncertainty alongside the forecast and know when to hold off. The
+Temporal Fusion Transformer (TFT) also forecasts uncertainty, but it is computationally expensive, while
+lightweight patch-based transformers produce only a single value. This paper proposes a lightweight
+model that equips a patch-based transformer with the quantile forecasting structure and the variable
+selection network of TFT, together with an abstention rule that withholds a decision when the prediction
+interval is wider than usual. On daily data for 201 KOSPI 200 stocks since 2015, the proposed model had
+a lower forecast error than TFT in all five repeated runs, while training 3.8 times and running
+inference 4.8 times faster. Abstentions concentrated in volatile periods, and the withheld forecasts
+carried about 1.5 times the error of those acted on, separating large errors better than a simple rule
+based on recent volatility alone. Section 6 discusses the limitations of the evaluation design.
 
-<!-- 239 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
+<!-- 187 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
 
 **Keywords :** Time-Series Transformer, Quantile Regression, Variable Selection Network,
 Forecast Uncertainty, Abstention
@@ -52,20 +48,16 @@ Forecast Uncertainty, Abstention
 
 ### 요     약
 
-주가 예측 모형은 대부분 "오를 것인가, 내릴 것인가"에 대해 하나의 답만 내놓는다. 그러나 실제 투자 판단에서는
-그 예측을 얼마나 믿을 수 있는지, 언제 판단을 미뤄야 하는지도 함께 알아야 한다. 예측값과 함께 불확실성의 폭을 내는 분위 예측 모형으로 Temporal Fusion Transformer(TFT)가 있으나, 모든 시점에서 어텐션을 수행하여 계산 비용이
-크다. 계산이 가벼운 패치 기반 트랜스포머는 하나의 예측값만 낸다. 이에 본 논문에서는 패치 기반 트랜스포머에
-TFT의 분위 예측 기능과 변수선택망을 결합한 경량 모형을 제안한다. 변수선택망은 입력 채널을 인코더 앞에서 하나로
-축약하여 인코더를 한 번만 실행시키는 장치로 쓴다. 여기에 예측 구간이 이례적으로 넓을 때 판단을 보류하는
-기권 규칙을 함께 적용하였다.
-
-2015년 이후 코스피200 구성종목 201개의 일별 자료로 평가하였다. 다섯 번의 반복 실험 모두에서, 조기종료에
-쓰인 검증구간과 쓰이지 않은 평가구간 양쪽에서 제안 모형의 오차가 TFT보다 작았다. 학습 시간과 추론 시간은
-TFT보다 각각 3.8배, 4.8배 짧았고 메모리는 5.1배 적었다. 시장
-변동성이 클수록 예측 구간이 넓어져, 판단 보류는 변동성 최상위 25% 후보의 20.1%, 최하위 25% 후보의 0.2%에서
-일어났다. 보류된 예측의 오차는 실행된 예측의 약 1.5배로, 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를
-잘 걸러냈다. 평가 기간 자료가 입력 설계와 기권 기준 선택에 참고되었으므로 보고 수치는 완전한 사후 검증 값이
-아니며, 이를 포함한 한계는 6장에서 다룬다.
+주가 예측은 투자와 위험관리 등 여러 분야에서 꾸준히 연구되고 있으나, 대부분의 예측 모형은 하나의 예측값만
+제공하여 그 예측을 얼마나 신뢰할 수 있는지 판단하기 어렵다. 실제 투자에서는 예측값과 함께 불확실성을 고려하여
+판단을 보류해야 할 시점을 알 수 있어야 한다. 불확실성을 함께 예측하는 모형으로 Temporal Fusion
+Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패치 기반 트랜스포머는 하나의 예측값만 제공한다.
+이에 본 논문에서는 패치 기반 트랜스포머에 TFT의 분위 예측 구조와 변수선택망을 결합한 경량 모형을 제안하고,
+예측 구간이 평소보다 넓을 때 판단을 보류하는 기권 규칙을 함께 적용한다. 2015년 이후 코스피200 구성종목
+201개의 일별 자료로 실험한 결과, 제안 모형은 다섯 번의 반복 실험 모두에서 TFT보다 낮은 예측 오차를 보이면서
+학습은 3.8배, 추론은 4.8배 빨랐다. 판단 보류는 변동성이 큰 시기에 집중되었으며, 보류된 예측의 오차는 실행된
+예측의 약 1.5배였다. 이는 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 평가
+설계상의 한계는 6장에서 논의한다.
 
 **키워드 :** 시계열 트랜스포머, 분위회귀, 변수선택망, 예측 불확실성, 기권
 
