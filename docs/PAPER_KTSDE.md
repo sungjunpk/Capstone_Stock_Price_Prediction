@@ -9,9 +9,9 @@ KIPS Transactions on Software and Data Engineering (KTSDE) 투고 원고
 쓰므로 hwp 수식 편집기로 다시 입력할 것.
 -->
 
-# A Lightweight Quantile Model for Stock Returns Combining Patch Tokenization and Variable Selection
+# A Lightweight Quantile Forecasting Model for Stock Returns with Abstention
 
-<!-- 제목 98자. 양식 영문 지침에는 "A manuscript title should be no more than 40
+<!-- 제목 74자. 양식 영문 지침에는 "A manuscript title should be no more than 40
 characters in length." 가 있으나, docs/kips/samples/ 의 게재본 5편 영문 제목이 62~103자다
 (전력수요 80 · 비디오 보간 80 · e-러닝 103 · 로봇팔 62). 문서에는 있고 실무에서는 지켜지지
 않는 규정으로 보여 게재본 관행과 국문 제목과의 대응을 택했다. 사무국 문의 시 함께 확인할 것. -->
@@ -37,10 +37,10 @@ based on recent volatility alone. Section 6 discusses the limitations of the eva
 
 <!-- 187 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
 
-**Keywords :** Time-Series Transformer, Quantile Regression, Variable Selection Network,
+**Keywords :** Time-Series Transformer, Quantile Regression, Patch-Based Transformer,
 Forecast Uncertainty, Abstention
 
-## 패치 토큰화와 변수선택망을 결합한 주가 수익률 경량 분위 모형
+## 판단 보류가 가능한 경량 주가 수익률 분위 예측 모형
 
 <!-- AUTHORS:BEGIN -->
 박 성 준†⋅김 지 민†⋅권 오 재†⋅송 하 얼†⋅서 정 일††⋅유 주 한†††
@@ -59,7 +59,7 @@ Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패�
 예측의 약 1.5배였다. 이는 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 평가
 설계상의 한계는 6장에서 논의한다.
 
-**키워드 :** 시계열 트랜스포머, 분위회귀, 변수선택망, 예측 불확실성, 기권
+**키워드 :** 시계열 트랜스포머, 분위회귀, 패치 기반 트랜스포머, 예측 불확실성, 기권
 
 <!-- AUTHORS:BEGIN -->
 † 비 회 원 : 동아대학교 컴퓨터공학과 학부생
@@ -86,9 +86,8 @@ Accepted :
 
 금융 시계열에 딥러닝을 적용한 연구는 장단기기억 신경망과 합성곱 구조를 거쳐 트랜스포머 계열로 확장되며
 폭넓게 축적되어 왔다[1]. 국내에서도 해외지수와 투자자 수급을 입력으로 삼은 등락 예측이 보고되었다[2].
-그러나 이들 다수는 최신 구조를 새 자료에 이식하거나 손실함수와 초매개변수를 조정하여 지표를 개선하는
-방식이며, 구조를 과업의 요구사항으로부터 도출하지는 않는다. 그 경우 모형 선택의 근거가 성능 지표 외에
-남지 않아 결과를 사후에 설명하기 어렵다.
+그러나 이들 연구는 대부분 점 예측의 정확도 개선에 초점을 두며, 예측의 불확실성이나 운용 비용은 함께
+다루지 않는다.
 
 본 연구는 먼저 두 가지 운용 요구사항을 정의하고, 이를 충족하는 구조를 설계하였다. 첫째는 기권이다. 시스템은
 "오를 것인가 내릴 것인가"뿐 아니라 "지금 판단해도 되는가"를 말할 수 있어야 하며, 이는 점 추정으로 정의할 수
@@ -100,7 +99,7 @@ Accepted :
 채널 축을 인코더 앞에서 하나로 모으는 장치가 필요하며 후자에는 TFT의 변수선택망을 쓴다. PatchTST를 그대로
 쓰면 첫째 요구를, TFT를 그대로 쓰면 둘째 요구를 충족하지 못한다. 따라서 본 연구가 답하는 질문은 두 가지이다.
 (1) 두 구성요소를 결합한 구조의 분위 정확도와 계산 비용은 두 원본과 어떻게 비교되는가. (2) 예측 구간이
-변동성에 반응하여 기권이 실제로 더 나쁜 판단을 걸러내는가.
+변동성에 반응하여 기권이 실제로 오차가 큰 예측을 걸러내는가.
 
 이하 2장에서 관련 연구를 정리하고, 3장에서 요구사항으로부터 제안 구조를 도출하며, 4장에서 실험 설계를,
 5장에서 정확도·비용·기권 행태의 결과를 제시하고 6장에서 결론과 한계를 정리한다.
@@ -145,8 +144,8 @@ RevIN(reversible instance normalization)[11]은 입력 윈도우별 인스턴스
 1장에서 언급한 금융 시계열 딥러닝 연구[1] 가운데, 장단기기억 신경망으로 미국 주식의 방향을 예측한
 연구[14]와 다수의 머신러닝 기법을 자산가격 결정에 적용한 연구[15]가 대표적이다. 국내에서는 해외지수와
 투자자별 매매 동향을 입력으로 삼은 등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[16]가 보고되었다.
-본 연구는 [2]와 마찬가지로 해외지수와 투자자 수급을 입력에 포함하되, 이를 별도 경로의 크로스어텐션으로
-주입하고 예측을 점이 아니라 분포로 산출한다는 점이 다르다.
+본 연구는 [2]와 마찬가지로 해외지수와 투자자 수급을 입력에 포함하되, 예측을 점이 아니라 분포로 산출한다는
+점이 다르다.
 
 잘 조정된 단순 기준모형과의 비교가 부재하다는 점은 이 분야 문헌의 공통 약점이므로, 본 연구는 동일 조건의
 그래디언트 부스팅 기준모형을 함께 측정하여 5장에 보고한다.
@@ -193,7 +192,7 @@ in this work (teal) and the static context path (orange).
 &nbsp;&nbsp;&nbsp;&nbsp;*Z* = Σ *α*_{i} · GRN_{i}(*E*_{i})&nbsp;&nbsp;&nbsp;&nbsp;(3)
 
 변수선택망을 인코더 뒤에 두면 인코더가 채널 수만큼 반복 실행되는 반면, 앞에 두면 채널이 먼저 하나로
-축약되어 1회만 실행된다. 이전 설정(17채널)에서 순전파를 실측한 결과 259ms에서 52ms로 5배 단축되었다.
+축약되어 1회만 실행된다.
 *α*는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않는다. 종목 채널까지 선형
 합치기로 바꾼 변형은 모수가 0.12M으로 줄면서도 정확도와 보류 행태가 같았다(5.4절). 인코더 앞에서 채널을
 하나로 합치는 것이 비용 절감의 원인이며, 게이트는 그 이상의 정확도를 더하지 않았다.
@@ -209,7 +208,8 @@ in this work (teal) and the static context path (orange).
 
 매크로를 질의로 두면 출력이 매크로 시퀀스의 형상을 따르게 되어 종목별 예측이 산출되지 않으므로, 방향을
 반대로 고정하였다. 매크로 경로에는 변수선택망을 두지 않고 13채널을 하나로 합치는 선형 변환을 썼다. 채널별로 부호화하면
-비용이 13배 증가하는 반면, 매크로는 크로스어텐션의 키와 값으로만 쓰이므로 채널별 가중이 필요하지 않다.
+비용이 13배 증가하는 반면, 매크로는 크로스어텐션의 키와 값으로만 쓰이므로 채널별 가중이 필요하지 않다. 다만 이 모듈의 정확도
+기여는 확인되지 않았다(5.4절).
 
 #### 3) 분위 단조성의 구조적 보장과 헤드 초기화
 
@@ -268,8 +268,7 @@ Table 3. Input channels
 요일은 사전 알려진 공변량이나 구현에서는 윈도우 마지막 날의 값을 정적 입력으로 넣었다.
 
 가격 수준은 직접 사용하지 않는다. 이동평균은 종가 대비 괴리율로, 수렴·발산 지표와 ATR은 종가로 나누어,
-유계 지표는 재척도하여 입력한다. 목표변수는 코스피200 대비 초과분으로 정의한 5일 누적 로그수익률이다(식 6). 1·2·3일 보조 지평은 패널에
-생성해 두었으나 본 실험의 세 모형은 사용하지 않았으며, 출력은 5일 지평의 세 분위뿐이다.
+유계 지표는 재척도하여 입력한다. 목표변수는 코스피200 대비 초과분으로 정의한 5일 누적 로그수익률이다(식 6).
 
 &nbsp;&nbsp;&nbsp;&nbsp;*y*_{t} = Σ_{k=1..5} *r*_{t+k} − Σ_{k=1..5} *r*^{index}_{t+k}&nbsp;&nbsp;&nbsp;&nbsp;(6)
 
@@ -439,8 +438,8 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 판단을 보류하는 기권 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 두 가지를
 확인하였다.
 
-첫째, 제안 모형은 TFT 원본과 대등하거나 근소하게 낮은 오차를 약 4분의 1의 비용으로 달성하였다. 다섯 번의
-반복 실험을 짝지은 열 번의 비교 전부에서 제안 모형의 손실이 낮았고, 조기종료에 쓰이지 않은 평가 구간에서는
+첫째, 제안 모형은 TFT 원본보다 낮은 오차를 약 4분의 1의 비용으로 달성하였다. 다섯 번의
+반복 실험을 짝지은 열 번의 비교 전부에서 제안 모형의 손실이 낮았고, 조기종료에 쓰이지 않은 검정구간에서는
 날짜 단위 DM 검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 종목당 추론 시간은 4.8배 짧았고,
 활성값 메모리는 5.1배 적었다. 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
 집중되었다. 보류된 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 기권율을 맞춘 비교에서도 최근 변동성만
@@ -516,7 +515,7 @@ e-mail : appop001@naver.com
 
 2021년～현  재 동아대학교 컴퓨터공학과 학사과정
 
-관심분야 : Time-Series Forecasting, Quantile Regression, Interpretable Deep Learning, Algorithmic Trading
+관심분야 : Time-Series Forecasting, Quantile Regression, Deep Learning, Algorithmic Trading
 
 #### 김 지 민
 
@@ -528,7 +527,7 @@ e-mail : bckck@naver.com
 
 2020년～현  재 동아대학교 컴퓨터공학과 학사과정
 
-관심분야 : Time-Series Forecasting, Quantile Regression, Interpretable Deep Learning, Algorithmic Trading
+관심분야 : Deep Learning, Financial Time-Series Analysis, Uncertainty Estimation
 
 #### 권 오 재
 
@@ -540,7 +539,7 @@ e-mail : rnjsdhwo4@naver.com
 
 2021년～현  재 동아대학교 컴퓨터공학과 학사과정
 
-관심분야 : Time-Series Forecasting, Quantile Regression, Interpretable Deep Learning, Algorithmic Trading
+관심분야 : Machine Learning, Time-Series Forecasting, Quantitative Finance
 
 #### 송 하 얼
 
@@ -552,7 +551,7 @@ e-mail : 2337310@donga.ac.kr
 
 2023년～현  재 동아대학교 컴퓨터공학과 학사과정
 
-관심분야 : Time-Series Forecasting, Quantile Regression, Interpretable Deep Learning, Algorithmic Trading
+관심분야 : Deep Learning, Transformer Models, Data Analysis
 
 #### 서 정 일
 
