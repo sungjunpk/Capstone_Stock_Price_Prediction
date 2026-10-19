@@ -547,7 +547,7 @@ e-mail : rnjsdhwo4@naver.com
 
 https://orcid.org/0009-0007-5429-4154
 
-e-mail : 2337310@donga.ac.kr
+e-mail : haeolsong@gmail.com
 
 2023년～현  재 동아대학교 컴퓨터공학과 학사과정
 
