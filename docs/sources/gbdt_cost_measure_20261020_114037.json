@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-10-20T11:40:37",
+  "device": "CPU, 8 cores (sklearn OpenMP)",
+  "train_rows": 282962,
+  "features": 136,
+  "trees": {
+    "0.1": 75,
+    "0.5": 25,
+    "0.9": 275
+  },
+  "fit_seconds": {
+    "q10": 6.7,
+    "q50": 2.81,
+    "q90": 16.55
+  },
+  "fit_seconds_total": 26.06,
+  "universe_rows": 199,
+  "universe_pass_ms": 13.44,
+  "latency_per_stock_ms": 0.0675,
+  "model_bytes": 2134397
+}

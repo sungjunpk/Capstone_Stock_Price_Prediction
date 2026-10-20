@@ -322,7 +322,7 @@ Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42
 | PatchTST + quantile head | 0.035M | 0.012166 ± 0.000022 | +0.07% | 0.018686 ± 0.000130 | +0.36% | 1-5 |
 | TFT, original | 0.687M | 0.011935 ± 0.000020 | +1.97% | 0.018325 ± 0.000091 | +2.28% | 1-2 |
 | Quantile GBDT | 375 trees | 0.011890 | +2.34% | 0.018107 | +3.45% | - |
-| **Ours (PatchTST x TFT)** | 0.500M | 0.011889 ± 0.000012 | +2.35% | **0.017826 ± 0.000059** | **+4.95%** | 2-10 |
+| **Ours** | 0.500M | 0.011889 ± 0.000012 | +2.35% | **0.017826 ± 0.000059** | **+4.95%** | 2-10 |
 
 제안 모형은 두 구간 모두에서 TFT 원본보다 손실이 낮았고, 다섯 시드를 짝지은 열 번의 비교 전부에서 그러하였다
 (부호검정 *p* = 0.031 단측, 두 구간 동일). 검증구간의 격차는 핀볼 손실 0.000046으로 기준선 대비
@@ -346,21 +346,27 @@ scikit-learn 구현)을 같은 분할과 같은 윈도우 표본에서 평가하
 
 ### 5.2 계산 비용
 
-Table 5. Computational cost measured on one device (Mac MPS, batch 64, 120-day input, 201 stocks). Seconds per epoch is the median training-step time over 40 batches times the 4,135 batches that one epoch takes over the 264,653 training windows of Section 4.3. The universe pass is the median of 21 forward passes over 201 stocks, and latency per stock is that value divided by 201 rather than an independent measurement. Activation is the device allocation added by a forward pass that retains the backward graph. Two independent runs agreed within 0.8%
+Table 5. Computational cost measured on one device (Mac MPS, batch 64, 120-day input, 201 stocks). Seconds per epoch is the median training-step time over 40 batches times the 4,135 batches that one epoch takes over the 264,653 training windows of Section 4.3. The universe pass is the median of 21 forward passes over 201 stocks, and latency per stock is that value divided by 201 rather than an independent measurement. Activation is the device allocation added by a forward pass that retains the backward graph. Two independent runs agreed within 0.8%. The quantile GBDT has no epochs and runs on the CPU (8 cores): its row gives one full fit of the three quantile models at the selected tree counts, the universe pass over the 199 stocks of the last test day, and the serialized model size
 
 | Model | s / epoch | Latency / stock | Universe pass | Activation | Param memory |
 |---|---|---|---|---|---|
 | PatchTST (+ quantile head) | 110.8 | 0.092 ms | 18.6 ms | 172.8 MB | 0.14 MB |
 | TFT, original | 550.8 | 0.693 ms | 139.4 ms | 679.1 MB | 2.75 MB |
 | Ours | 143.5 | 0.143 ms | 28.7 ms | 132.9 MB | 2.00 MB |
+| Quantile GBDT (CPU) | 26.1 (full fit) | 0.068 ms | 13.4 ms | - | 2.13 MB |
 
 대등한 정확도에서 제안 모형은 TFT 원본 대비 학습 3.8배, 종목당 추론 4.8배, 활성값 메모리 5.1배의 절감을
 보였다. 패치 토큰화가 어텐션 대상 시퀀스를 120에서 24로 줄이고 인코더 앞의 채널 축약이 채널 반복을
 제거한 결과이며, 모수 1.4배 차이는 부차적이다. 같은 배율은 장비와 배치가 다른 조건에서도 재현된다 —
 <Table 4>를 얻은 캐글 GPU(배치 256, 혼합정밀도)에서 제안 모형 41.8초/epoch, TFT 원본 157.1초/epoch였다.
+분위 GBDT는 이보다도 싸다. 세 분위 모형 전체를 한 번 학습하는 데 CPU에서 26.1초로 제안 모형의 1 epoch보다
+짧았고, 종목당 추론도 0.068 ms로 절반 이하였다. 따라서 본 연구의 경량은 트랜스포머 분위 모형, 특히 TFT
+대비의 의미이며, 제안 모형이 GBDT 대비 얻는 것은 비용이 아니라 검정구간 손실의 추가 개선(+4.95% 대
++3.45%)이다.
 
 (Fig. 2)는 <Table 4>의 검증구간 정확도와 <Table 5>의 비용을 한 평면에 놓은 것이다. 지연시간만 보면 분위
-헤드 모형이 더 왼쪽에 있으나, 정확도와 비용을 함께 보면 제안 모형이 파레토 전선 위에 있다.
+헤드 모형이 더 왼쪽에 있으나, 정확도와 비용을 함께 보면 세 트랜스포머 모형 가운데 제안 모형이 파레토 전선 위에 있다. 그림에 넣지 않은
+분위 GBDT는 검증 정확도가 같고 지연이 더 짧으므로 이 평면에서는 제안 모형보다 앞선다.
 
 ![Fig. 2](images/fig2_cost_accuracy.png)
 
@@ -435,7 +441,9 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 어느 한 구성요소에서 오지 않는다. 남는 설명은 둘이다. 세 변형이 공유하는 것, 즉 패치 임베딩을 인코더 앞에서
 채널 축으로 합치는 구조 자체가 개선의 원인이거나, 구성요소들이 서로를 대신하여 하나를 빼도 나머지가
 보완하는 경우이다. 둘 이상을 함께 제거하지 않았으므로 이 둘은 가려지지 않는다. 선형 합치기 변형은 모수가
-4분의 1이면서 결과가 같았으므로, 변수선택망의 정확도상 이점은 이 자료에서 확인되지 않는다.
+4분의 1이면서 결과가 같았으므로, 변수선택망의 정확도상 이점은 이 자료에서 확인되지 않는다. 제안 모형의
+설정은 제거 실험 전에 고정하였으므로 본문의 비교는 변수선택망 판으로 유지하였으며, 실제 운용에서는 선형
+합치기 변형이 같은 결과를 내는 더 가벼운 대안이다.
 
 ## 6. 결론 및 향후 연구
 
