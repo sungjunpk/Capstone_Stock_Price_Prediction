@@ -159,15 +159,69 @@ def three_line_borders(table, header=True):
                 edge(cell, "bottom", 0)
 
 
+def column_widths(rows, width):
+    """열마다 가장 긴 칸의 길이에 비례해 폭을 나눈다.
+
+    균등 분할이면 〈Table 7〉 처럼 "0.017837 ± 0.000078" 이 든 열이 줄바꿈된다.
+    상한을 두는 이유는 변형 이름 같은 긴 라벨이 숫자 열의 폭까지 가져가지 않게 하려는 것이다.
+    """
+    w = [min(max(max(len(r[c]) for r in rows), 6), 28) for c in range(len(rows[0]))]
+    total = sum(w)
+    width = width - Mm(1.5)     # 단 폭에 딱 맞추면 테두리 때문에 밀린다
+    return [int(width * x / total) for x in w]
+
+
+def table_layout(table, widths):
+    """tblW·tblGrid·여백을 명시한다.
+
+    python-docx 가 표를 만들 때 넣는 tblGrid 는 셀 폭(tcW)과 무관한 값이라, 고정 레이아웃에서
+    Word 가 grid 를 따르면 표가 단 밖으로 삐져나간다. 둘을 같은 값으로 맞춘다.
+    기본 셀 여백(좌우 각 1.9mm)도 폭 계산에 들어가도록 줄인다.
+    """
+    tblPr = table._tbl.tblPr
+    for tag, attrs in (("w:tblW", {"w:w": str(sum(widths) // 635), "w:type": "dxa"}),
+                       ("w:tblLayout", {"w:type": "fixed"})):
+        for old in tblPr.findall(qn(tag)):
+            tblPr.remove(old)
+        el = OxmlElement(tag)
+        for k, v in attrs.items():
+            el.set(qn(k), v)
+        tblPr.append(el)
+    mar = OxmlElement("w:tblCellMar")
+    for side, val in (("left", 40), ("right", 40)):      # 40 twip = 0.7mm
+        e = OxmlElement(f"w:{side}")
+        e.set(qn("w:w"), str(val))
+        e.set(qn("w:type"), "dxa")
+        mar.append(e)
+    tblPr.append(mar)
+    grid = table._tbl.find(qn("w:tblGrid"))
+    for col in list(grid):
+        grid.remove(col)
+    for w in widths:
+        gc = OxmlElement("w:gridCol")
+        gc.set(qn("w:w"), str(w // 635))                 # EMU -> twip
+        grid.append(gc)
+
+
+def keep_together(table):
+    """행이 쪽 사이에서 갈라지지 않게 하고, 표 전체를 한 쪽에 묶는다."""
+    for row in table.rows[:-1]:
+        for para in (p for c in row.cells for p in c.paragraphs):
+            para.paragraph_format.keep_with_next = True
+    for row in table.rows:
+        trPr = row._tr.get_or_add_trPr()
+        trPr.append(OxmlElement("w:cantSplit"))
+
+
 def add_table(doc, rows, width):
     table = doc.add_table(rows=len(rows), cols=len(rows[0]))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
-    col_w = int(width / len(rows[0]))
+    widths = column_widths(rows, width)
     for r_i, row in enumerate(rows):
         for c_i, text in enumerate(row):
             cell = table.cell(r_i, c_i)
-            cell.width = col_w
+            cell.width = widths[c_i]
             cell.text = ""
             p = cell.paragraphs[0]
             korean_spacing(p)
@@ -183,6 +237,8 @@ def add_table(doc, rows, width):
                 else:
                     style_run(p.add_run(piece), "table", bold=bold)
     three_line_borders(table)
+    table_layout(table, widths)
+    keep_together(table)
     return table
 
 
@@ -328,13 +384,15 @@ def build(blind):
                 mode, in_body = switch(doc, 2), True
             if mode != 2:
                 mode = switch(doc, 2)
-            add_para(doc, payload, "chapter", None, 4, bold=True)
+            add_para(doc, payload, "chapter", None, 4,
+                     bold=True).paragraph_format.keep_with_next = True
             in_bio = payload == "References"
             continue
         if kind == "h3":
             if mode != 2:
                 mode = switch(doc, 2)
-            add_para(doc, payload, "section", None, 3)
+            add_para(doc, payload, "section", None, 3) \
+                .paragraph_format.keep_with_next = True
             continue
         if kind == "h4":
             add_para(doc, payload, "bio_name" if in_bio else "body", None, 3)
@@ -402,7 +460,9 @@ def build(blind):
                 add_para(doc, text, "caption", WD_ALIGN_PARAGRAPH.LEFT, 8)
                 mode = switch(doc, 2)   # 그림 캡션 다음은 본문으로 복귀
             else:
-                add_para(doc, text, "caption", None, 2)
+                cap = add_para(doc, text, "caption", None, 2)
+                if text.startswith("Table "):
+                    cap.paragraph_format.keep_with_next = True
             continue
         if text.startswith(("※", "†", "* Corresponding", "Manuscript Received",
                             "First Revision", "Accepted")):
