@@ -1,0 +1,424 @@
+{
+  "generated_at": "2026-10-20T12:04:26",
+  "data": "outputs/train_bundle.zip (2026-10-16 동결본)",
+  "note": "mae/rmse 는 q50 기준. baseline 은 학습구간 무조건부 분위수 상수.",
+  "models": {
+    "ours": {
+      "stem": "phase1_b113237e",
+      "runs": [
+        {
+          "checkpoint": "phase1_b113237e_seed42.pt",
+          "seed": 42,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011873,
+            "mae": 0.035876,
+            "rmse": 0.052449,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5291
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017893,
+            "mae": 0.053679,
+            "rmse": 0.074615,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5171
+          }
+        },
+        {
+          "checkpoint": "phase1_b113237e_seed43.pt",
+          "seed": 43,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011887,
+            "mae": 0.035889,
+            "rmse": 0.052394,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5303
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.01783,
+            "mae": 0.053392,
+            "rmse": 0.074434,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5539
+          }
+        },
+        {
+          "checkpoint": "phase1_b113237e_seed44.pt",
+          "seed": 44,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011904,
+            "mae": 0.035848,
+            "rmse": 0.052297,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5295
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017858,
+            "mae": 0.053425,
+            "rmse": 0.074481,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5527
+          }
+        },
+        {
+          "checkpoint": "phase1_b113237e_seed45.pt",
+          "seed": 45,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011884,
+            "mae": 0.03588,
+            "rmse": 0.052491,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5305
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017739,
+            "mae": 0.053299,
+            "rmse": 0.074495,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5541
+          }
+        },
+        {
+          "checkpoint": "phase1_b113237e_seed46.pt",
+          "seed": 46,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011896,
+            "mae": 0.035869,
+            "rmse": 0.052381,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5296
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.017809,
+            "mae": 0.053399,
+            "rmse": 0.074479,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5535
+          }
+        }
+      ],
+      "agg": {
+        "val_mae_mean": 0.035872,
+        "val_mae_sd": 1.5e-05,
+        "val_rmse_mean": 0.052402,
+        "val_rmse_sd": 7.4e-05,
+        "val_hit_rate_mean": 0.5298,
+        "val_hit_rate_sd": 0.000583,
+        "val_pinball_mean": 0.011889,
+        "val_pinball_sd": 1.2e-05,
+        "val_baseline_mae_mean": 0.035916,
+        "val_baseline_mae_sd": 0.0,
+        "val_mae_vs_baseline_pct": 0.123,
+        "test_mae_mean": 0.053439,
+        "test_mae_sd": 0.000142,
+        "test_rmse_mean": 0.074501,
+        "test_rmse_sd": 6.8e-05,
+        "test_hit_rate_mean": 0.54626,
+        "test_hit_rate_sd": 0.01631,
+        "test_pinball_mean": 0.017826,
+        "test_pinball_sd": 5.8e-05,
+        "test_baseline_mae_mean": 0.053447,
+        "test_baseline_mae_sd": 0.0,
+        "test_mae_vs_baseline_pct": 0.015
+      }
+    },
+    "tft": {
+      "stem": "phase1_f5e8f4e4_tft",
+      "runs": [
+        {
+          "checkpoint": "phase1_f5e8f4e4_tft_seed42.pt",
+          "seed": 42,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011925,
+            "mae": 0.036065,
+            "rmse": 0.052401,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5143
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018205,
+            "mae": 0.053708,
+            "rmse": 0.074566,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5124
+          }
+        },
+        {
+          "checkpoint": "phase1_f5e8f4e4_tft_seed43.pt",
+          "seed": 43,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011925,
+            "mae": 0.036033,
+            "rmse": 0.052428,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5218
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018405,
+            "mae": 0.053758,
+            "rmse": 0.074575,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5191
+          }
+        },
+        {
+          "checkpoint": "phase1_f5e8f4e4_tft_seed44.pt",
+          "seed": 44,
+          "val": {
+            "n": 23086,
+            "pinball": 0.01197,
+            "mae": 0.035992,
+            "rmse": 0.052363,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5172
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018257,
+            "mae": 0.053675,
+            "rmse": 0.074616,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5243
+          }
+        },
+        {
+          "checkpoint": "phase1_f5e8f4e4_tft_seed45.pt",
+          "seed": 45,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011922,
+            "mae": 0.03594,
+            "rmse": 0.052391,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5283
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018353,
+            "mae": 0.053589,
+            "rmse": 0.074532,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5269
+          }
+        },
+        {
+          "checkpoint": "phase1_f5e8f4e4_tft_seed46.pt",
+          "seed": 46,
+          "val": {
+            "n": 23086,
+            "pinball": 0.011934,
+            "mae": 0.036034,
+            "rmse": 0.05239,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5181
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018407,
+            "mae": 0.053806,
+            "rmse": 0.074759,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5077
+          }
+        }
+      ],
+      "agg": {
+        "val_mae_mean": 0.036013,
+        "val_mae_sd": 4.8e-05,
+        "val_rmse_mean": 0.052395,
+        "val_rmse_sd": 2.3e-05,
+        "val_hit_rate_mean": 0.51994,
+        "val_hit_rate_sd": 0.005386,
+        "val_pinball_mean": 0.011935,
+        "val_pinball_sd": 2e-05,
+        "val_baseline_mae_mean": 0.035916,
+        "val_baseline_mae_sd": 0.0,
+        "val_mae_vs_baseline_pct": -0.27,
+        "test_mae_mean": 0.053707,
+        "test_mae_sd": 8.3e-05,
+        "test_rmse_mean": 0.07461,
+        "test_rmse_sd": 8.9e-05,
+        "test_hit_rate_mean": 0.51808,
+        "test_hit_rate_sd": 0.008024,
+        "test_pinball_mean": 0.018325,
+        "test_pinball_sd": 9.1e-05,
+        "test_baseline_mae_mean": 0.053447,
+        "test_baseline_mae_sd": 0.0,
+        "test_mae_vs_baseline_pct": -0.486
+      }
+    },
+    "patchtst_q": {
+      "stem": "phase1_5263fac6_patchtst_q",
+      "runs": [
+        {
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed42.pt",
+          "seed": 42,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012127,
+            "mae": 0.035963,
+            "rmse": 0.052389,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5279
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018458,
+            "mae": 0.053488,
+            "rmse": 0.074524,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.5503
+          }
+        },
+        {
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed43.pt",
+          "seed": 43,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012176,
+            "mae": 0.035917,
+            "rmse": 0.052287,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5305
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018776,
+            "mae": 0.053523,
+            "rmse": 0.074523,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.554
+          }
+        },
+        {
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed44.pt",
+          "seed": 44,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012177,
+            "mae": 0.035926,
+            "rmse": 0.052347,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5304
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018747,
+            "mae": 0.05345,
+            "rmse": 0.074477,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.554
+          }
+        },
+        {
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed45.pt",
+          "seed": 45,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012172,
+            "mae": 0.035911,
+            "rmse": 0.052341,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5304
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018738,
+            "mae": 0.053431,
+            "rmse": 0.074471,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.554
+          }
+        },
+        {
+          "checkpoint": "phase1_5263fac6_patchtst_q_seed46.pt",
+          "seed": 46,
+          "val": {
+            "n": 23086,
+            "pinball": 0.012178,
+            "mae": 0.03594,
+            "rmse": 0.052413,
+            "baseline_mae": 0.035916,
+            "baseline_rmse": 0.05233,
+            "hit_rate": 0.5304
+          },
+          "test": {
+            "n": 106490,
+            "pinball": 0.018711,
+            "mae": 0.053363,
+            "rmse": 0.074431,
+            "baseline_mae": 0.053447,
+            "baseline_rmse": 0.07448,
+            "hit_rate": 0.554
+          }
+        }
+      ],
+      "agg": {
+        "val_mae_mean": 0.035931,
+        "val_mae_sd": 2.1e-05,
+        "val_rmse_mean": 0.052355,
+        "val_rmse_sd": 4.8e-05,
+        "val_hit_rate_mean": 0.52992,
+        "val_hit_rate_sd": 0.00113,
+        "val_pinball_mean": 0.012166,
+        "val_pinball_sd": 2.2e-05,
+        "val_baseline_mae_mean": 0.035916,
+        "val_baseline_mae_sd": 0.0,
+        "val_mae_vs_baseline_pct": -0.042,
+        "test_mae_mean": 0.053451,
+        "test_mae_sd": 6.1e-05,
+        "test_rmse_mean": 0.074485,
+        "test_rmse_sd": 3.9e-05,
+        "test_hit_rate_mean": 0.55326,
+        "test_hit_rate_sd": 0.001655,
+        "test_pinball_mean": 0.018686,
+        "test_pinball_sd": 0.00013,
+        "test_baseline_mae_mean": 0.053447,
+        "test_baseline_mae_sd": 0.0,
+        "test_mae_vs_baseline_pct": -0.007
+      }
+    }
+  }
+}

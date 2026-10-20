@@ -31,12 +31,15 @@ lightweight patch-based transformers produce only a single value. This paper pro
 model that adds a quantile head to a patch-based transformer and merges the input channels into one
 before the encoder so that the encoder runs only once, together with an abstention rule that withholds a decision when the prediction
 interval is wider than usual. On daily data for 201 KOSPI 200 stocks since 2015, the proposed model had
-a lower forecast error than TFT in all five repeated runs, while training 3.8 times and running
+a lower quantile (pinball) loss than TFT in all five repeated runs, while training 3.8 times and running
 inference 4.8 times faster. Abstentions concentrated in volatile periods, and the withheld forecasts
 carried about 1.5 times the error of those acted on, separating large errors better than a simple rule
-based on recent volatility alone. Section 6 discusses the limitations of the evaluation design.
+based on recent volatility alone. A quantile gradient-boosting baseline fitted on the same windows was
+cheaper still and abstained just as well, so what the proposed model gains over it is accuracy rather than
+cost. The evaluation uses the current index constituents and an abstention threshold chosen with
+reference to the test split.
 
-<!-- 196 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
+<!-- 236 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -56,10 +59,12 @@ Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패�
 이에 본 논문에서는 패치 기반 트랜스포머에 분위 예측 헤드를 달고 입력 채널을 인코더 앞에서 하나로 합쳐 인코더를
 한 번만 실행하는 경량 모형을 제안하고,
 예측 구간이 평소보다 넓을 때 판단을 보류하는 기권 규칙을 함께 적용한다. 2015년 이후 코스피200 구성종목
-201개의 일별 자료로 실험한 결과, 제안 모형은 다섯 번의 반복 실험 모두에서 TFT보다 낮은 예측 오차를 보이면서
-학습은 3.8배, 추론은 4.8배 빨랐다. 판단 보류는 변동성이 큰 시기에 집중되었으며, 보류된 예측의 오차는 실행된
-예측의 약 1.5배였다. 이는 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 평가
-설계상의 한계는 6장에서 논의한다.
+201개의 일별 자료로 실험한 결과, 제안 모형은 다섯 번의 반복 실험 모두에서 TFT보다 낮은 분위 손실을 보이면서
+학습은 3.8배, 추론은 4.8배 빨랐다. 기권은 변동성이 큰 시기에 집중되었으며, 기권한 예측의 오차는 실행된
+예측의 약 1.5배였다. 이는 최근 변동성만 보고 기권하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 같은 표본으로
+학습한 분위 그래디언트 부스팅 기준모형은 계산 비용이 더 낮고 기권 품질도 대등하였으므로, 제안 모형이 그
+기준모형보다 나은 점은 비용이 아니라 정확도이다. 다만 평가는 현재 시점의 지수 구성종목을 쓰고 기권
+임계값도 시험구간을 참조하여 골랐다는 한계가 있다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 기권
 
@@ -93,7 +98,7 @@ Accepted :
 
 본 연구는 먼저 두 가지 운용 요구사항을 정의하고, 이를 충족하는 구조를 설계하였다. 첫째는 기권이다. 시스템은
 "오를 것인가 내릴 것인가"뿐 아니라 "지금 판단해도 되는가"를 말할 수 있어야 하며, 이는 점 추정으로 정의할 수
-없고 예측 분포를 요구한다. 둘째는 계산 비용이다. 201종목을 매일 평가하려면 종목당 추론이 싸야 하고, 실질적
+없고 예측 분포를 요구한다. 둘째는 계산 비용이다. 201종목을 매일 평가하려면 종목당 추론 비용이 낮아야 하고, 실질적
 독립 사건이 적은 자료라 모형을 키울 수도 없다. 분위 예측을 제공하는 Temporal Fusion Transformer(TFT)는 모든
 시점에서 어텐션을 수행하므로 이 제약과 충돌한다.
 
@@ -103,6 +108,12 @@ Accepted :
 쓰면 첫째 요구를, TFT를 그대로 쓰면 둘째 요구를 충족하지 못한다. 따라서 본 연구가 답하는 질문은 두 가지이다.
 (1) 두 구성요소를 결합한 구조의 분위 정확도와 계산 비용은 두 원본과 어떻게 비교되는가. (2) 예측 구간이
 변동성에 반응하여 기권이 실제로 오차가 큰 예측을 걸러내는가.
+
+이에 대한 본 연구의 기여는 세 가지이다. 첫째, 채널 축을 인코더 앞에서 하나로 합쳐 분위 예측 트랜스포머의
+학습·추론 비용을 TFT의 약 4분의 1로 낮추면서 예측 손실은 더 낮추었다. 둘째, 예측 구간의 폭을 기준으로 한
+기권이 최근 변동성만 쓰는 규칙보다 큰 오차를 더 잘 걸러낸다는 것을, 기권율을 맞춘 비교로 보였다. 셋째, 같은
+분할과 같은 윈도우 표본 위에서 무조건부 분위수 상수와 분위 그래디언트 부스팅을 함께 측정하여, 구조에서 오는
+이득과 그렇지 않은 부분을 구분하였다.
 
 이하 2장에서 관련 연구를 정리하고, 3장에서 요구사항으로부터 제안 구조를 도출하며, 4장에서 실험 설계를,
 5장에서 정확도·비용·기권 행태의 결과를 제시하고 6장에서 결론과 한계를 정리한다.
@@ -124,14 +135,14 @@ PatchTST[7]는 시계열을 시점이 아니라 구간(패치) 단위로 토큰�
 TFT[8]는 변수선택망으로 입력 채널별 소프트맥스 게이트를 학습하고, 게이트 잔차 신경망(gated residual
 network, GRN)으로 채널별 변환을 수행하며, 정적 공변량을 문맥 벡터로 부호화하고 복수의 분위를 동시에
 산출한다. 본 연구는 이 가운데 분위 헤드를 채택하고 변수선택망은 채널 축약의 한 구현으로 비교하였으며,
-시점 단위 연산 구조는 버렸다. 변수선택망을 쓰는 이유는 중요도 해석이 아니라, 채널 축을 소프트맥스 가중합으로
+시점 단위 연산 구조는 채택하지 않았다. 변수선택망을 쓰는 이유는 중요도 해석이 아니라, 채널 축을 소프트맥스 가중합으로
 하나로 줄여 인코더 실행 횟수를 1회로 만드는 데 있다. 국내에서도 TFT를 다지평
 예측에 적용한 연구[9]와 트랜스포머를 시계열 특성에 맞추어 변형한 연구[10]가 보고되었다.
 
 ### 2.3 분포 이동 정규화와 분위 회귀
 
 RevIN(reversible instance normalization)[11]은 입력 윈도우별 인스턴스 정규화를 적용하고 출력에서 역변환한다. 종목과 시대에 따라 가격 수준의
-의미가 달라지는 자료에서는 선택이 아닌 필수 요소이다. 본 연구는 이를 선별적으로 적용하였다. 횡단면 순위 채널은 정보가 전적으로
+의미가 달라지는 자료에서는 선택 사항이 아니라 필수 요소이다. 본 연구는 이를 선별적으로 적용하였다. 횡단면 순위 채널은 정보가 전적으로
 수준에 담겨 있어 윈도우 내 표준화가 그 정보를 소거하기 때문이다.
 
 분위회귀[12]를 신경망 출력에 적용한 것이 핀볼 손실이며, 분위 *τ*에 대하여 식 (1)과 같이 정의된다.
@@ -142,16 +153,27 @@ RevIN(reversible instance normalization)[11]은 입력 윈도우별 인스턴스
 앙상블 분산 없이 기권 규칙을 정의할 수 있다. 분위 예측의 구간이 명목 수준을 지키는지는 별도 문제이며
 등각예측을 분위회귀에 결합한 교정 방법이 제안되어 있다[13]. 본 연구의 교정 상태는 6장에 밝힌다.
 
-### 2.4 기준 모형과 본 연구의 위치
+### 2.4 선택적 예측과 기권
+
+예측 모형이 일부 입력에 대해 답을 내지 않는 선택지는 기각 옵션(reject option)으로 형식화되어 있다[14].
+오분류 비용과 기각 비용의 교환관계로 최적 기각 영역을 정의한 이 틀은 이후 선택적
+예측(selective prediction)으로 일반화되어, 적용률과 적용된 표본에서의 위험을 함께 보고하는 평가 방식으로
+자리잡았고[15], 심층 신경망에서는 선택 함수를 별도 헤드로 학습하는 방법이 제안되었다[16]. 본 연구의 기권은 이들과 두 가지 점에서
+다르다. 첫째, 분류가 아니라 회귀이므로 선택 점수가 확률이 아니라 예측 구간의 폭이다. 둘째, 선택 함수를 따로
+학습하지 않고 이미 산출된 분위 예측에서 파생되므로 모형에 추가 비용이 들지 않는다. 대신 기권율이 학습으로
+최적화되지 않고 임계값으로 정해지므로, 임계값 선택이 결과에 미치는 영향을 5.3절에서 따로 확인한다.
+
+### 2.5 기준 모형과 본 연구의 위치
 
 1장에서 언급한 금융 시계열 딥러닝 연구[1] 가운데, 장단기기억 신경망으로 미국 주식의 방향을 예측한
-연구[14]와 다수의 머신러닝 기법을 자산가격 결정에 적용한 연구[15]가 대표적이다. 국내에서는 해외지수와
-투자자별 매매 동향을 입력으로 삼은 등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[16]가 보고되었다.
+연구[17]와 다수의 머신러닝 기법을 자산가격 결정에 적용한 연구[18]가 대표적이다. 국내에서는 해외지수와
+투자자별 매매 동향을 입력으로 삼은 등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[19]가 보고되었다.
 본 연구는 [2]와 마찬가지로 해외지수와 투자자 수급을 입력에 포함하되, 예측을 점이 아니라 분포로 산출한다는
 점이 다르다.
 
-잘 조정된 단순 기준모형과의 비교가 부재하다는 점은 이 분야 문헌의 공통 약점이므로, 본 연구는 동일 조건의
-그래디언트 부스팅 기준모형을 함께 측정하여 5장에 보고한다.
+잘 조정된 단순 기준모형과의 비교가 부재하여 개선폭이 과장되기 쉽다는 지적은 예측 문헌에서 반복되어
+왔으므로[20], 본 연구는 동일 조건의 그래디언트 부스팅 결정트리(gradient boosting
+decision tree, GBDT) 기준모형을 함께 측정하여 5장에 보고한다.
 
 ## 3. 연구 방법
 
@@ -167,7 +189,7 @@ Table 1. Requirements and corresponding components
 | Cost: 120-day lookback x 201 stocks, daily | Sequence-length reduction | Patch tokenization (120 to 24) |
 | Cost: channel-independent encoding repeats the encoder | Channel-axis reduction before the encoder | TFT variable selection network (vs. linear merge, Sec. 5.4) |
 | Scale differs by stock and era | Non-stationary normalization | RevIN, with channel exceptions |
-| Local equities track global macro | Exogenous sequence injection | Cross-attention (this work) |
+| Local equities track global macro | Exogenous sequence injection | Macro cross-attention (design option, Sec. 5.4) |
 
 ### 3.2 제안 구조
 
@@ -177,10 +199,11 @@ Table 1. Requirements and corresponding components
 
 ![Fig. 1](images/fig1_architecture.png)
 
-Fig. 1. Architecture of the proposed model (a) with component detail (b-e). Colors mark
+Fig. 1. Architecture of the proposed model (a) with component detail (b-e). Colors in (a) mark
 the PatchTST lineage (yellow), the TFT components (blue), the macro cross-attention added
 in this work (teal) and the static context path (orange). The variable selection network and the
 cross-attention are design options; removing either did not change the results (Sec. 5.4).
+Panels (b)-(d) are adapted from [3] and [8].
 
 ### 3.3 결합 과정의 설계 결정
 
@@ -189,7 +212,7 @@ cross-attention are design options; removing either did not change the results (
 
 #### 1) 변수선택망의 역할과 배치
 
-패치 임베딩은 각 채널을 독립적으로 24개 토큰으로 변환한다. 채널 축을 줄이는 가장 싼 방법은 선형 합치기이며
+패치 임베딩은 각 채널을 독립적으로 24개 토큰으로 변환한다. 채널 축을 줄이는 데 연산이 가장 적은 방법은 선형 합치기이며
 매크로 경로에는 그 방식을 썼으나, 종목 채널에는 변수선택망을 두었다. 소프트맥스 게이트가 정적 문맥으로
 조건화되어 섹터와 시가총액 구간에 따라 다른 가중을 주기 때문이다. 변수선택망은 그 게이트를 채널 축에
 적용한다(식 2, 3).
@@ -198,34 +221,39 @@ cross-attention are design options; removing either did not change the results (
 
 &nbsp;&nbsp;&nbsp;&nbsp;*Z*_{n} = Σ_{i} *v*_{n,i} · GRN_{i}(*E*_{n,i})&nbsp;&nbsp;&nbsp;&nbsp;(3)
 
+여기서 *C*는 채널 수, *N*은 패치 수, *E*_{n,i}는 패치 *n*·채널 *i*의 임베딩이고, flat(*E*_{n})은 그 패치의
+모든 채널 임베딩을 이어 붙인 벡터, *c*_{s}는 정적 임베딩에서 얻은 문맥 벡터, GRN은 TFT의 게이트 잔차
+신경망이다.
+
 변수선택망을 인코더 뒤에 두면 인코더가 채널 수만큼 반복 실행되는 반면, 앞에 두면 채널이 먼저 하나로
 축약되어 1회만 실행된다.
 패치마다 산출되는 *v* ∈ ℝ^{N×C}는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않는다. 종목 채널까지 선형
-합치기로 바꾼 변형은 모수가 0.12M으로 줄면서도 정확도와 보류 행태가 같았다(5.4절). 인코더 앞에서 채널을
+합치기로 바꾼 변형은 모수가 0.117M으로 줄면서도 정확도와 기권 행태가 같았다(5.4절). 인코더 앞에서 채널을
 하나로 합치는 것이 비용 절감의 원인이며, 게이트는 그 이상의 정확도를 더하지 않았다.
 
 #### 2) 매크로 크로스어텐션의 방향
 
 매크로 지표를 주입하는 크로스어텐션 모듈은 본 연구에서 직접 설계하였다. 외생변수를 어텐션으로 주입하는
-발상 자체는 새롭지 않다. TimeXer[17]가 같은 문제를 다루었으며, 외생 변수를 변수 단위 토큰으로 요약해 내생
+발상 자체는 새롭지 않다. TimeXer[21]가 같은 문제를 다루었으며, 외생 변수를 변수 단위 토큰으로 요약해 내생
 패치 토큰과 교차시킨다. 본 연구의 모듈은 매크로 시퀀스를 패치 단위로 유지한 채 키와 값으로 둔다는 점이
 다르다. 종목 표현을 질의로, 매크로 부호화를 키·값으로 설정하였다(식 4).
 
 &nbsp;&nbsp;&nbsp;&nbsp;CrossAttn(*Z*, *H*_{m}) = softmax[ (*Z W*_{Q})(*H*_{m} *W*_{K})^{T} ∕ √*d*_{k} ] (*H*_{m} *W*_{V})&nbsp;&nbsp;&nbsp;&nbsp;(4)
 
-매크로를 질의로 두면 출력이 매크로 시퀀스의 형상을 따르게 되어 종목별 예측이 산출되지 않으므로, 방향을
-반대로 고정하였다. 매크로 경로에는 변수선택망을 두지 않고 13채널을 하나로 합치는 선형 변환을 썼다. 채널별로 부호화하면
-비용이 13배 증가하는 반면, 매크로는 크로스어텐션의 키와 값으로만 쓰이므로 채널별 가중이 필요하지 않다. 다만 이 모듈의 정확도
-기여는 확인되지 않았다(5.4절).
+여기서 *Z*는 종목 표현, *H*_{m}은 매크로 부호화, *W*_{Q}·*W*_{K}·*W*_{V}는 투영 행렬, *d*_{k}는 키의
+차원이다. 매크로를 질의로 두면 출력이 매크로 시퀀스의 형상을 따르게 되어 종목별 예측이 산출되지 않으므로,
+방향을 반대로 고정하였다. 매크로 경로에는 변수선택망을 두지 않고 13채널을 하나로 합치는 선형 변환을 썼다. 채널별로 부호화하면
+비용이 13배 증가하는 반면, 매크로는 크로스어텐션의 키와 값으로만 쓰이므로 채널별 가중이 필요하지 않다. 이 모듈의 정확도 기여는
+5.4절의 제거 실험에서 확인되지 않았다.
 
 #### 3) 분위 단조성의 구조적 보장과 헤드 초기화
 
 분위 교차를 손실 벌점이 아니라 누적 소프트플러스 구조로 원천 차단하였다(식 5).
 
-&nbsp;&nbsp;&nbsp;&nbsp;*q*_{10} = *o*_{1},&nbsp;&nbsp; *q*_{50} = *q*_{10} + softplus(*o*_{2}),&nbsp;&nbsp; *q*_{90} = *q*_{50} + softplus(*o*_{3})&nbsp;&nbsp;&nbsp;&nbsp;(5)
+&nbsp;&nbsp;&nbsp;&nbsp;*q*_{10} = *b*,&nbsp;&nbsp; *q*_{50} = *q*_{10} + softplus(δ_{1}),&nbsp;&nbsp; *q*_{90} = *q*_{50} + softplus(δ_{2})&nbsp;&nbsp;&nbsp;&nbsp;(5)
 
-교차가 발생하면 기권 폭이 음수가 되어 하위 규칙 전체가 무효화되므로 구조적 보장이 필요하다. 5.1절의 세 트랜스포머 모형
-모두 실측 교차율은 0.000이었다.
+*b*와 δ_{1}, δ_{2}는 헤드 마지막 선형층의 세 출력이다. 교차가 발생하면 기권 폭이 음수가 되어 하위 규칙
+전체가 무효화되므로 구조적 보장이 필요하다. 5.1절의 세 트랜스포머 모형 모두 실측 교차율은 0.000이었다.
 
 헤드의 초기화도 성능에 영향을 주었다. 기본 초기화에서는 softplus(0) = 0.693이라 초기 구간 폭이 목표 분포와
 어긋난 지점에 놓여 기준선에 미달하므로, 최종층 편향을 학습자료의 무조건부 분위수로 설정하여 해소하였다.
@@ -250,7 +278,7 @@ Table 2. Final model configuration
 ### 4.1 자료
 
 분석 자료는 코스피200 구성종목 201개의 2015년 1월 2일부터 2026년 10월 16일까지 일별 자료 519,617행이며,
-종목당 최대 2,892거래일이다. 지수와
+종목당 최대 2,892거래일이다. 종목 목록은 2026년 9월 8일 지수 구성종목 조회 결과이며, 그 시점에 201개가 조회되었다. 지수와
 투자자 수급 계열을 포함해 모두 키움증권 Open API로 수집하였다. 거래정지일은 거래량 0과 시가=고가=저가=종가로
 입력되는데, 제거하지 않으면 허위의 0 수익률이 생겨 변동성 추정을 왜곡하므로 지표 산출 이전에 제거하였다.
 종목별 거래일이 크게 상이하다. 가장 짧은 종목은 35거래일뿐이어서 201종목이 모두 존재하는 공통 달력은
@@ -277,18 +305,20 @@ Table 3. Input channels
 가격 수준은 직접 사용하지 않는다. 이동평균은 종가 대비 괴리율로, 수렴·발산 지표와 ATR은 종가로 나누어,
 유계 지표는 재척도하여 입력한다. 목표변수는 코스피200 대비 초과분으로 정의한 5일 누적 로그수익률이다(식 6).
 
-&nbsp;&nbsp;&nbsp;&nbsp;*y*_{t} = Σ_{k=1..5} *r*_{t+k} − Σ_{k=1..5} *r*^{index}_{t+k}&nbsp;&nbsp;&nbsp;&nbsp;(6)
+&nbsp;&nbsp;&nbsp;&nbsp;*y*_{t} = Σ_{k=1}^{5} *r*_{t+k} − Σ_{k=1}^{5} *r*^{index}_{t+k}&nbsp;&nbsp;&nbsp;&nbsp;(6)
+
+*r*_{t}는 일별 로그수익률이고 *r*^{index}_{t}는 같은 날 코스피200의 로그수익률이다.
 
 ### 4.3 분할과 기준선
 
-분할은 종목이 아니라 날짜 기준 전역 분할이다. 2022년까지 학습, 2023년 검증, 2024년 이후 검정이며, 목표가
+분할은 종목이 아니라 날짜 기준 전역 분할이다. 2022년까지 학습, 2023년 검증, 2024년 이후 시험이며, 목표가
 5일 앞을 보므로 각 경계에 5일 격리구간을 둔다. 정규화 통계는 학습 구간 행에서만 추정한다.
 
 윈도우는 120일 룩백이 해당 구간 안에 온전히 들어갈 때만 생성된다. 입력이 앞 구간에 걸치는 것 자체는 5일
 격리구간이 목표값 중첩을 막으므로 누수가 아니나, 그 경우 검증 표본의 입력 대부분이 학습에서 이미 관측된 행이
 되어 암기가 검증 성능을 부풀릴 여지가 남는다. 본 연구는 보수적으로 룩백 전체를 구간 안에 넣었고, 그 대가로
 각 구간의 처음 120거래일이 소모되어 검증 표본이 122거래일로 줄었다. 검증 표본은 2023년 7월 3일부터
-12월 28일까지 122거래일·190종목·23,086건, 검정 표본은 2024년 7월 3일부터 2026년 10월 8일까지
+12월 28일까지 122거래일·190종목·23,086건, 시험 표본은 2024년 7월 3일부터 2026년 10월 8일까지
 550거래일·198종목·106,490건이다. 자료는 2026년 10월 16일 수집분으로 동결하였고, 파일 해시와 구간별 윈도우
 수를 기록하여 이후 모든 수치를 같은 표본에서 산출하였다.
 
@@ -300,7 +330,8 @@ Table 3. Input channels
 
 ### 4.4 기권 규칙
 
-비교하는 모든 모형에 동일한 규칙을 적용한다. 예측 구간의 폭이 최근 분포의 일정 분위를 넘으면 기권한다.
+비교하는 모든 모형에 동일한 규칙을 적용한다. 예측 구간의 폭이 최근 분포의 95분위를 넘으면 기권한다. 이 분위를 고른 근거와 바꿨을 때의
+영향은 5.3절에서 따로 다룬다.
 '최근 분포'는 판단일부터 거슬러 달력 90일, 거래일로는 약 60일 안에 들어온 폭을 모은 것이며, 종목별로 나누지
 않고 전 종목을 합친 분포다. 구간 전체의 폭 분포를 쓰면 뒤쪽 날짜의 폭이 앞쪽 날짜의 기권 판단에 흘러들어
 미래 정보가 유입되기 때문이고, 모의투자에서 실제로 쓰는 방식과도 같다.
@@ -315,7 +346,12 @@ Table 3. Input channels
 비교이다. 초매개변수는 제안 모형에 맞추어 조정된 값을 대조군에 동일하게 적용하였으므로 대조군의
 최적값이 아니다.
 
-Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42-46 with the standard deviation). All transformer rows were trained on Kaggle GPUs under identical mixed-precision settings and evaluated on one device. The quantile gradient-boosting row is a single run, since the fit has no random component. The unconditional-quantile baseline is 0.012175 on validation and 0.018754 on test. With all three models in single precision, one run each, the test improvements are +5.25% for the proposed model, +3.30% for TFT and +2.25% for PatchTST with the quantile head, so the ordering is unchanged. The original point-forecast PatchTST is left out: scored as three identical quantiles it falls 47.79% below the baseline, which reflects the loss function rather than a comparison
+세 트랜스포머 모형은 같은 혼합정밀도 설정으로 캐글 GPU에서 학습하고 한 장비에서
+평가하였으며, 분위 GBDT는 적합에 난수 요소가 없어 한 번만 학습하였다. 점 예측을 그대로 내는 원본
+PatchTST는 표에서 제외하였다. 세 분위를 같은 값으로 채점하면 기준선보다 47.79% 나쁜데, 이는 구조의
+비교가 아니라 손실함수의 차이를 보는 것이기 때문이다.
+
+Table 4. Forecast accuracy on the validation and test splits (three-quantile pinball loss; mean over five seeds 42-46 with the standard deviation, single run for the quantile GBDT). Lower is better, and 'vs baseline' is the improvement over the unconditional-quantile predictor, which scores 0.012175 on validation and 0.018754 on test
 
 | Model | Params | Validation | vs baseline | Test | vs baseline | Best epoch |
 |---|---|---|---|---|---|---|
@@ -324,29 +360,34 @@ Table 4. Forecast accuracy (three-quantile pinball loss, mean over five seeds 42
 | Quantile GBDT | 375 trees | 0.011890 | +2.34% | 0.018107 | +3.45% | - |
 | **Ours** | 0.500M | 0.011889 ± 0.000012 | +2.35% | **0.017826 ± 0.000059** | **+4.95%** | 2-10 |
 
-제안 모형은 두 구간 모두에서 TFT 원본보다 손실이 낮았고, 다섯 시드를 짝지은 열 번의 비교 전부에서 그러하였다
-(부호검정 *p* = 0.031 단측, 두 구간 동일). 검증구간의 격차는 핀볼 손실 0.000046으로 기준선 대비
+제안 모형은 두 구간 모두에서 TFT 원본보다 손실이 낮았고, 시드를 짝지은 비교에서도 구간마다 다섯 시드 전부가
+같은 방향이었다(구간별 부호검정 *p* = 0.031 단측, 두 구간 각각). 두 구간은 같은 체크포인트에서 나오므로
+열 번을 독립 시행으로 합치지 않는다. 검증구간의 격차는 핀볼 손실 0.000046으로 기준선 대비
 개선폭의 16%에 그치므로 우위가 아니라 대등하거나 근소하게 낫다는 수준으로 해석한다. 조기종료와 최적 회차
-선택에 쓰이지 않은 검정구간에서는 격차가 0.000499로 벌어지며 다섯 시드의 범위가 겹치지 않는다
-(0.017739~0.017895 대 0.018205~0.018407). 평균 차이에 대한 Welch 검정은 검증 *t* = 4.47(*p* = 0.004),
-검정 *t* = 10.33(*p* < 0.001)이다. 같은 표본의 날짜별 손실 계열에 Diebold-Mariano 검정(Newey-West 4시차,
-Harvey-Leybourne-Newbold 보정)을 적용하면 550거래일의 검정구간에서는 다섯 시드 모두 유의하나
+선택에 쓰이지 않은 시험구간에서는 격차가 0.000499로 벌어지며 다섯 시드의 범위가 겹치지 않는다
+(0.017739~0.017895 대 0.018205~0.018407). 평균 차이에 대한 Welch 검정은 검증구간 *t* = 4.47(*p* = 0.004),
+시험구간 *t* = 10.33(*p* < 0.001)이다. 같은 표본의 날짜별 손실 계열에 Diebold-Mariano 검정[22](Newey-West 4시차[23],
+Harvey-Leybourne-Newbold 소표본 보정[24])을 적용하면 550거래일의 시험구간에서는 다섯 시드 모두 유의하나
 (*p* = 0.022, 0.001, 0.009, 0.003, < 0.001) 122거래일의 검증구간에서는 다섯 시드 모두 유의하지 않다
-(*p* = 0.16~0.56) — 날짜를 표본으로 보는 검정이므로 짧은 구간에서는 검정력이 약하다. 분위 헤드만 부착한
-PatchTST는 검증구간 +0.07%, 검정구간 +0.36%로 상수 예측을 간신히 상회하는 데 그쳤고, 다섯 시드 가운데
-네 시드는 첫 회차에서 최적값에 도달하였다. 격차가 검정구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
-1~2회차에서 최적값에 도달한 뒤 과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다. 다만
-격차의 일부는 수치 정밀도 설정에서 오며, 단정밀도로 맞추면 줄어든다(<Table 4> 캡션).
+(*p* = 0.16~0.56). 날짜를 표본으로 보는 검정이므로 짧은 구간에서는 검정력이 약하다. 분위 헤드만 부착한
+PatchTST는 검증구간 +0.07%, 시험구간 +0.36%로 상수 예측을 간신히 상회하는 데 그쳤고, 다섯 시드 가운데
+네 시드는 첫 회차에서 최적값에 도달하였다. 격차가 시험구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
+1~2회차에서 최적값에 도달한 뒤 과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다. 격차의
+일부는 수치 정밀도 설정에서도 온다. 세 모형을 모두 단정밀도로 맞추어 한 번씩 학습하면 시험구간
+개선폭이 제안 모형 +5.25%, TFT 원본 +3.30%, 분위 헤드만 부착한 PatchTST +2.25%로 격차가 좁아지지만
+순서는 바뀌지 않는다. 중앙값만 떼어 평균절대오차로 재면 제안 모형은 0.053439 ± 0.000142로 상수
+기준선(0.053447)과 사실상 같고 TFT 원본은 0.053707로 오히려 나쁘므로, 핀볼 손실의 개선은 중앙값의 점
+정확도가 아니라 예측 구간에서 온다.
 
-트리 계열 기준모형으로 분위 손실을 쓰는 히스토그램 그래디언트 부스팅(LightGBM[18]의 방식을 따른
-scikit-learn 구현)을 같은 분할과 같은 윈도우 표본에서 평가하였다. 입력은 동적 30채널의 당일 값과 1·5·20일
+트리 계열 기준모형으로 분위 손실을 쓰는 히스토그램 그래디언트 부스팅(LightGBM[25]의 방식을 따른
+scikit-learn[26] 구현)을 같은 분할과 같은 윈도우 표본에서 평가하였다. 입력은 동적 30채널의 당일 값과 1·5·20일
 시차, 매크로 13채널, 정적 범주형 3종의 136개이고, 분위마다 모형을 하나씩 두어 검증구간 손실로 트리 수를
-정하였다(75·25·275개). 부표본 추출이 없어 같은 자료에서는 같은 모형이 나오므로 한 번만 학습하였다. 검증구간 손실은 제안 모형과 같았고(0.011890 대 0.011889), 검정구간 손실은 TFT
+정하였다(75·25·275개). 부표본 추출이 없어 같은 자료에서는 같은 모형이 나오므로 한 번만 학습하였다. 검증구간 손실은 제안 모형과 같았고(0.011890 대 0.011889), 시험구간 손실은 TFT
 원본보다 작고 제안 모형보다 컸다. 제안 모형의 다섯 시드는 모두 이 값보다 낮았다(최대 0.017895 대 0.018107).
 
 ### 5.2 계산 비용
 
-Table 5. Computational cost measured on one device (Mac MPS, batch 64, 120-day input, 201 stocks). Seconds per epoch is the median training-step time over 40 batches times the 4,135 batches that one epoch takes over the 264,653 training windows of Section 4.3. The universe pass is the median of 21 forward passes over 201 stocks, and latency per stock is that value divided by 201 rather than an independent measurement. Activation is the device allocation added by a forward pass that retains the backward graph. Two independent runs agreed within 0.8%. The quantile GBDT has no epochs and runs on the CPU (8 cores): its row gives one full fit of the three quantile models at the selected tree counts, the universe pass over the 199 stocks of the last test day, and the serialized model size
+Table 5. Computational cost measured on one device (Mac, Metal GPU backend; batch 64, 120-day input, 201 stocks). The quantile GBDT row is one full fit of the three quantile models on the CPU (8 cores), so it has neither epochs nor activation memory. The text below gives the measurement procedure
 
 | Model | s / epoch | Latency / stock | Universe pass | Activation | Param memory |
 |---|---|---|---|---|---|
@@ -355,13 +396,19 @@ Table 5. Computational cost measured on one device (Mac MPS, batch 64, 120-day i
 | Ours | 143.5 | 0.143 ms | 28.7 ms | 132.9 MB | 2.00 MB |
 | Quantile GBDT (CPU) | 26.1 (full fit) | 0.068 ms | 13.4 ms | - | 2.13 MB |
 
-대등한 정확도에서 제안 모형은 TFT 원본 대비 학습 3.8배, 종목당 추론 4.8배, 활성값 메모리 5.1배의 절감을
+측정 방법은 다음과 같다. epoch당 시간은 40배치의 학습 스텝 시간 중앙값에, 4.3절의 학습 윈도우
+264,653건이 만드는 4,135배치를 곱한 값이다. 전 종목 1회 통과는 201종목에 대한 순전파 21회의 중앙값이고,
+종목당 지연시간은 그 값을 201로 나눈 것이지 따로 측정한 값이 아니다. 활성값은 역전파 그래프를 남기는
+순전파가 추가로 할당한 장치 메모리이며, 독립적인 두 번의 측정이 0.8% 안에서 일치하였다. 분위 GBDT의 전
+종목 통과는 시험구간 마지막 날의 199종목에 대한 것이고, 모수 메모리는 직렬화한 모형 크기다.
+
+더 낮은 손실에서 제안 모형은 TFT 원본 대비 학습 3.8배, 종목당 추론 4.8배, 활성값 메모리 5.1배의 절감을
 보였다. 패치 토큰화가 어텐션 대상 시퀀스를 120에서 24로 줄이고 인코더 앞의 채널 축약이 채널 반복을
-제거한 결과이며, 모수 1.4배 차이는 부차적이다. 같은 배율은 장비와 배치가 다른 조건에서도 재현된다 —
-<Table 4>를 얻은 캐글 GPU(배치 256, 혼합정밀도)에서 제안 모형 41.8초/epoch, TFT 원본 157.1초/epoch였다.
-분위 GBDT는 이보다도 싸다. 세 분위 모형 전체를 한 번 학습하는 데 CPU에서 26.1초로 제안 모형의 1 epoch보다
+제거한 결과이며, 모수 1.4배 차이는 부차적이다. 같은 배율은 장비와 배치가 다른 조건에서도 재현된다.
+<Table 4>를 얻은 캐글 GPU(배치 256, 혼합정밀도)에서는 제안 모형 41.8초/epoch, TFT 원본 157.1초/epoch였다.
+분위 GBDT의 비용은 이보다도 낮다. 세 분위 모형 전체를 한 번 학습하는 데 CPU에서 26.1초로 제안 모형의 1 epoch보다
 짧았고, 종목당 추론도 0.068 ms로 절반 이하였다. 따라서 본 연구의 경량은 트랜스포머 분위 모형, 특히 TFT
-대비의 의미이며, 제안 모형이 GBDT 대비 얻는 것은 비용이 아니라 검정구간 손실의 추가 개선(+4.95% 대
+대비의 의미이며, 제안 모형이 GBDT 대비 얻는 것은 비용이 아니라 시험구간 손실의 추가 개선(+4.95% 대
 +3.45%)이다.
 
 (Fig. 2)는 <Table 4>의 검증구간 정확도와 <Table 5>의 비용을 한 평면에 놓은 것이다. 지연시간만 보면 분위
@@ -371,7 +418,8 @@ GBDT는 검증 정확도가 같고 지연이 더 짧으므로 이 평면에서�
 ![Fig. 2](images/fig2_cost_accuracy.png)
 
 Fig. 2. Forecast accuracy against inference cost. The vertical axis is the pinball
-improvement over the unconditional-quantile baseline on validation (<Table 4>), the
+improvement over the unconditional-quantile baseline on validation, the split the models
+were selected on; the test-split gap is wider (<Table 4>). The
 horizontal axis is per-stock inference latency, and the circle area is activation memory
 for a 120-day input (<Table 5>). The quantile GBDT (open diamond) is measured on the CPU
 and has no activation memory, so its marker size does not apply. The original point-forecast
@@ -379,10 +427,10 @@ PatchTST is omitted because its pinball loss falls far below the plotted range.
 
 ### 5.3 기권 행태
 
-네 분위 모형에 4.4절의 동일한 기권 규칙을 적용하고 검정구간 전체에서 집계하였다. 점 예측 모형은 임계할
+네 분위 모형에 4.4절의 동일한 기권 규칙을 적용하고 시험구간 전체에서 집계하였다. 점 예측 모형은 임계할
 폭이 없어 기권이 정의되지 않으므로 제외하였다.
 
-Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation for TFT and the proposed model and a single run for the quantile GBDT. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks; Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time. Pinball loss is reported separately for abstained and retained candidates
+Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation, single run for the quantile GBDT. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks. Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time, taken over the whole test split
 
 | Model | Abstain | Q1 | Q4 | Pinball, abstained | Pinball, retained |
 |---|---|---|---|---|---|
@@ -393,27 +441,27 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 
 <Table 6>은 기권 요구사항이 규칙이 아니라 구조에 의해 충족되었음을 보여준다. 네 행의 기권 규칙은 동일하며
 예측 분포만 다르다. 분위 헤드를 부착하면 기권이 작동하기 시작하고, 변수선택·정적 문맥·매크로 입력이
-더해지면 최상위 변동성 분위의 기권율이 20.07%인 반면 최하위 분위는 0.21%에 머물러(셋 중 하나를 빼도 유지된다, 5.4절) 기권이 고변동 구간에
-집중된다. 다만 예측 폭과 실현 변동의 상관 자체는 TFT 원본이 더 높았다(0.186 대 0.170). 기권이 고변동
-구간에 더 몰리는 것과 폭이 변동을 더 잘 따라가는 것은 별개의 성질이다. 보류된 판단은 실제로 더 나빴다. 제안 모형이 기권한 예측의 핀볼 손실은 남긴 예측의
+더해지면 최상위 변동성 분위의 기권율이 20.07%인 반면 최하위 분위는 0.21%에 머물러 기권이 고변동
+구간에 집중된다. 이 집중은 세 구성요소 가운데 하나를 빼도 유지된다(5.4절). 예측 폭과 실현 변동의 상관 자체는 TFT 원본이 더 높았다(0.186 대 0.170). 기권이 고변동
+구간에 더 몰리는 것과 폭이 변동을 더 잘 따라가는 것은 별개의 성질이다. 기권한 판단은 실제로 더 나빴다. 제안 모형이 기권한 예측의 핀볼 손실은 남긴 예측의
 1.510 ± 0.023배이며, 날짜 단위로 짝지은 손실차의 *t* 값은 19.41 ± 1.02이다. 반면 중앙값 부호의 방향
-적중률은 기권 0.52 대 유지 0.52로 거의 같다 — 보류된 판단은 방향을 틀리기 쉬운 판단이 아니라 오차의 크기가
+적중률은 기권 0.56 ± 0.02 대 유지 0.55 ± 0.02로 거의 같다. 기권한 판단은 방향을 틀리기 쉬운 판단이 아니라 오차의 크기가
 큰 판단이며, 이는 기권이 폭에 걸려 있다는 설계와 일치한다.
 
-다만 핀볼 손실은 변동성이 큰 구간에서 원래 크므로, 고변동 구간을 피하는 규칙이라면 무엇이든 이 비가 1을
+핀볼 손실은 변동성이 큰 구간에서 원래 크므로, 고변동 구간을 피하는 규칙이라면 무엇이든 이 비가 1을
 넘는다. 규칙과 분위를 그대로 두고 점수만 예측 폭에서 직전 20일 실현변동성으로 바꿔 끼운 통제군과
-대조하였고, 기권율 차이가 섞이지 않도록 날짜마다 두 점수의 횡단면 순위 상위 r%를 보류시켜 같은 날 같은
-개수를 보류하게 맞추었다. r = 2, 5, 6, 10, 20, 30% 여섯 수준 전부에서 다섯 시드 모두 폭 기준의 비가
+대조하였고, 기권율 차이가 섞이지 않도록 날짜마다 두 점수의 횡단면 순위 상위 r%를 기권시켜 같은 날 같은
+개수를 기권하게 맞추었다. r = 2, 5, 6, 10, 20, 30% 여섯 수준 전부에서 다섯 시드 모두 폭 기준의 비가
 통제군보다 높았고(차이 최소 +0.030, 6%에서 +0.064 ± 0.029), 날짜 블록 부트스트랩 1,000회의 95%
 신뢰구간도 0을 포함하지 않았다. TFT 원본은 2~6% 구간에서 시드에 따라 부호가 바뀌었고, 분위 헤드만 부착한
-모형은 통제군에 미치지 못하였다. 예측 폭이 단순 변동성 지표보다 나은 보류 기준이라는 결과는 분위 헤드를
+모형은 통제군에 미치지 못하였다. 예측 폭이 단순 변동성 지표보다 나은 기권 기준이라는 결과는 분위 헤드를
 부착하는 것만으로는 생기지 않았다. 분위 GBDT의 폭도 같은 비교에서 통제군보다 나았다(6%에서 +0.071, 95%
 신뢰구간 [+0.033, +0.107]). 제안 모형(+0.064 ± 0.029)과 차이가 없으므로 이 성질은 트랜스포머 구조에
 고유하지 않다. 제안 모형에 남는 차이는 최상위 변동성 분위로의 집중(20.07% 대 17.04%)과 남긴 후보의
 손실(0.01730 대 0.01765)이다.
 
-기권율의 절대 수준을 정하는 임계값 분위는 검정구간을 참조하여 선택되었으므로 5.91%라는 값은 표본 밖
-수치가 아니다. 다만 분위를 95에서 90, 75로 낮추면 전체 기권율이 11.71%, 28.08%로 오르는 동안 최상위
+기권율의 절대 수준을 정하는 임계값 분위는 시험구간을 참조하여 선택되었으므로 5.91%라는 값은 표본 밖
+수치가 아니다. 분위를 95에서 90, 75로 낮추면 전체 기권율이 11.71%, 28.08%로 오르는 동안 최상위
 변동성 분위의 기권율도 36.22%, 68.72%로 함께 올라 분위별 집중이 유지되고, 세 분위 모두에서 최상위 분위
 기권율의 모형 간 순서(제안 모형 > TFT 원본 > 분위 헤드)도 보존된다. 임계값 선택이 기권 행태에 관한 결론을
 만들어낸 것은 아니다.
@@ -424,19 +472,19 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 있다. 개선이 어디서 오는지 가리기 위해 셋을 하나씩 제거한 변형을 같은 설정과 시드로 학습하였다. 변수선택망은
 매크로 경로와 같은 선형 합치기로 바꾸었고, 매크로 제거 변형은 크로스어텐션 없이 종목 표현을 헤드로 보내며,
 정적 문맥 제거 변형은 문맥 벡터를 0으로 두어 변수선택의 조건화와 결합 뒤 더하기를 함께 껐다. 초매개변수는
-<Table 2> 그대로이며, 보고 지표는 실험 전에 검정구간 핀볼 손실, 최상위 변동성 분위의 기권율, 기권율 6%에서
+<Table 2> 그대로이며, 보고 지표는 실험 전에 시험구간 핀볼 손실, 최상위 변동성 분위의 기권율, 기권율 6%에서
 맞춘 통제군 대비 비 차이의 셋으로 정하였다.
 
-Table 7. Removing one component at a time (test split, mean over five seeds 42-46 with the standard deviation). The sign test counts the seeds on which the proposed model has the lower test loss. The last column is the difference between the abstained-to-retained loss ratio of the width rule and that of the trailing 20-day volatility control at a matched 6% abstention rate (Section 5.3)
+Table 7. Removing one component at a time (test split, mean over five seeds 42-46 with the standard deviation). 'Ours lower' counts the seeds on which the proposed model has the lower test loss; 'Ratio gap at 6%' is the abstained-to-retained loss ratio of the width rule minus that of the trailing 20-day volatility control at a matched 6% abstention rate (Section 5.3)
 
 | Variant | Params | Test pinball | vs baseline | Ours lower | Q4 abstain | Ratio gap at 6% |
 |---|---|---|---|---|---|---|
 | Ours | 0.500M | 0.017826 ± 0.000059 | +4.95% | - | 20.07 ± 0.71% | +0.064 ± 0.029 |
-| VSN to linear merge | 0.117M | 0.017837 ± 0.000078 | +4.89% | 3/5 | 19.90 ± 0.18% | +0.057 ± 0.007 |
+| Variable selection to linear merge | 0.117M | 0.017837 ± 0.000078 | +4.89% | 3/5 | 19.90 ± 0.18% | +0.057 ± 0.007 |
 | No macro cross-attention | 0.468M | 0.017786 ± 0.000029 | +5.16% | 2/5 | 20.51 ± 0.46% | +0.080 ± 0.035 |
 | No static context | 0.456M | 0.017797 ± 0.000010 | +5.10% | 1/5 | 20.18 ± 0.30% | +0.067 ± 0.021 |
 
-세 변형 모두 세 지표에서 제안 모형과 구별되지 않았다. 검정 손실의 Welch 검정은 *p* = 0.81, 0.21, 0.33이고,
+세 변형 모두 세 지표에서 제안 모형과 구별되지 않았다. 시험구간 손실의 Welch 검정은 *p* = 0.81, 0.21, 0.33이고,
 짝지은 비교에서 제안 모형이 낮은 시드는 다섯 가운데 셋, 둘, 하나였다. 기권율 6%의 통제군 비교는 열다섯
 실행 가운데 열넷에서 95% 신뢰구간이 0을 포함하지 않았다. 따라서 PatchTST에 분위 헤드만 단 모형 대비 개선은
 어느 한 구성요소에서 오지 않는다. 남는 설명은 둘이다. 세 변형이 공유하는 것, 즉 패치 임베딩을 인코더 앞에서
@@ -450,24 +498,28 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 본 연구는 주가 예측에서 "지금 판단해도 되는가"를 함께 답하는 모형을, 매일 201종목을 평가할 수 있는 비용
 안에서 만드는 것을 목표로 하였다. 계산이 가벼운 패치 기반 트랜스포머에 TFT의 분위 예측 헤드를
-달고, 입력 채널을 인코더 앞에서 하나로 합쳐 인코더 실행 횟수를 1회로 줄였다. 예측 구간이 이례적으로 넓을 때
-판단을 보류하는 기권 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 두 가지를
+달고, 입력 채널을 인코더 앞에서 하나로 합쳐 인코더 실행 횟수를 1회로 줄였다. 예측 구간이 이례적으로 넓을
+때 기권하는 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 두 가지를
 확인하였다.
 
-첫째, 제안 모형은 TFT 원본보다 낮은 오차를 약 4분의 1의 비용으로 달성하였다. 다섯 번의
-반복 실험을 짝지은 열 번의 비교 전부에서 제안 모형의 손실이 낮았고, 조기종료에 쓰이지 않은 검정구간에서는
+첫째, 제안 모형은 TFT 원본보다 낮은 분위 손실을 약 4분의 1의 비용으로 달성하였다. 시드를 짝지은 비교에서
+구간마다 다섯 시드 전부가 제안 모형 쪽이었고, 조기종료에 쓰이지 않은 시험구간에서는
 날짜 단위 DM 검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 종목당 추론 시간은 4.8배 짧았고,
-활성값 메모리는 5.1배 적었다. 다만 분위 GBDT는 이보다도 싸며, 제안 모형이 GBDT보다 나은 점은 비용이 아니라
-검정구간 손실이다(+4.95% 대 +3.45%, 다섯 시드 모두 GBDT보다 낮음). 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
-집중되었다. 보류된 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 기권율을 맞춘 비교에서도 최근 변동성만
-보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 다만 분위 GBDT도 같은 비교에서 대등한 보류 품질을
+활성값 메모리는 5.1배 적었다. 다만 분위 GBDT의 비용은 이보다도 낮으며, 제안 모형이 GBDT보다 나은 점은 비용이 아니라
+시험구간 손실이다(+4.95% 대 +3.45%, 다섯 시드 모두 GBDT보다 낮음). 또한 종목 채널의 변수선택망을
+선형 합치기로 바꾼 변형은 모수가 0.117M으로 줄면서 같은 결과를 냈으므로, 운용에서는 이 변형이 같은 성능의
+더 가벼운 선택지다(5.4절). 둘째, 예측 구간이 시장 변동성에 반응하여 기권이 변동성이 큰 시기에
+집중되었다. 기권한 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 기권율을 맞춘 비교에서도 최근 변동성만
+보고 기권하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 분위 GBDT도 같은 비교에서 대등한 기권 품질을
 보였으므로 이 성질은 트랜스포머 구조에 고유하지 않다. 하나의 예측값만 내는 기존 패치 기반 모형으로는
-이러한 판단 보류 자체를 할 수 없다.
+이러한 기권 자체를 할 수 없다.
 
-본 연구의 평가는 평가 기간 자료가 입력 설계와 기권 기준 선택에 일부 참고되었고, 현재 시점의 구성종목으로
-유니버스를 정하였으므로 완전한 사후 검증은 아니다. 또한 변수선택망, 정적 문맥, 매크로 크로스어텐션은 하나씩
+본 연구의 평가는 예측 손실에 한정된다. 거래비용과 체결을 포함한 포트폴리오 수준의 성과는 측정하지
+않았으므로, 기권이 투자 성과에 미치는 영향은 본 논문의 결과로 답할 수 없다. 평가 기간 자료가 입력 설계와
+기권 기준 선택에 일부 참고되었고 현재 시점의 구성종목으로 유니버스를 정하였으므로, 완전한 사후 검증도
+아니다. 또한 변수선택망, 정적 문맥, 매크로 크로스어텐션은 하나씩
 제거해도 결과가 달라지지 않아, 개선이 인코더 앞 채널 축약 구조 자체에서 오는지 구성요소 간 대체에서 오는지
-가리지 못하였다(5.4절). 예측 구간의 절대 포함률은 명목 80%보다 낮았고(71.6%), 검증구간에서 맞춘 CQR[13] 보정 후에도
+가리지 못하였다(5.4절). 예측 구간의 절대 포함률은 명목 80%보다 낮았고(71.6%), 검증구간에서 맞춘 등각 분위회귀 보정[13] 후에도
 73.9%에 그쳐 구간 자체를 신뢰구간으로 해석해서는 안 된다. 보정은 폭의 순위를 바꾸지 않으므로 기권 결과에는
 영향이 없다.
 
@@ -503,16 +555,31 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 [13] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in *Advances in Neural Information Processing Systems*, pp.3543-3553, 2019.
 
-[14] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," *European Journal of Operational Research*, Vol.270, No.2, pp.654-669, 2018.
+[14] C. K. Chow, "On optimum recognition error and reject tradeoff," *IEEE Transactions on Information Theory*, Vol.16, No.1, pp.41-46, 1970.
 
-[15] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," *The Review of Financial Studies*, Vol.33, No.5, pp.2223-2273, 2020.
+[15] R. El-Yaniv and Y. Wiener, "On the foundations of noise-free selective classification," *Journal of Machine Learning Research*, Vol.11, pp.1605-1641, 2010.
 
-[16] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," *KIPS Transactions on Software and Data Engineering*, Vol.8, No.3, pp.123-128, 2019.
+[16] Y. Geifman and R. El-Yaniv, "Selective classification for deep neural networks," in *Advances in Neural Information Processing Systems*, pp.4878-4887, 2017.
 
-[17] Y. Wang et al., "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in *Advances in Neural Information Processing Systems*, 2024.
+[17] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," *European Journal of Operational Research*, Vol.270, No.2, pp.654-669, 2018.
 
-[18] G. Ke et al., "LightGBM: A highly efficient gradient boosting decision tree," in *Advances in Neural Information Processing Systems*, pp.3146-3154, 2017.
+[18] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," *The Review of Financial Studies*, Vol.33, No.5, pp.2223-2273, 2020.
 
+[19] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," *KIPS Transactions on Software and Data Engineering*, Vol.8, No.3, pp.123-128, 2019.
+
+[20] S. Makridakis, E. Spiliotis, and V. Assimakopoulos, "Statistical and machine learning forecasting methods: Concerns and ways forward," *PLOS ONE*, Vol.13, No.3, e0194889, 2018.
+
+[21] Y. Wang et al., "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in *Advances in Neural Information Processing Systems*, 2024.
+
+[22] F. X. Diebold and R. S. Mariano, "Comparing predictive accuracy," *Journal of Business & Economic Statistics*, Vol.13, No.3, pp.253-263, 1995.
+
+[23] W. K. Newey and K. D. West, "A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix," *Econometrica*, Vol.55, No.3, pp.703-708, 1987.
+
+[24] D. Harvey, S. Leybourne, and P. Newbold, "Testing the equality of prediction mean squared errors," *International Journal of Forecasting*, Vol.13, No.2, pp.281-291, 1997.
+
+[25] G. Ke et al., "LightGBM: A highly efficient gradient boosting decision tree," in *Advances in Neural Information Processing Systems*, pp.3146-3154, 2017.
+
+[26] F. Pedregosa et al., "Scikit-learn: Machine learning in Python," *Journal of Machine Learning Research*, Vol.12, pp.2825-2830, 2011.
 
 <!-- AUTHORS:BEGIN -->
 <!--
