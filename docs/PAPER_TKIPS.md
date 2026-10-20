@@ -1,6 +1,7 @@
 <!--
-KIPS Transactions on Software and Data Engineering (KTSDE) 투고 원고
-양식 출처: docs/kips/Submission_Format_KTSDE.hwp (조판값은 그 파일에서 실측)
+정보처리학회 논문지 (The Transactions of the Korea Information Processing Society, TKIPS) 투고 원고
+(KTSDE·KTCCS 는 2024년 TKIPS 로 통합된 옛 논문지다)
+양식 출처: docs/kips/paper-format_TKIPS.hwp (쪽·단·글꼴 설정은 옛 KTSDE 양식과 같다)
 언어: 국문 본문. 규정 2.1 에 따라 제목·저자·소속·초록·키워드·표·그림·감사의 글·
 참고문헌은 영문으로 작성한다.
 1쪽 구성은 실제 게재논문(정보처리학회논문지 제13권 제1호)을 따랐다.
@@ -466,41 +467,41 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 ## References
 
-[1] O. B. Sezer, M. U. Gudelek, and A. M. Ozbayoglu, "Financial time series forecasting with deep learning: A systematic literature review: 2005-2019," Applied Soft Computing, Vol.90, 106181, 2020.
+[1] O. B. Sezer, M. U. Gudelek, and A. M. Ozbayoglu, "Financial time series forecasting with deep learning: A systematic literature review: 2005-2019," *Applied Soft Computing*, Vol.90, 106181, 2020.
 
-[2] T. S. Kim and S. Lee, "Deep learning-based stock fluctuation prediction according to overseas indices and trading trends," KIPS Transactions on Software and Data Engineering, Vol.10, No.9, pp.367-374, 2021.
+[2] T. S. Kim and S. Lee, "Deep learning-based stock fluctuation prediction according to overseas indices and trading trends," *KIPS Transactions on Software and Data Engineering*, Vol.10, No.9, pp.367-374, 2021.
 
-[3] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin, "Attention is all you need," in Advances in Neural Information Processing Systems, 2017, pp.5998-6008.
+[3] A. Vaswani et al., "Attention is all you need," in *Advances in Neural Information Processing Systems*, pp.5998-6008, 2017.
 
-[4] H. Zhou, S. Zhang, J. Peng, S. Zhang, J. Li, H. Xiong, and W. Zhang, "Informer: Beyond efficient transformer for long sequence time-series forecasting," in Proceedings of the AAAI Conference on Artificial Intelligence, 2021, pp.11106-11115.
+[4] H. Zhou et al., "Informer: Beyond efficient transformer for long sequence time-series forecasting," in *Proceedings of the AAAI Conference on Artificial Intelligence*, pp.11106-11115, 2021.
 
-[5] H. Wu, J. Xu, J. Wang, and M. Long, "Autoformer: Decomposition transformers with auto-correlation for long-term series forecasting," in Advances in Neural Information Processing Systems, 2021, pp.22419-22430.
+[5] H. Wu, J. Xu, J. Wang, and M. Long, "Autoformer: Decomposition transformers with auto-correlation for long-term series forecasting," in *Advances in Neural Information Processing Systems*, pp.22419-22430, 2021.
 
-[6] A. Zeng, M. Chen, L. Zhang, and Q. Xu, "Are transformers effective for time series forecasting?," in Proceedings of the AAAI Conference on Artificial Intelligence, 2023, pp.11121-11128.
+[6] A. Zeng, M. Chen, L. Zhang, and Q. Xu, "Are transformers effective for time series forecasting?," in *Proceedings of the AAAI Conference on Artificial Intelligence*, pp.11121-11128, 2023.
 
-[7] Y. Nie, N. H. Nguyen, P. Sinthong, and J. Kalagnanam, "A time series is worth 64 words: Long-term forecasting with transformers," in Proceedings of the International Conference on Learning Representations, 2023.
+[7] Y. Nie, N. H. Nguyen, P. Sinthong, and J. Kalagnanam, "A time series is worth 64 words: Long-term forecasting with transformers," in *Proceedings of the International Conference on Learning Representations*, 2023.
 
-[8] B. Lim, S. O. Arik, N. Loeff, and T. Pfister, "Temporal fusion transformers for interpretable multi-horizon time series forecasting," International Journal of Forecasting, Vol.37, No.4, pp.1748-1764, 2021.
+[8] B. Lim, S. O. Arik, N. Loeff, and T. Pfister, "Temporal fusion transformers for interpretable multi-horizon time series forecasting," *International Journal of Forecasting*, Vol.37, No.4, pp.1748-1764, 2021.
 
-[9] I. K. Kim, D. H. Kim, and J. Lee, "Temporal fusion transformers and deep learning methods for multi-horizon time series forecasting," KIPS Transactions on Software and Data Engineering, Vol.11, No.2, pp.81-86, 2022.
+[9] I. K. Kim, D. H. Kim, and J. Lee, "Temporal fusion transformers and deep learning methods for multi-horizon time series forecasting," *KIPS Transactions on Software and Data Engineering*, Vol.11, No.2, pp.81-86, 2022.
 
-[10] D.-K. Kim and K. Kim, "Style-based transformer for time series forecasting," KIPS Transactions on Software and Data Engineering, Vol.10, No.12, pp.579-586, 2021.
+[10] D.-K. Kim and K. Kim, "Style-based transformer for time series forecasting," *KIPS Transactions on Software and Data Engineering*, Vol.10, No.12, pp.579-586, 2021.
 
-[11] T. Kim, J. Kim, Y. Tae, C. Park, J.-H. Choi, and J. Choo, "Reversible instance normalization for accurate time-series forecasting against distribution shift," in Proceedings of the International Conference on Learning Representations, 2022.
+[11] T. Kim, J. Kim, Y. Tae, C. Park, J.-H. Choi, and J. Choo, "Reversible instance normalization for accurate time-series forecasting against distribution shift," in *Proceedings of the International Conference on Learning Representations*, 2022.
 
-[12] R. Koenker and G. Bassett, "Regression quantiles," Econometrica, Vol.46, No.1, pp.33-50, 1978.
+[12] R. Koenker and G. Bassett, "Regression quantiles," *Econometrica*, Vol.46, No.1, pp.33-50, 1978.
 
-[13] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in Advances in Neural Information Processing Systems, 2019, pp.3543-3553.
+[13] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in *Advances in Neural Information Processing Systems*, pp.3543-3553, 2019.
 
-[14] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," European Journal of Operational Research, Vol.270, No.2, pp.654-669, 2018.
+[14] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," *European Journal of Operational Research*, Vol.270, No.2, pp.654-669, 2018.
 
-[15] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," The Review of Financial Studies, Vol.33, No.5, pp.2223-2273, 2020.
+[15] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," *The Review of Financial Studies*, Vol.33, No.5, pp.2223-2273, 2020.
 
-[16] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," KIPS Transactions on Software and Data Engineering, Vol.8, No.3, pp.123-128, 2019.
+[16] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," *KIPS Transactions on Software and Data Engineering*, Vol.8, No.3, pp.123-128, 2019.
 
-[17] Y. Wang, H. Wu, J. Dong, G. Qin, H. Zhang, Y. Liu, Y. Qiu, J. Wang, and M. Long, "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in Advances in Neural Information Processing Systems, 2024.
+[17] Y. Wang et al., "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in *Advances in Neural Information Processing Systems*, 2024.
 
-[18] G. Ke, Q. Meng, T. Finley, T. Wang, W. Chen, W. Ma, Q. Ye, and T.-Y. Liu, "LightGBM: A highly efficient gradient boosting decision tree," in Advances in Neural Information Processing Systems, 2017, pp.3146-3154.
+[18] G. Ke et al., "LightGBM: A highly efficient gradient boosting decision tree," in *Advances in Neural Information Processing Systems*, pp.3146-3154, 2017.
 
 
 <!-- AUTHORS:BEGIN -->

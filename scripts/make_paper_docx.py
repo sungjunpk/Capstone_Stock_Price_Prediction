@@ -1,6 +1,6 @@
-"""docs/PAPER_KTSDE.md -> docs/PAPER_KTSDE.docx (KTSDE 투고 양식 조판).
+"""docs/PAPER_TKIPS.md -> docs/PAPER_TKIPS_*.docx (정보처리학회 논문지 TKIPS 투고 양식 조판).
 
-조판값은 docs/kips/Submission_Format_KTSDE.hwp 에서 실측한 것이다.
+조판값은 옛 KTSDE 양식에서 실측했고, docs/kips/paper-format_TKIPS.hwp 와 쪽·단·글꼴 설정이 같다.
 A4 / 여백 L20 R20 T25.5 B15.5mm / 2단 / 단 간격 8mm / 단 폭 81mm.
 한글에서 열어 그대로 쓰거나, Word 원고로 투고한다(규정상 둘 다 허용).
 
@@ -19,10 +19,10 @@ from docx.shared import Mm, Pt
 from docx.oxml import OxmlElement
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "docs" / "PAPER_KTSDE.md"
+SRC = ROOT / "docs" / "PAPER_TKIPS.md"
 # 심사용은 규정 2.1 에 따라 저자 정보를 뺀다. 최종본은 넣는다.
-OUT = {True: ROOT / "docs" / "PAPER_KTSDE_review.docx",
-       False: ROOT / "docs" / "PAPER_KTSDE_final.docx"}
+OUT = {True: ROOT / "docs" / "PAPER_TKIPS_review.docx",
+       False: ROOT / "docs" / "PAPER_TKIPS_final.docx"}
 AUTHOR_BLOCK = re.compile(r"<!-- AUTHORS:BEGIN -->.*?<!-- AUTHORS:END -->", re.S)
 
 # 양식에 표기된 글꼴·크기 (견명조 14pt 따위). 한글이 HNC 글꼴로 렌더한다.

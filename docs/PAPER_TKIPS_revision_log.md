@@ -1,4 +1,4 @@
-# PAPER_KTSDE 재구성 기록 (2026-10-18)
+# PAPER_TKIPS 재구성 기록 (2026-10-18)
 
 주장을 하나로 좁혔다: **제안 모형은 TFT와 대등한 분위 정확도를 4~5배 적은 비용으로 내며,
 예측 구간이 변동성에 반응해 기권이 고변동 구간에 집중된다.**
@@ -100,8 +100,8 @@ docx 에서 아래첨자·위첨자가 실제 런으로 적용되는 것을 확�
 
 ## 8. docx 재생성과 대조
 
-`.venv/bin/python scripts/make_paper_docx.py` → `PAPER_KTSDE_review.docx`(투고용 블라인드),
-`PAPER_KTSDE_final.docx`(저자소개 포함). 둘 다 표 7개.
+`.venv/bin/python scripts/make_paper_docx.py` → `PAPER_TKIPS_review.docx`(투고용 블라인드),
+`PAPER_TKIPS_final.docx`(저자소개 포함). 둘 다 표 7개.
 md 본문의 모든 줄을 docx 텍스트와 대조해 누락 **0건**(표 구분선 `|---|` 3줄만 제외).
 블라인드 docx 에 저자 흔적 0건.
 
