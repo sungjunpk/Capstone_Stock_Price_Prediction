@@ -33,15 +33,16 @@ AUTHOR_BLOCK = re.compile(r"<!-- AUTHORS:BEGIN -->.*?<!-- AUTHORS:END -->", re.S
 # 뒤의 두 값은 양식 hwp 의 CHAR_SHAPE 에서 읽은 장평(%)·자간(글자 크기 대비 %)이다.
 # 이걸 빼면 Word 기본값(100%/0%)으로 조판되어 게재논문보다 눈에 띄게 벌어진다.
 F = {
-    "title_en": ("견명조", 14, 95, -5),
-    "author": ("중고딕", 10, 100, 0),
+    "title_en": ("견명조", 14, 93, -5),
+    "author": ("중고딕", 10, 94, 0),
     "abs_head": ("태고딕", 10.5, 100, 0),
     "abs_body": ("신명조", 7.5, 95, -5),
-    "kw": ("태고딕", 7.5, 90, 0),
-    "title_ko": ("태명조", 19, 95, -5),
-    "chapter": ("견고딕", 10, 95, 0),
+    "abs_body_ko": ("신명조", 7.5, 98, -5),
+    "kw": ("태고딕", 7.5, 97, 0),
+    "title_ko": ("태명조", 16.5, 96, -5),
+    "chapter": ("견고딕", 10, 97, 0),
     "section": ("중고딕", 9, 95, -5),
-    "body": ("신명조", 9, 95, -3),
+    "body": ("신명조", 9, 100, -3),
     "caption": ("중고딕", 8.5, 95, -5),
     "table": ("신명조", 8, 95, -3),
     "refs": ("신명조", 8.5, 95, -3),
@@ -49,13 +50,23 @@ F = {
     "bio_name": ("중고딕", 11, 100, 10),
     "bio": ("신명조", 8.5, 95, -3),
 }
+# 양식이 지정한 HNC 글꼴은 한글(HWP)에만 있어서 Word 는 전부 같은 글꼴로 대체해 버린다.
+# 그 과정에서 명조/고딕 구분과 굵기가 사라져 장·절 제목이 본문과 구분되지 않는다
+# (게재본과 나란히 놓고 확인). docx 로 내는 동안은 맥에 있는 같은 계열로 바꿔 둔다.
+# hwp 최종본에서는 양식 글꼴 이름(F 의 키)으로 되돌릴 것.
+HNC = {
+    "신명조": "AppleMyungjo", "태명조": "AppleMyungjo", "견명조": "AppleMyungjo",
+    "중고딕": "Apple SD Gothic Neo", "태고딕": "Apple SD Gothic Neo",
+    "견고딕": "Apple SD Gothic Neo",
+}
+
 # 고정 줄간격(pt). 양식의 줄간격은 글자 크기 대비 %(본문 150, 참고문헌 154, 캡션·표 130,
 # 각주 110)인데 HNC 글꼴의 줄 높이가 끼어 실제 인쇄본은 그보다 조금 넓다. 게재논문에서
 # 잰 값(본문 14.0 / 초록 11.2 / 각주 8.4 / 저자소개 13.7)을 그대로 고정값으로 쓴다.
 # 배수로 두면 Word 가 대체 글꼴의 줄 높이로 계산해 들쭉날쭉해진다.
 LEADING = {
-    "body": 14.0, "abs_body": 11.2, "kw": 11.2, "refs": 13.5,
-    "caption": 11.0, "table": 10.4, "footnote": 8.4, "bio": 13.7,
+    "body": 14.0, "abs_body": 10.5, "abs_body_ko": 12.0, "kw": 11.2,
+    "refs": 13.5, "caption": 11.0, "table": 10.4, "footnote": 8.4, "bio": 13.6,
 }
 COL_W = Mm(81)      # 단 폭
 BIO_W = Mm(25)      # 저자 소개 사진
@@ -85,14 +96,14 @@ def page_setup(section, cols=1):
 
 
 def korean_spacing(p):
-    """국문 조판 보정.
+    """국문 조판 보정 — autoSpaceDE/DN 을 끄면 '2015년'이 '2015 년'으로 벌어지지 않는다.
 
-    autoSpaceDE/DN 을 끄면 '2015년'이 '2015 년'으로 벌어지지 않는다.
-    wordWrap 0 은 긴 영문 토큰이 줄 안에서 끊기게 하여, 양쪽 정렬이 남는 폭을
-    한글 어절 사이로 몰아 벌리는 현상을 막는다.
+    wordWrap 0 (글자 단위 줄바꿈 허용) 은 쓰지 않는다. 양쪽 정렬의 남는 폭을 줄여주긴
+    하지만 영문 단어와 숫자가 아무 데서나 잘린다 — 참고문헌이 'Proceed/ings',
+    '202/3' 으로 끊겼다. 게재본은 단어 단위로 줄을 바꾼다.
     """
     pPr = p._p.get_or_add_pPr()
-    for tag, val in (("w:autoSpaceDN", "0"), ("w:autoSpaceDE", "0"), ("w:wordWrap", "0")):
+    for tag, val in (("w:autoSpaceDN", "0"), ("w:autoSpaceDE", "0")):
         el = OxmlElement(tag)
         el.set(qn("w:val"), val)
         pPr.insert(0, el)      # 스키마 순서: wordWrap → autoSpaceDE → autoSpaceDN → spacing/ind/jc
@@ -151,7 +162,7 @@ def style_run(run, key, bold=False, italic=False):
         rPr.append(rFonts)
     rFonts.set(qn("w:ascii"), "Times New Roman")
     rFonts.set(qn("w:hAnsi"), "Times New Roman")
-    rFonts.set(qn("w:eastAsia"), name)     # 한글 글자는 양식 글꼴로
+    rFonts.set(qn("w:eastAsia"), HNC.get(name, name))   # 한글 글자
     set_rpr(rPr, "w:w", scale)                          # 장평
     set_rpr(rPr, "w:spacing", round(size * track / 5))  # 자간: % → 1/20pt
     run.bold = bold
@@ -450,14 +461,15 @@ def build(blind):
                 mode, in_body = switch(doc, 2), True
             if mode != 2:
                 mode = switch(doc, 2)
-            add_para(doc, payload, "chapter", None, 4,
-                     bold=True).paragraph_format.keep_with_next = True
+            ch = add_para(doc, payload, "chapter", None, 14, bold=True)
+            ch.paragraph_format.space_before = Pt(18)
+            ch.paragraph_format.keep_with_next = True
             in_bio = payload == "References"
             continue
         if kind == "h3":
             if mode != 2:
                 mode = switch(doc, 2)
-            add_para(doc, payload, "section", None, 3) \
+            add_para(doc, payload, "section", None, 1, bold=True) \
                 .paragraph_format.keep_with_next = True
             continue
         if kind == "h4":
@@ -547,12 +559,13 @@ def build(blind):
             add_para(doc, text.replace("&nbsp;", " ").strip(), "body",
                      WD_ALIGN_PARAGRAPH.CENTER, 4)
             continue
-        key = "abs_body" if not in_body else "body"
+        key = "body" if in_body else (
+            "abs_body_ko" if re.search(r"[가-힣]", text) else "abs_body")
         # 국문 논문 관례: 본문 단락은 첫 줄을 한 글자 들여 쓴다
         para = add_para(doc, text, key, WD_ALIGN_PARAGRAPH.JUSTIFY,
                         4 if key == "body" else 0,
                         indent=Pt(F[key][1]) if key == "body" else ABS_INDENT)
-        if key == "abs_body":       # 초록은 본문보다 좌우를 좁혀 조판한다
+        if key.startswith("abs_body"):   # 초록은 본문보다 좌우를 좁혀 조판한다
             para.paragraph_format.left_indent = ABS_SIDE
             para.paragraph_format.right_indent = ABS_SIDE
 
