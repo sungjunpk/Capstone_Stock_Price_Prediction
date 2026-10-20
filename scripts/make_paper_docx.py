@@ -2,7 +2,7 @@
 
 기본은 **투고 서식**이다 — TKIPS 투고 안내 5.2: 10pt, 2배 줄간격, A4, 상하좌우 여백 2.5cm.
 5.4 의 순서에 따라 국문 제목·요약·키워드는 참고문헌 뒤로 옮긴다. 1단이다.
-    review.docx  심사용(저자 정보 없음)    final.docx  저자 정보 포함
+투고는 익명 심사라 저자 정보를 뺀 review.docx 를 낸다(규정 2.1).
 
 --preview 는 게재본 모양(2단)을 PAPER_TKIPS_preview.docx 로 낸다. 조판값은 옛 KTSDE
 양식에서 실측했고 docs/kips/paper-format_TKIPS.hwp 와 같다:
@@ -24,10 +24,8 @@ from docx.oxml import OxmlElement
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "docs" / "PAPER_TKIPS.md"
-# 심사용은 규정 2.1 에 따라 저자 정보를 뺀다. 최종본은 넣는다.
-OUT = {True: ROOT / "docs" / "PAPER_TKIPS_review.docx",
-       False: ROOT / "docs" / "PAPER_TKIPS_final.docx"}
-PREVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_preview.docx"
+REVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_review.docx"     # 투고용
+PREVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_preview.docx"   # 게재본 조판 확인용(쪽수)
 SUBMIT = True       # 투고 서식(1단·10pt·2배 줄간격). --preview 일 때만 False
 AUTHOR_BLOCK = re.compile(r"<!-- AUTHORS:BEGIN -->.*?<!-- AUTHORS:END -->", re.S)
 
@@ -294,9 +292,9 @@ def korean_to_end(blocks):
     return rest[:at] + ko + rest[at:]
 
 
-def build(blind):
+def build():
     md = SRC.read_text(encoding="utf-8")
-    if blind:
+    if SUBMIT:          # 심사용은 규정 2.1 에 따라 저자 정보를 뺀다. 게재본 확인용에는 넣는다
         md = AUTHOR_BLOCK.sub("", md)
     blocks = group_bios(parse(md))
     if SUBMIT:
@@ -450,7 +448,7 @@ def build(blind):
         add_para(doc, text, key, WD_ALIGN_PARAGRAPH.JUSTIFY, 4,
                  indent=Pt(F[key][1]) if key == "body" else None)
 
-    dst = OUT[blind] if SUBMIT else PREVIEW_OUT
+    dst = REVIEW_OUT if SUBMIT else PREVIEW_OUT
     clear_metadata(doc)
     doc.save(dst)
     print(f"wrote {dst.relative_to(ROOT)}")
@@ -459,8 +457,5 @@ def build(blind):
 if __name__ == "__main__":
     if "--preview" in sys.argv:
         SUBMIT = False
-        build(blind=False)
-        sys.exit(0)
-    build(blind=True)
-    build(blind=False)
+    build()
     sys.exit(0)

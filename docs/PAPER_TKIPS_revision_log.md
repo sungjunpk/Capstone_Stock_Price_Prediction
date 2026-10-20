@@ -882,3 +882,18 @@ feature importance 없음이었다. PNG 쪽이 논문에 맞춘 최신본이라 
 코드가 실제로 MLP 다 — `Linear(d_model, hidden) → GELU → Dropout → Linear(hidden, 3)`
 (`src/models/quantile_head.py`). 본문의 "헤드 마지막 선형층의 세 출력" 도 그 마지막 `Linear` 를
 가리키므로 정확하다. 둘 다 맞아서 고칠 것이 없다.
+
+## final.docx 를 없앤다 (2026-10-20, 6차)
+
+`PAPER_TKIPS_final.docx` 는 "투고 서식 + 저자 정보" 판본이었는데 쓸 자리가 없다.
+투고는 익명이라 `review.docx` 를 내고(규정 2.1), 게재 확정 후 최종본은 식 (1)~(6) 을
+hwp 수식 개체로 다시 넣어야 해서 hwp 로 만든다. 조판은 `review` 와 완전히 같고
+저자 정보는 `preview` 에도 들어 있어, `final` 만 가진 조합이 없다.
+
+파일을 지우면서 `blind` 분기도 걷어냈다 — `blind` 가 `SUBMIT` 과 1:1 이었다
+(review = 투고 서식 + 익명, preview = 게재 서식 + 저자 정보). `OUT` 딕셔너리는
+`REVIEW_OUT`/`PREVIEW_OUT` 두 상수로, `build(blind)` 는 `build()` 로, `__main__` 은
+호출 한 번으로 줄었다. 두 산출물의 바이트는 그대로다.
+
+남는 산출물은 둘이다 — `review.docx`(투고용) · `preview.docx`(게재본 쪽수 확인용,
+7쪽부터 쪽당 50,000원).
