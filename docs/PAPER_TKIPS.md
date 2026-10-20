@@ -474,7 +474,7 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 매크로 경로와 같은 선형 합치기로 바꾸었고, 매크로 제거 변형은 크로스어텐션 없이 종목 표현을 헤드로 보내며,
 정적 문맥 제거 변형은 문맥 벡터를 0으로 두어 변수선택의 조건화와 결합 뒤 더하기를 함께 껐다. 초매개변수는
 <Table 2> 그대로이며, 보고 지표는 실험 전에 시험구간 핀볼 손실, 최상위 변동성 분위의 기권율, 기권율 6%에서
-맞춘 통제군 대비 비 차이의 셋으로 정하였다.
+맞춘 통제군 대비 비 차이의 셋으로 정하였다. 결과는 <Table 7>과 같다.
 
 Table 7. Removing one component at a time (test split, mean over five seeds 42-46 with the standard deviation). 'Ours lower' counts the seeds on which the proposed model has the lower test loss; 'Ratio gap at 6%' is the abstained-to-retained loss ratio of the width rule minus that of the trailing 20-day volatility control at a matched 6% abstention rate (Section 5.3)
 
