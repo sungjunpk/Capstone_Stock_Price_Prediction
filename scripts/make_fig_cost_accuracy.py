@@ -41,7 +41,7 @@ LABEL = {"patchtst_q": "PatchTST\n+ quantile", "tft": "TFT", "ours": "Proposed"}
 # ⚠️ 세 마커를 모두 원으로 둔다. matplotlib 의 s 는 **외접 사각형** 면적이라
 #    모양이 다르면 실제 칠해지는 면적이 달라진다(원 π/4, 사각형 1.0, 삼각형 0.5).
 #    삼각형·사각형을 섞었을 때 84MB 가 46MB 의 1.17배로, 168MB 가 4.66배로 보였다
-#    — 캡션이 "marker area = activation memory" 라고 적는 한 모양을 섞으면 안 된다.
+#    — 캡션이 "circle area = activation memory" 라고 적는 한 모양을 섞으면 안 된다.
 #    모델 구분은 점 옆 라벨이 하므로 표식 모양에 기댈 필요가 없다.
 STYLE = {
     "patchtst_q": dict(marker="o", facecolor="0.82", edgecolor="0.30"),
@@ -77,6 +77,18 @@ def load():
     return acc, cost
 
 
+def load_gbdt():
+    """분위 GBDT — 정확도는 같은 윈도우 표본의 검증 개선율, 비용은 CPU 측정.
+
+    활성값 메모리가 없으므로(트리 모형) 넓이로 메모리를 나타내는 원 대신 고정 크기
+    마름모로 그린다. 캡션이 "marker size not applicable" 이라고 밝힌다.
+    """
+    acc = json.loads(sorted(REP.glob("gbdt_quantile_compare_*.json"))[-1]
+                     .read_text(encoding="utf-8"))["accuracy"]["val"]["improvement_pct"]
+    cm = json.loads(sorted(REP.glob("gbdt_cost_measure_*.json"))[-1].read_text(encoding="utf-8"))
+    return acc, cm["latency_per_stock_ms"], cm["fit_seconds_total"]
+
+
 def main() -> int:
     acc, cost = load()
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 7})
@@ -90,10 +102,17 @@ def main() -> int:
                     (x, y), textcoords="offset points", xytext=OFFSET[k][:2],
                     fontsize=6.0, linespacing=1.25, ha=OFFSET[k][2])
 
+    g_acc, g_lat, g_fit = load_gbdt()
+    ax.scatter(g_lat, g_acc, s=28, marker="D", facecolor="white", edgecolor="black",
+               linewidths=0.8, zorder=4)
+    ax.annotate(f"Quantile GBDT (CPU)\n{g_fit:.1f} s full fit", (g_lat, g_acc),
+                textcoords="offset points", xytext=(2, -24), fontsize=6.0,
+                linespacing=1.25, ha="left")
+
     # 더 좋은 방향을 한 번만 적는다
     ax.annotate("cheaper and more accurate", xy=(0.03, 0.94), xycoords="axes fraction",
                 fontsize=6.0, style="italic", color="0.35")
-    ax.annotate("marker area = activation memory", xy=(0.97, 0.04),
+    ax.annotate("circle area = activation memory", xy=(0.97, 0.04),
                 xycoords="axes fraction", ha="right", fontsize=5.8, color="0.45")
     ax.set_xlabel("Inference latency per stock (ms)", fontsize=7)
     ax.set_ylabel("Pinball improvement over\nunconditional baseline (%)", fontsize=7)
@@ -114,6 +133,7 @@ def main() -> int:
         print(f"   {LABEL[k].replace(chr(10),' '):<20} "
               f"latency {c['latency']:.4f} ms | 개선 {acc[k]:+.2f}% | "
               f"활성값 {c['act']['120']:.1f} MB | {c['secPerEpoch']:.1f} s/epoch")
+    print(f"   Quantile GBDT        latency {g_lat:.4f} ms | 개선 {g_acc:+.2f}% | {g_fit:.1f} s 전체 학습")
     print(f"   (제외) PatchTST 원본 점예측  개선 {acc['patchtst']:+.2f}% — 축 범위 밖")
     return 0
 

@@ -341,7 +341,7 @@ PatchTST는 검증구간 +0.07%, 검정구간 +0.36%로 상수 예측을 간신�
 트리 계열 기준모형으로 분위 손실을 쓰는 히스토그램 그래디언트 부스팅(LightGBM[18]의 방식을 따른
 scikit-learn 구현)을 같은 분할과 같은 윈도우 표본에서 평가하였다. 입력은 동적 30채널의 당일 값과 1·5·20일
 시차, 매크로 13채널, 정적 범주형 3종의 136개이고, 분위마다 모형을 하나씩 두어 검증구간 손실로 트리 수를
-정하였다(75·25·275개). 검증구간 손실은 제안 모형과 같았고(0.011890 대 0.011889), 검정구간 손실은 TFT
+정하였다(75·25·275개). 부표본 추출이 없어 같은 자료에서는 같은 모형이 나오므로 한 번만 학습하였다. 검증구간 손실은 제안 모형과 같았고(0.011890 대 0.011889), 검정구간 손실은 TFT
 원본보다 작고 제안 모형보다 컸다. 제안 모형의 다섯 시드는 모두 이 값보다 낮았다(최대 0.017895 대 0.018107).
 
 ### 5.2 계산 비용
@@ -365,16 +365,17 @@ Table 5. Computational cost measured on one device (Mac MPS, batch 64, 120-day i
 +3.45%)이다.
 
 (Fig. 2)는 <Table 4>의 검증구간 정확도와 <Table 5>의 비용을 한 평면에 놓은 것이다. 지연시간만 보면 분위
-헤드 모형이 더 왼쪽에 있으나, 정확도와 비용을 함께 보면 세 트랜스포머 모형 가운데 제안 모형이 파레토 전선 위에 있다. 그림에 넣지 않은
-분위 GBDT는 검증 정확도가 같고 지연이 더 짧으므로 이 평면에서는 제안 모형보다 앞선다.
+헤드 모형이 더 왼쪽에 있으나, 정확도와 비용을 함께 보면 세 트랜스포머 모형 가운데 제안 모형이 파레토 전선 위에 있다. 분위
+GBDT는 검증 정확도가 같고 지연이 더 짧으므로 이 평면에서는 제안 모형보다 앞선다.
 
 ![Fig. 2](images/fig2_cost_accuracy.png)
 
 Fig. 2. Forecast accuracy against inference cost. The vertical axis is the pinball
 improvement over the unconditional-quantile baseline on validation (<Table 4>), the
 horizontal axis is per-stock inference latency, and the marker area is activation memory
-for a 120-day input (<Table 5>). The original point-forecast PatchTST is omitted because
-its pinball loss falls far below the plotted range.
+for a 120-day input (<Table 5>). The quantile GBDT (open diamond) is measured on the CPU
+and has no activation memory, so its marker size does not apply. The original point-forecast
+PatchTST is omitted because its pinball loss falls far below the plotted range.
 
 ### 5.3 기권 행태
 
@@ -456,7 +457,8 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 첫째, 제안 모형은 TFT 원본보다 낮은 오차를 약 4분의 1의 비용으로 달성하였다. 다섯 번의
 반복 실험을 짝지은 열 번의 비교 전부에서 제안 모형의 손실이 낮았고, 조기종료에 쓰이지 않은 검정구간에서는
 날짜 단위 DM 검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 종목당 추론 시간은 4.8배 짧았고,
-활성값 메모리는 5.1배 적었다. 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
+활성값 메모리는 5.1배 적었다. 다만 분위 GBDT는 이보다도 싸며, 제안 모형이 GBDT보다 나은 점은 비용이 아니라
+검정구간 손실이다(+4.95% 대 +3.45%, 다섯 시드 모두 GBDT보다 낮음). 둘째, 예측 구간이 시장 변동성에 반응하여 판단 보류가 변동성이 큰 시기에
 집중되었다. 보류된 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 기권율을 맞춘 비교에서도 최근 변동성만
 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 다만 분위 GBDT도 같은 비교에서 대등한 보류 품질을
 보였으므로 이 성질은 트랜스포머 구조에 고유하지 않다. 하나의 예측값만 내는 기존 패치 기반 모형으로는
