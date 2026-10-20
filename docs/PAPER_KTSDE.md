@@ -27,15 +27,15 @@ models give a single value, which leaves no way to judge how far that forecast c
 practice, an investor needs to weigh uncertainty alongside the forecast and know when to hold off. The
 Temporal Fusion Transformer (TFT) also forecasts uncertainty, but it is computationally expensive, while
 lightweight patch-based transformers produce only a single value. This paper proposes a lightweight
-model that equips a patch-based transformer with the quantile forecasting structure and the variable
-selection network of TFT, together with an abstention rule that withholds a decision when the prediction
+model that adds a quantile head to a patch-based transformer and merges the input channels into one
+before the encoder so that the encoder runs only once, together with an abstention rule that withholds a decision when the prediction
 interval is wider than usual. On daily data for 201 KOSPI 200 stocks since 2015, the proposed model had
 a lower forecast error than TFT in all five repeated runs, while training 3.8 times and running
 inference 4.8 times faster. Abstentions concentrated in volatile periods, and the withheld forecasts
 carried about 1.5 times the error of those acted on, separating large errors better than a simple rule
 based on recent volatility alone. Section 6 discusses the limitations of the evaluation design.
 
-<!-- 187 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
+<!-- 196 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -52,7 +52,8 @@ Forecast Uncertainty, Abstention
 제공하여 그 예측을 얼마나 신뢰할 수 있는지 판단하기 어렵다. 실제 투자에서는 예측값과 함께 불확실성을 고려하여
 판단을 보류해야 할 시점을 알 수 있어야 한다. 불확실성을 함께 예측하는 모형으로 Temporal Fusion
 Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패치 기반 트랜스포머는 하나의 예측값만 제공한다.
-이에 본 논문에서는 패치 기반 트랜스포머에 TFT의 분위 예측 구조와 변수선택망을 결합한 경량 모형을 제안하고,
+이에 본 논문에서는 패치 기반 트랜스포머에 분위 예측 헤드를 달고 입력 채널을 인코더 앞에서 하나로 합쳐 인코더를
+한 번만 실행하는 경량 모형을 제안하고,
 예측 구간이 평소보다 넓을 때 판단을 보류하는 기권 규칙을 함께 적용한다. 2015년 이후 코스피200 구성종목
 201개의 일별 자료로 실험한 결과, 제안 모형은 다섯 번의 반복 실험 모두에서 TFT보다 낮은 예측 오차를 보이면서
 학습은 3.8배, 추론은 4.8배 빨랐다. 판단 보류는 변동성이 큰 시기에 집중되었으며, 보류된 예측의 오차는 실행된
@@ -96,7 +97,8 @@ Accepted :
 시점에서 어텐션을 수행하므로 이 제약과 충돌한다.
 
 두 요구사항은 각각 다른 구성요소를 필요로 한다. 기권에는 분위 헤드와 핀볼 손실이, 비용에는 패치 토큰화와
-채널 축을 인코더 앞에서 하나로 모으는 장치가 필요하며 후자에는 TFT의 변수선택망을 쓴다. PatchTST를 그대로
+채널 축을 인코더 앞에서 하나로 모으는 장치가 필요하다. 이 장치는 TFT의 변수선택망으로 구현하되 더 단순한
+선형 합치기와 비교한다. PatchTST를 그대로
 쓰면 첫째 요구를, TFT를 그대로 쓰면 둘째 요구를 충족하지 못한다. 따라서 본 연구가 답하는 질문은 두 가지이다.
 (1) 두 구성요소를 결합한 구조의 분위 정확도와 계산 비용은 두 원본과 어떻게 비교되는가. (2) 예측 구간이
 변동성에 반응하여 기권이 실제로 오차가 큰 예측을 걸러내는가.
@@ -120,7 +122,7 @@ PatchTST[7]는 시계열을 시점이 아니라 구간(패치) 단위로 토큰�
 
 TFT[8]는 변수선택망으로 입력 채널별 소프트맥스 게이트를 학습하고, 게이트 잔차 신경망(gated residual
 network, GRN)으로 채널별 변환을 수행하며, 정적 공변량을 문맥 벡터로 부호화하고 복수의 분위를 동시에
-산출한다. 본 연구는 이 가운데 분위 헤드와 변수선택망을 부품으로 채택하고
+산출한다. 본 연구는 이 가운데 분위 헤드를 채택하고 변수선택망은 채널 축약의 한 구현으로 비교하였으며,
 시점 단위 연산 구조는 버렸다. 변수선택망을 쓰는 이유는 중요도 해석이 아니라, 채널 축을 소프트맥스 가중합으로
 하나로 줄여 인코더 실행 횟수를 1회로 만드는 데 있다. 국내에서도 TFT를 다지평
 예측에 적용한 연구[9]와 트랜스포머를 시계열 특성에 맞추어 변형한 연구[10]가 보고되었다.
@@ -162,7 +164,7 @@ Table 1. Requirements and corresponding components
 |---|---|---|
 | Abstention | A distribution, not a point: q90 - q10 must exist | Quantile head, pinball loss |
 | Cost: 120-day lookback x 201 stocks, daily | Sequence-length reduction | Patch tokenization (120 to 24) |
-| Cost: channel-independent encoding repeats the encoder | Channel-axis reduction before the encoder | TFT variable selection network |
+| Cost: channel-independent encoding repeats the encoder | Channel-axis reduction before the encoder | TFT variable selection network (vs. linear merge, Sec. 5.4) |
 | Scale differs by stock and era | Non-stationary normalization | RevIN, with channel exceptions |
 | Local equities track global macro | Exogenous sequence injection | Cross-attention (this work) |
 
@@ -176,9 +178,13 @@ Table 1. Requirements and corresponding components
 
 Fig. 1. Architecture of the proposed model (a) with component detail (b-e). Colors mark
 the PatchTST lineage (yellow), the TFT components (blue), the macro cross-attention added
-in this work (teal) and the static context path (orange).
+in this work (teal) and the static context path (orange). The variable selection network and the
+cross-attention are design options; removing either did not change the results (Sec. 5.4).
 
 ### 3.3 결합 과정의 설계 결정
+
+아래 1)과 2)는 구조의 필수 요소가 아니라 비교 검토한 설계 선택지이며, 각각의 기여는 5.4절의 제거 실험으로
+확인한다. 3)은 기권 규칙이 의존하는 구조적 요건이다.
 
 #### 1) 변수선택망의 역할과 배치
 
@@ -348,7 +354,7 @@ Table 5. Computational cost measured on one device (Mac MPS, batch 64, 120-day i
 | Ours | 143.5 | 0.143 ms | 28.7 ms | 132.9 MB | 2.00 MB |
 
 대등한 정확도에서 제안 모형은 TFT 원본 대비 학습 3.8배, 종목당 추론 4.8배, 활성값 메모리 5.1배의 절감을
-보였다. 패치 토큰화가 어텐션 대상 시퀀스를 120에서 24로 줄이고 변수선택망의 선행 배치가 채널 반복을
+보였다. 패치 토큰화가 어텐션 대상 시퀀스를 120에서 24로 줄이고 인코더 앞의 채널 축약이 채널 반복을
 제거한 결과이며, 모수 1.4배 차이는 부차적이다. 같은 배율은 장비와 배치가 다른 조건에서도 재현된다 —
 <Table 4>를 얻은 캐글 GPU(배치 256, 혼합정밀도)에서 제안 모형 41.8초/epoch, TFT 원본 157.1초/epoch였다.
 
@@ -433,8 +439,8 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 ## 6. 결론 및 향후 연구
 
 본 연구는 주가 예측에서 "지금 판단해도 되는가"를 함께 답하는 모형을, 매일 201종목을 평가할 수 있는 비용
-안에서 만드는 것을 목표로 하였다. 계산이 가벼운 패치 기반 트랜스포머에 TFT의 분위 예측 기능과 변수선택망을
-결합하고, 변수선택망을 인코더 앞에 두어 인코더 실행 횟수를 1회로 줄였다. 예측 구간이 이례적으로 넓을 때
+안에서 만드는 것을 목표로 하였다. 계산이 가벼운 패치 기반 트랜스포머에 TFT의 분위 예측 헤드를
+달고, 입력 채널을 인코더 앞에서 하나로 합쳐 인코더 실행 횟수를 1회로 줄였다. 예측 구간이 이례적으로 넓을 때
 판단을 보류하는 기권 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 두 가지를
 확인하였다.
 
@@ -448,8 +454,9 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 이러한 판단 보류 자체를 할 수 없다.
 
 본 연구의 평가는 평가 기간 자료가 입력 설계와 기권 기준 선택에 일부 참고되었고, 현재 시점의 구성종목으로
-유니버스를 정하였으므로 완전한 사후 검증은 아니다. 또한 구성요소별 기여는 단일 제거 실험에서 뚜렷이 구분되지
-않았다(5.4절). 예측 구간의 절대 포함률은 명목 80%보다 낮았고(71.6%), 검증구간에서 맞춘 CQR[13] 보정 후에도
+유니버스를 정하였으므로 완전한 사후 검증은 아니다. 또한 변수선택망, 정적 문맥, 매크로 크로스어텐션은 하나씩
+제거해도 결과가 달라지지 않아, 개선이 인코더 앞 채널 축약 구조 자체에서 오는지 구성요소 간 대체에서 오는지
+가리지 못하였다(5.4절). 예측 구간의 절대 포함률은 명목 80%보다 낮았고(71.6%), 검증구간에서 맞춘 CQR[13] 보정 후에도
 73.9%에 그쳐 구간 자체를 신뢰구간으로 해석해서는 안 된다. 보정은 폭의 순위를 바꾸지 않으므로 기권 결과에는
 영향이 없다.
 
