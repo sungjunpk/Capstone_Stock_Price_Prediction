@@ -3,6 +3,8 @@
 조판은 학회 양식 `docs/kips/paper-format_TKIPS.hwp` 그대로다. hwp 의 PAGE_DEF 를 직접
 읽어 맞췄다: A4 / 여백 L20 R20 T25.5 B15.5mm / 머리·꼬리 10mm / 2단 / 단 폭 81mm /
 단 간격 8mm (본문 폭 170 = 81+8+81). 국문 표제부도 양식대로 1쪽에 둔다.
+hwp 는 머리말·꼬리말을 여백과 본문 사이의 별도 영역으로 두므로 본문 상자는
+좌우 20mm / 위 35.5mm / 아래 25.5mm 안쪽이다 — Word 여백은 본문 기준이라 그 값을 넣는다.
 
     review.docx   투고용 — 규정 2.1 에 따라 저자 정보를 뺀다
     preview.docx  저자 정보까지 넣은 판 — 쪽수 확인과 게재 확정 후 최종본 대비용
@@ -28,37 +30,50 @@ PREVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_preview.docx"   # 게재본 조판 �
 AUTHOR_BLOCK = re.compile(r"<!-- AUTHORS:BEGIN -->.*?<!-- AUTHORS:END -->", re.S)
 
 # 양식에 표기된 글꼴·크기 (견명조 14pt 따위). 한글이 HNC 글꼴로 렌더한다.
+# 뒤의 두 값은 양식 hwp 의 CHAR_SHAPE 에서 읽은 장평(%)·자간(글자 크기 대비 %)이다.
+# 이걸 빼면 Word 기본값(100%/0%)으로 조판되어 게재논문보다 눈에 띄게 벌어진다.
 F = {
-    "title_en": ("견명조", 14),
-    "author": ("중고딕", 10),
-    "abs_head": ("태고딕", 10.5),
-    "abs_body": ("신명조", 7.5),
-    "kw": ("태고딕", 7.5),
-    "title_ko": ("태명조", 19),
-    "chapter": ("견고딕", 10),
-    "section": ("중고딕", 9),
-    "body": ("신명조", 9),
-    "caption": ("중고딕", 8.5),
-    "table": ("신명조", 8),
-    "refs": ("신명조", 8.5),
-    "footnote": ("신명조", 7),
-    "bio_name": ("중고딕", 11),
-    "bio": ("신명조", 8.5),
+    "title_en": ("견명조", 14, 95, -5),
+    "author": ("중고딕", 10, 100, 0),
+    "abs_head": ("태고딕", 10.5, 100, 0),
+    "abs_body": ("신명조", 7.5, 95, -5),
+    "kw": ("태고딕", 7.5, 90, 0),
+    "title_ko": ("태명조", 19, 95, -5),
+    "chapter": ("견고딕", 10, 95, 0),
+    "section": ("중고딕", 9, 95, -5),
+    "body": ("신명조", 9, 95, -3),
+    "caption": ("중고딕", 8.5, 95, -5),
+    "table": ("신명조", 8, 95, -3),
+    "refs": ("신명조", 8.5, 95, -3),
+    "footnote": ("신명조", 7, 95, -5),
+    "bio_name": ("중고딕", 11, 100, 10),
+    "bio": ("신명조", 8.5, 95, -3),
 }
-LEADING = {                 # 샘플 게재논문 실측 기반 행간 배수
-    "body": 1.42, "abs_body": 1.35, "refs": 1.25, "caption": 1.20,
-    "table": 1.10, "footnote": 1.15,
+# 고정 줄간격(pt). 양식의 줄간격은 글자 크기 대비 %(본문 150, 참고문헌 154, 캡션·표 130,
+# 각주 110)인데 HNC 글꼴의 줄 높이가 끼어 실제 인쇄본은 그보다 조금 넓다. 게재논문에서
+# 잰 값(본문 14.0 / 초록 11.2 / 각주 8.4 / 저자소개 13.7)을 그대로 고정값으로 쓴다.
+# 배수로 두면 Word 가 대체 글꼴의 줄 높이로 계산해 들쭉날쭉해진다.
+LEADING = {
+    "body": 14.0, "abs_body": 11.2, "kw": 11.2, "refs": 13.5,
+    "caption": 11.0, "table": 10.4, "footnote": 8.4, "bio": 13.7,
 }
 COL_W = Mm(81)      # 단 폭
 BIO_W = Mm(25)      # 저자 소개 사진
 FULL_W = Mm(170)    # 좌우 여백을 뺀 본문 폭
 
+# 표제부의 문단 간격·여백은 양식 hwp 의 PARA_SHAPE 값(1/200pt 단위)을 pt 로 환산한 것이다.
+# 게재논문 실측 좌표와도 맞는다 — 저자줄 아래 22.7pt, 키워드 위 8.5pt, 초록 들여쓰기 10pt.
+ABS_SIDE = Pt(17.5)     # 초록·키워드 좌우 여백
+ABS_INDENT = Pt(10)     # 초록 첫 줄 들여쓰기
+
 
 def page_setup(section, cols=1):
     section.page_width, section.page_height = Mm(210), Mm(297)
     section.left_margin = section.right_margin = Mm(20)
-    section.top_margin, section.bottom_margin = Mm(25.5), Mm(15.5)
-    section.header_distance = section.footer_distance = Mm(10)
+    # 위 25.5 + 머리말 10 / 아래 15.5 + 꼬리말 10 = 본문 상자 35.5~271.5mm.
+    # 게재본 실측도 같다 (본문 첫 줄 38.2mm, 끝 줄 269.6mm, 머리말 27.8mm).
+    section.top_margin, section.bottom_margin = Mm(35.5), Mm(25.5)
+    section.header_distance, section.footer_distance = Mm(25.5), Mm(15.5)
     sectPr = section._sectPr
     for old in sectPr.findall(qn("w:cols")):
         sectPr.remove(old)
@@ -83,8 +98,50 @@ def korean_spacing(p):
         pPr.insert(0, el)      # 스키마 순서: wordWrap → autoSpaceDE → autoSpaceDN → spacing/ind/jc
 
 
+def footnote_frame(p, first):
+    """저자·접수일 각주를 1쪽 좌측 단 하단에 붙인다.
+
+    양식은 이것을 각주로 두어 본문과 분리하는데, docx 에서 그대로 흘리면 키워드 바로 뒤
+    본문 첫머리에 끼어든다. 같은 자리에 놓이도록 단 폭 프레임으로 띄우고, 첫 줄 위에
+    각주 구분선을 넣는다.
+    """
+    pPr = p._p.get_or_add_pPr()
+    if first:
+        bdr = OxmlElement("w:pBdr")
+        top = OxmlElement("w:top")
+        for k, v in (("w:val", "single"), ("w:sz", "6"),
+                     ("w:space", "4"), ("w:color", "000000")):
+            top.set(qn(k), v)
+        bdr.append(top)
+        pPr.insert(0, bdr)
+    frame = OxmlElement("w:framePr")
+    # vSpace 는 위쪽 본문과의 거리. 게재본은 본문 마지막 줄 기준선에서 각주 첫 줄까지
+    # 24.3pt 이고, 그 중 본문 줄 높이 14pt 를 뺀 나머지가 이 여백 + 구분선 간격이다.
+    for k, v in (("w:w", str(COL_W.twips)), ("w:hRule", "auto"),
+                 ("w:wrap", "around"), ("w:vSpace", "160"),
+                 ("w:vAnchor", "margin"),
+                 ("w:hAnchor", "margin"), ("w:xAlign", "left"),
+                 ("w:yAlign", "bottom")):
+        frame.set(qn(k), v)
+    pPr.insert(0, frame)        # 스키마 순서: framePr 가 pBdr·wordWrap 보다 앞
+
+
+# rPr 자식 요소의 스키마 순서 — w:spacing(자간) 과 w:w(장평) 뒤에 오는 것들.
+# 순서가 틀리면 Word 가 파일을 열면서 복구 대화상자를 띄운다.
+RPR_AFTER = ("w:kern", "w:position", "w:sz", "w:szCs", "w:highlight", "w:u",
+             "w:effect", "w:bdr", "w:shd", "w:fitText", "w:vertAlign", "w:rtl",
+             "w:cs", "w:em", "w:lang", "w:eastAsianLayout", "w:specVanish", "w:oMath")
+
+
+def set_rpr(rPr, tag, val):
+    el = OxmlElement(tag)
+    el.set(qn("w:val"), str(val))
+    rPr.insert_element_before(el, *(("w:w",) + RPR_AFTER if tag == "w:spacing"
+                                    else RPR_AFTER))
+
+
 def style_run(run, key, bold=False, italic=False):
-    name, size = F[key]
+    name, size, scale, track = F[key]
     run.font.size = Pt(size)
     run.font.name = "Times New Roman"      # 라틴 글자
     rPr = run._element.get_or_add_rPr()
@@ -95,6 +152,8 @@ def style_run(run, key, bold=False, italic=False):
     rFonts.set(qn("w:ascii"), "Times New Roman")
     rFonts.set(qn("w:hAnsi"), "Times New Roman")
     rFonts.set(qn("w:eastAsia"), name)     # 한글 글자는 양식 글꼴로
+    set_rpr(rPr, "w:w", scale)                          # 장평
+    set_rpr(rPr, "w:spacing", round(size * track / 5))  # 자간: % → 1/20pt
     run.bold = bold
     run.italic = italic
 
@@ -107,7 +166,8 @@ def add_para(doc, text, key, align=None, space_after=3, indent=None, bold=False)
     pf = p.paragraph_format
     pf.space_after = Pt(space_after)
     pf.space_before = Pt(0)
-    pf.line_spacing = LEADING.get(key, 1.25)
+    leading = LEADING.get(key)
+    pf.line_spacing = Pt(leading) if leading else 1.25
     if align is not None:
         p.alignment = align
     if indent is not None:
@@ -227,6 +287,7 @@ def add_table(doc, rows, width):
             korean_spacing(p)
             p.paragraph_format.space_after = Pt(1)
             p.paragraph_format.space_before = Pt(1)
+            p.paragraph_format.line_spacing = Pt(LEADING["table"])
             bold = r_i == 0 or text.startswith("**")
             clean = text.replace("**", "")
             for piece in INLINE.split(clean):
@@ -340,6 +401,7 @@ def build(blind):
     expect_author = False
     in_bio = False    # References 이후는 저자 소개 블록
     in_body = False   # 본문(2단) 시작 여부
+    fn_started = False  # 1쪽 각주 블록의 첫 줄인가 (구분선은 한 번만)
 
     def next_is_wide_table(i):
         """다음 블록이 전폭이 필요한 표인가 — 캡션부터 1단으로 넘기려고 미리 본다."""
@@ -350,11 +412,11 @@ def build(blind):
         was_author, expect_author = expect_author, False
         # --- 표제부 ---
         if kind == "h1":
-            add_para(doc, payload, "title_en", WD_ALIGN_PARAGRAPH.CENTER, 6)
+            add_para(doc, payload, "title_en", WD_ALIGN_PARAGRAPH.CENTER, 19.8)
             expect_author = True
             continue
         if kind == "h2" and payload == "ABSTRACT":
-            add_para(doc, "ABSTRACT", "abs_head", WD_ALIGN_PARAGRAPH.CENTER, 4)
+            add_para(doc, "ABSTRACT", "abs_head", WD_ALIGN_PARAGRAPH.CENTER, 14.2)
             continue
         # 번호 없는 h2 중 영문 표제부가 아닌 것 = 국문 제목 (제목 문자열에 의존하지 않는다)
         if (kind == "h2" and not re.match(r"^\d+\.", payload)
@@ -364,18 +426,22 @@ def build(blind):
                 mode = 1
             in_body = False          # 이후 요약 단락은 7.5pt
             in_bio = False
-            add_para(doc, payload, "title_ko", WD_ALIGN_PARAGRAPH.CENTER, 6)
+            add_para(doc, payload, "title_ko", WD_ALIGN_PARAGRAPH.CENTER,
+                     17.0).paragraph_format.space_before = Pt(10)
             expect_author = True
             continue
         if kind == "h3" and payload.startswith("요"):
-            add_para(doc, "요     약", "abs_head", WD_ALIGN_PARAGRAPH.CENTER, 4)
+            add_para(doc, "요     약", "abs_head", WD_ALIGN_PARAGRAPH.CENTER, 14.2)
             continue
 
         if kind == "p" and was_author:
-            add_para(doc, payload, "author", WD_ALIGN_PARAGRAPH.CENTER, 8)
+            add_para(doc, payload, "author", WD_ALIGN_PARAGRAPH.CENTER, 22.7)
             continue
         if kind == "p" and payload.startswith(("**Keywords :**", "**키워드 :**")):
-            add_para(doc, payload.replace("**", ""), "kw", None, 10)
+            pf = add_para(doc, payload.replace("**", ""), "kw",
+                          None, 28.4).paragraph_format
+            pf.space_before = Pt(8.5)
+            pf.left_indent = pf.right_indent = ABS_SIDE
             continue
 
         # --- 장·절 제목: 첫 장에서 2단으로 전환 ---
@@ -466,7 +532,9 @@ def build(blind):
             continue
         if text.startswith(("※", "†", "* Corresponding", "Manuscript Received",
                             "First Revision", "Accepted")):
-            add_para(doc, text, "footnote", None, 1)
+            footnote_frame(add_para(doc, text, "footnote", None, 1),
+                           first=not fn_started)
+            fn_started = True
             continue
         if re.match(r"^\[\d+\]", text):
             ref = add_para(doc, text, "refs", None, 2, indent=Pt(-14))
@@ -481,8 +549,12 @@ def build(blind):
             continue
         key = "abs_body" if not in_body else "body"
         # 국문 논문 관례: 본문 단락은 첫 줄을 한 글자 들여 쓴다
-        add_para(doc, text, key, WD_ALIGN_PARAGRAPH.JUSTIFY, 4,
-                 indent=Pt(F[key][1]) if key == "body" else None)
+        para = add_para(doc, text, key, WD_ALIGN_PARAGRAPH.JUSTIFY,
+                        4 if key == "body" else 0,
+                        indent=Pt(F[key][1]) if key == "body" else ABS_INDENT)
+        if key == "abs_body":       # 초록은 본문보다 좌우를 좁혀 조판한다
+            para.paragraph_format.left_indent = ABS_SIDE
+            para.paragraph_format.right_indent = ABS_SIDE
 
     dst = REVIEW_OUT if blind else PREVIEW_OUT
     clear_metadata(doc)
