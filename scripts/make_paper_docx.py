@@ -1,10 +1,14 @@
-"""docs/PAPER_TKIPS.md -> docs/PAPER_TKIPS_*.docx (정보처리학회 논문지 TKIPS 투고 양식 조판).
+"""docs/PAPER_TKIPS.md -> docs/PAPER_TKIPS_*.docx (정보처리학회 논문지 TKIPS).
 
-조판값은 옛 KTSDE 양식에서 실측했고, docs/kips/paper-format_TKIPS.hwp 와 쪽·단·글꼴 설정이 같다.
+기본은 **투고 서식**이다 — TKIPS 투고 안내 5.2: 10pt, 2배 줄간격, A4, 상하좌우 여백 2.5cm.
+5.4 의 순서에 따라 국문 제목·요약·키워드는 참고문헌 뒤로 옮긴다. 1단이다.
+    review.docx  심사용(저자 정보 없음)    final.docx  저자 정보 포함
+
+--preview 는 게재본 모양(2단)을 PAPER_TKIPS_preview.docx 로 낸다. 조판값은 옛 KTSDE
+양식에서 실측했고 docs/kips/paper-format_TKIPS.hwp 와 같다:
 A4 / 여백 L20 R20 T25.5 B15.5mm / 2단 / 단 간격 8mm / 단 폭 81mm.
-한글에서 열어 그대로 쓰거나, Word 원고로 투고한다(규정상 둘 다 허용).
 
-    python3 scripts/make_paper_docx.py
+    python3 scripts/make_paper_docx.py [--preview]
 """
 import re
 import sys
@@ -23,6 +27,8 @@ SRC = ROOT / "docs" / "PAPER_TKIPS.md"
 # 심사용은 규정 2.1 에 따라 저자 정보를 뺀다. 최종본은 넣는다.
 OUT = {True: ROOT / "docs" / "PAPER_TKIPS_review.docx",
        False: ROOT / "docs" / "PAPER_TKIPS_final.docx"}
+PREVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_preview.docx"
+SUBMIT = True       # 투고 서식(1단·10pt·2배 줄간격). --preview 일 때만 False
 AUTHOR_BLOCK = re.compile(r"<!-- AUTHORS:BEGIN -->.*?<!-- AUTHORS:END -->", re.S)
 
 # 양식에 표기된 글꼴·크기 (견명조 14pt 따위). 한글이 HNC 글꼴로 렌더한다.
@@ -54,8 +60,13 @@ FULL_W = Mm(170)    # 좌우 여백을 뺀 본문 폭
 
 def page_setup(section, cols=1):
     section.page_width, section.page_height = Mm(210), Mm(297)
-    section.left_margin = section.right_margin = Mm(20)
-    section.top_margin, section.bottom_margin = Mm(25.5), Mm(15.5)
+    if SUBMIT:
+        cols = 1
+        section.left_margin = section.right_margin = Mm(25)
+        section.top_margin = section.bottom_margin = Mm(25)
+    else:
+        section.left_margin = section.right_margin = Mm(20)
+        section.top_margin, section.bottom_margin = Mm(25.5), Mm(15.5)
     section.header_distance = section.footer_distance = Mm(10)
     sectPr = section._sectPr
     for old in sectPr.findall(qn("w:cols")):
@@ -83,7 +94,7 @@ def korean_spacing(p):
 
 def style_run(run, key, bold=False, italic=False):
     name, size = F[key]
-    run.font.size = Pt(size)
+    run.font.size = Pt(max(size, 10) if SUBMIT else size)
     run.font.name = "Times New Roman"      # 라틴 글자
     rPr = run._element.get_or_add_rPr()
     rFonts = rPr.find(qn("w:rFonts"))
@@ -105,7 +116,7 @@ def add_para(doc, text, key, align=None, space_after=3, indent=None, bold=False)
     pf = p.paragraph_format
     pf.space_after = Pt(space_after)
     pf.space_before = Pt(0)
-    pf.line_spacing = LEADING.get(key, 1.25)
+    pf.line_spacing = 2.0 if SUBMIT else LEADING.get(key, 1.25)
     if align is not None:
         p.alignment = align
     if indent is not None:
@@ -261,11 +272,24 @@ def group_bios(blocks):
     return out
 
 
+def korean_to_end(blocks):
+    """국문 제목부터 국문 키워드까지를 참고문헌 뒤(저자 소개 앞)로 옮긴다 — 투고 안내 5.4."""
+    start = next(i for i, (k, p) in enumerate(blocks) if k == "h2" and not re.match(r"^\d+\.", p)
+                 and p not in ("ABSTRACT", "References", "Acknowledgments"))
+    end = next(i for i, (k, p) in enumerate(blocks) if k == "p" and p.startswith("**키워드 :**"))
+    ko, rest = blocks[start:end + 1], blocks[:start] + blocks[end + 1:]
+    at = next((i for i, (k, _) in enumerate(rest) if k == "bio"), len(rest))
+    return rest[:at] + ko + rest[at:]
+
+
 def build(blind):
     md = SRC.read_text(encoding="utf-8")
     if blind:
         md = AUTHOR_BLOCK.sub("", md)
     blocks = group_bios(parse(md))
+    if SUBMIT:
+        blocks = korean_to_end(blocks)
+    full_w = Mm(160) if SUBMIT else FULL_W
     doc = Document()
     page_setup(doc.sections[0], cols=1)
     mode = 1          # 현재 단 수
@@ -295,6 +319,9 @@ def build(blind):
                 switch(doc, 1)
                 mode = 1
             in_body = False          # 이후 요약 단락은 7.5pt
+            if SUBMIT and in_bio:
+                doc.add_page_break()     # 참고문헌 뒤 국문 표제부는 새 쪽에서
+            in_bio = False
             add_para(doc, payload, "title_ko", WD_ALIGN_PARAGRAPH.CENTER, 6)
             expect_author = True
             continue
@@ -370,7 +397,7 @@ def build(blind):
             p.paragraph_format.space_after = Pt(2)
             p.add_run().add_picture(
                 str(ROOT / "docs" / payload),
-                width=BIO_W if in_bio else (FULL_W if full else COL_W))
+                width=BIO_W if in_bio else (full_w if full else COL_W))
             continue
 
         # --- 표: 열이 많으면 1단 구간 ---
@@ -379,7 +406,7 @@ def build(blind):
             if wide and mode != 1:
                 switch(doc, 1)
                 mode = 1
-            add_table(doc, payload, FULL_W if mode == 1 else COL_W)
+            add_table(doc, payload, full_w if mode == 1 else COL_W)
             doc.add_paragraph().paragraph_format.space_after = Pt(4)
             if wide and in_body:
                 switch(doc, 2)      # 전폭 표가 끝나면 곧바로 2단 본문으로 되돌린다
@@ -419,12 +446,16 @@ def build(blind):
         add_para(doc, text, key, WD_ALIGN_PARAGRAPH.JUSTIFY, 4,
                  indent=Pt(F[key][1]) if key == "body" else None)
 
-    dst = OUT[blind]
+    dst = OUT[blind] if SUBMIT else PREVIEW_OUT
     doc.save(dst)
     print(f"wrote {dst.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
+    if "--preview" in sys.argv:
+        SUBMIT = False
+        build(blind=False)
+        sys.exit(0)
     build(blind=True)
     build(blind=False)
     sys.exit(0)

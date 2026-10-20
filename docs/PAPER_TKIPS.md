@@ -372,7 +372,7 @@ GBDT는 검증 정확도가 같고 지연이 더 짧으므로 이 평면에서�
 
 Fig. 2. Forecast accuracy against inference cost. The vertical axis is the pinball
 improvement over the unconditional-quantile baseline on validation (<Table 4>), the
-horizontal axis is per-stock inference latency, and the marker area is activation memory
+horizontal axis is per-stock inference latency, and the circle area is activation memory
 for a 120-day input (<Table 5>). The quantile GBDT (open diamond) is measured on the CPU
 and has no activation memory, so its marker size does not apply. The original point-forecast
 PatchTST is omitted because its pinball loss falls far below the plotted range.
