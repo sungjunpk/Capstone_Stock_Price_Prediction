@@ -105,9 +105,12 @@ def main() -> int:
     g_acc, g_lat, g_fit = load_gbdt()
     ax.scatter(g_lat, g_acc, s=28, marker="D", facecolor="white", edgecolor="black",
                linewidths=0.8, zorder=4)
+    # 지시선 — 라벨이 제안 모형 원 바로 아래에 놓여 그쪽 설명으로 읽히지 않게
     ax.annotate(f"Quantile GBDT (CPU)\n{g_fit:.1f} s full fit", (g_lat, g_acc),
-                textcoords="offset points", xytext=(2, -24), fontsize=6.0,
-                linespacing=1.25, ha="left")
+                textcoords="offset points", xytext=(-6, -30), fontsize=6.0,
+                linespacing=1.25, ha="left",
+                arrowprops=dict(arrowstyle="-", lw=0.5, color="0.45",
+                                shrinkA=1, shrinkB=4))
 
     # 더 좋은 방향을 한 번만 적는다
     ax.annotate("cheaper and more accurate", xy=(0.03, 0.94), xycoords="axes fraction",
