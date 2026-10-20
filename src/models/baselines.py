@@ -261,7 +261,7 @@ def build_baseline(cfg: BaselineConfig) -> nn.Module:
 # 경로에 대조군용 분기를 다시 넣지 않으려는 것이다.
 # ──────────────────────────────────────────────────────────────────────────
 
-VARIANT_ARCHS = ("itrans", "timexer", "abl_linear", "abl_nomacro", "abl_nostatic")
+VARIANT_ARCHS = ("itrans", "timexer", "abl_linear", "abl_nomacro", "abl_nostatic", "abl_min")
 
 
 class VariateEmbedding(nn.Module):
@@ -456,6 +456,19 @@ class AblNoStaticVariant(_Phase1Variant):
         return ctx, ctx.new_zeros(b, len(self.cfg.static_vocab))
 
 
+class AblMinVariant(AblLinearVariant, AblNoMacroVariant, AblNoStaticVariant):
+    """셋을 한꺼번에 제거 — 선형 합치기 + 매크로 없음 + 정적 문맥 없음.
+
+    하나씩 제거해서는 셋 모두 제안 모형과 구별되지 않았다. 남는 설명이 둘이라
+    (채널 축약 구조 자체가 원인 / 구성요소끼리 서로 대체) 셋을 함께 뺀 판이 필요하다.
+    이 변형에 남는 것은 패치 임베딩을 인코더 앞에서 채널 축으로 합치는 구조뿐이다.
+
+    세 변형이 겹치지 않는 지점만 건드리므로(`_endog` / `_exog`·`_fuse` / `_static`)
+    상속 순서대로 합쳐진다. `__init__` 은 각자 super() 를 먼저 부른 뒤 자기 모듈만
+    지우므로 삭제도 겹치지 않는다.
+    """
+
+
 def build_variant(arch: str, cfg: Phase1Config) -> nn.Module:
     """`Phase1Config` 를 쓰는 모델을 세운다 — 우리 모델과 그 모듈 교체 변형들."""
     if arch == "phase1":
@@ -470,4 +483,6 @@ def build_variant(arch: str, cfg: Phase1Config) -> nn.Module:
         return AblNoMacroVariant(cfg)
     if arch == "abl_nostatic":
         return AblNoStaticVariant(cfg)
+    if arch == "abl_min":
+        return AblMinVariant(cfg)
     raise ValueError(f"모르는 아키텍처: {arch!r} (가능: phase1, {list(VARIANT_ARCHS)})")
