@@ -67,10 +67,17 @@ HNC = {
 LEADING = {
     "body": 14.0, "abs_body": 10.5, "abs_body_ko": 12.0, "kw": 11.2,
     "refs": 13.5, "caption": 11.0, "table": 10.4, "footnote": 8.4, "bio": 13.6,
+    # 제목 계열도 고정값으로 둔다 — 배수로 두면 대체 글꼴의 줄 높이가 그대로 반영돼
+    # 제목과 본문 사이가 들뜬다. 값은 게재본의 제목 줄 간격 실측.
+    "title_en": 18.2, "title_ko": 20.0, "author": 13.0, "abs_head": 14.0,
+    "chapter": 15.5, "section": 14.0, "bio_name": 15.0,
 }
 COL_W = Mm(81)      # 단 폭
 BIO_W = Mm(25)      # 저자 소개 사진
-FULL_W = Mm(170)    # 좌우 여백을 뺀 본문 폭
+FULL_W = Mm(170)    # 좌우 여백을 뺀 본문 폭 — 전폭 표가 쓴다
+# 전폭 그림은 본문 폭보다 좁게 둔다. 170mm 로 넣으면 높이가 128.7mm 로 쪽 높이(236mm)의
+# 55% 라, 2단 본문 뒤에 남은 자리에 못 들어가 다음 쪽으로 밀리고 그 쪽이 통째로 빈다.
+FIG_W = Mm(145)     # 높이 109.8mm
 
 # 표제부의 문단 간격·여백은 양식 hwp 의 PARA_SHAPE 값(1/200pt 단위)을 pt 로 환산한 것이다.
 # 게재논문 실측 좌표와도 맞는다 — 저자줄 아래 22.7pt, 키워드 위 8.5pt, 초록 들여쓰기 10pt.
@@ -515,7 +522,7 @@ def build(blind):
             p.add_run().add_picture(
                 str(ROOT / "docs" / payload),
                 width=BIO_W if in_bio else (
-                    full_w if full else COL_W))
+                    FIG_W if full else COL_W))
             continue
 
         # --- 표: 열이 많으면 1단 구간 ---
