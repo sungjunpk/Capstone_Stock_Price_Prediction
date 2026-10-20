@@ -1,14 +1,13 @@
 """docs/PAPER_TKIPS.md -> docs/PAPER_TKIPS_*.docx (정보처리학회 논문지 TKIPS).
 
-기본은 **투고 서식**이다 — TKIPS 투고 안내 5.2: 10pt, 2배 줄간격, A4, 상하좌우 여백 2.5cm.
-5.4 의 순서에 따라 국문 제목·요약·키워드는 참고문헌 뒤로 옮긴다. 1단이다.
-투고는 익명 심사라 저자 정보를 뺀 review.docx 를 낸다(규정 2.1).
+조판은 학회 양식 `docs/kips/paper-format_TKIPS.hwp` 그대로다. hwp 의 PAGE_DEF 를 직접
+읽어 맞췄다: A4 / 여백 L20 R20 T25.5 B15.5mm / 머리·꼬리 10mm / 2단 / 단 폭 81mm /
+단 간격 8mm (본문 폭 170 = 81+8+81). 국문 표제부도 양식대로 1쪽에 둔다.
 
---preview 는 게재본 모양(2단)을 PAPER_TKIPS_preview.docx 로 낸다. 조판값은 옛 KTSDE
-양식에서 실측했고 docs/kips/paper-format_TKIPS.hwp 와 같다:
-A4 / 여백 L20 R20 T25.5 B15.5mm / 2단 / 단 간격 8mm / 단 폭 81mm.
+    review.docx   투고용 — 규정 2.1 에 따라 저자 정보를 뺀다
+    preview.docx  저자 정보까지 넣은 판 — 쪽수 확인과 게재 확정 후 최종본 대비용
 
-    python3 scripts/make_paper_docx.py [--preview]
+    python3 scripts/make_paper_docx.py
 """
 import re
 import sys
@@ -26,7 +25,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "docs" / "PAPER_TKIPS.md"
 REVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_review.docx"     # 투고용
 PREVIEW_OUT = ROOT / "docs" / "PAPER_TKIPS_preview.docx"   # 게재본 조판 확인용(쪽수)
-SUBMIT = True       # 투고 서식(1단·10pt·2배 줄간격). --preview 일 때만 False
 AUTHOR_BLOCK = re.compile(r"<!-- AUTHORS:BEGIN -->.*?<!-- AUTHORS:END -->", re.S)
 
 # 양식에 표기된 글꼴·크기 (견명조 14pt 따위). 한글이 HNC 글꼴로 렌더한다.
@@ -51,21 +49,15 @@ LEADING = {                 # 샘플 게재논문 실측 기반 행간 배수
     "body": 1.42, "abs_body": 1.35, "refs": 1.25, "caption": 1.20,
     "table": 1.10, "footnote": 1.15,
 }
-COL_W = Mm(81)      # 단 폭 (게재본 2단)
-SUBMIT_FIG_W = Mm(120)  # 투고 서식(1단)에서 전폭이 아닌 그림
+COL_W = Mm(81)      # 단 폭
 BIO_W = Mm(25)      # 저자 소개 사진
 FULL_W = Mm(170)    # 좌우 여백을 뺀 본문 폭
 
 
 def page_setup(section, cols=1):
     section.page_width, section.page_height = Mm(210), Mm(297)
-    if SUBMIT:
-        cols = 1
-        section.left_margin = section.right_margin = Mm(25)
-        section.top_margin = section.bottom_margin = Mm(25)
-    else:
-        section.left_margin = section.right_margin = Mm(20)
-        section.top_margin, section.bottom_margin = Mm(25.5), Mm(15.5)
+    section.left_margin = section.right_margin = Mm(20)
+    section.top_margin, section.bottom_margin = Mm(25.5), Mm(15.5)
     section.header_distance = section.footer_distance = Mm(10)
     sectPr = section._sectPr
     for old in sectPr.findall(qn("w:cols")):
@@ -93,7 +85,7 @@ def korean_spacing(p):
 
 def style_run(run, key, bold=False, italic=False):
     name, size = F[key]
-    run.font.size = Pt(max(size, 10) if SUBMIT else size)
+    run.font.size = Pt(size)
     run.font.name = "Times New Roman"      # 라틴 글자
     rPr = run._element.get_or_add_rPr()
     rFonts = rPr.find(qn("w:rFonts"))
@@ -115,7 +107,7 @@ def add_para(doc, text, key, align=None, space_after=3, indent=None, bold=False)
     pf = p.paragraph_format
     pf.space_after = Pt(space_after)
     pf.space_before = Pt(0)
-    pf.line_spacing = 2.0 if SUBMIT else LEADING.get(key, 1.25)
+    pf.line_spacing = LEADING.get(key, 1.25)
     if align is not None:
         p.alignment = align
     if indent is not None:
@@ -203,9 +195,7 @@ def clear_metadata(doc):
 
 
 def switch(doc, cols):
-    """단 수를 바꾸고 **적용된** 단 수를 돌려준다. 투고 서식은 1단이라 구역을 만들지 않는다."""
-    if SUBMIT:
-        return 1
+    """단 수를 바꾸고 적용된 단 수를 돌려준다. 전폭 표·그림만 1단 구역으로 빠진다."""
     page_setup(doc.add_section(WD_SECTION.CONTINUOUS), cols)
     return cols
 
@@ -282,24 +272,12 @@ def group_bios(blocks):
     return out
 
 
-def korean_to_end(blocks):
-    """국문 제목부터 국문 키워드까지를 참고문헌 뒤(저자 소개 앞)로 옮긴다 — 투고 안내 5.4."""
-    start = next(i for i, (k, p) in enumerate(blocks) if k == "h2" and not re.match(r"^\d+\.", p)
-                 and p not in ("ABSTRACT", "References", "Acknowledgments"))
-    end = next(i for i, (k, p) in enumerate(blocks) if k == "p" and p.startswith("**키워드 :**"))
-    ko, rest = blocks[start:end + 1], blocks[:start] + blocks[end + 1:]
-    at = next((i for i, (k, _) in enumerate(rest) if k == "bio"), len(rest))
-    return rest[:at] + ko + rest[at:]
-
-
-def build():
+def build(blind):
     md = SRC.read_text(encoding="utf-8")
-    if SUBMIT:          # 심사용은 규정 2.1 에 따라 저자 정보를 뺀다. 게재본 확인용에는 넣는다
+    if blind:           # 심사용 초기 투고 원고에는 저자 정보를 넣지 않는다 (규정 2.1)
         md = AUTHOR_BLOCK.sub("", md)
     blocks = group_bios(parse(md))
-    if SUBMIT:
-        blocks = korean_to_end(blocks)
-    full_w = Mm(160) if SUBMIT else FULL_W
+    full_w = FULL_W
     doc = Document()
     page_setup(doc.sections[0], cols=1)
     mode = 1          # 현재 단 수
@@ -329,8 +307,6 @@ def build():
                 switch(doc, 1)
                 mode = 1
             in_body = False          # 이후 요약 단락은 7.5pt
-            if SUBMIT and in_bio:
-                doc.add_page_break()     # 참고문헌 뒤 국문 표제부는 새 쪽에서
             in_bio = False
             add_para(doc, payload, "title_ko", WD_ALIGN_PARAGRAPH.CENTER, 6)
             expect_author = True
@@ -403,7 +379,7 @@ def build():
             p.add_run().add_picture(
                 str(ROOT / "docs" / payload),
                 width=BIO_W if in_bio else (
-                    full_w if full else (SUBMIT_FIG_W if SUBMIT else COL_W)))
+                    full_w if full else COL_W))
             continue
 
         # --- 표: 열이 많으면 1단 구간 ---
@@ -448,14 +424,13 @@ def build():
         add_para(doc, text, key, WD_ALIGN_PARAGRAPH.JUSTIFY, 4,
                  indent=Pt(F[key][1]) if key == "body" else None)
 
-    dst = REVIEW_OUT if SUBMIT else PREVIEW_OUT
+    dst = REVIEW_OUT if blind else PREVIEW_OUT
     clear_metadata(doc)
     doc.save(dst)
     print(f"wrote {dst.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
-    if "--preview" in sys.argv:
-        SUBMIT = False
-    build()
+    build(blind=True)
+    build(blind=False)
     sys.exit(0)
