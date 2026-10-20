@@ -36,10 +36,10 @@ inference 4.8 times faster. Abstentions concentrated in volatile periods, and th
 carried about 1.5 times the error of those acted on, separating large errors better than a simple rule
 based on recent volatility alone. A quantile gradient-boosting baseline fitted on the same windows was
 cheaper still and abstained just as well, so what the proposed model gains over it is accuracy rather than
-cost. The evaluation uses the current index constituents and an abstention threshold chosen with
-reference to the test split.
+cost. Point accuracy at the median matches a constant baseline, so the model adds not a sharper forecast but a
+signal of when not to act on one.
 
-<!-- 236 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
+<!-- 245 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -63,8 +63,8 @@ Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패�
 학습은 3.8배, 추론은 4.8배 빨랐다. 기권은 변동성이 큰 시기에 집중되었으며, 기권한 예측의 오차는 실행된
 예측의 약 1.5배였다. 이는 최근 변동성만 보고 기권하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 같은 표본으로
 학습한 분위 그래디언트 부스팅 기준모형은 계산 비용이 더 낮고 기권 품질도 대등하였으므로, 제안 모형이 그
-기준모형보다 나은 점은 비용이 아니라 정확도이다. 다만 평가는 현재 시점의 지수 구성종목을 쓰고 기권
-임계값도 시험구간을 참조하여 골랐다는 한계가 있다.
+기준모형보다 나은 점은 비용이 아니라 정확도이다. 중앙값의 점 예측 정확도는 상수 기준선과 다르지 않으므로,
+제안 모형이 더하는 것은 더 정확한 예측값이 아니라 그 예측에 따라 움직이지 말아야 할 시점이다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 기권
 
@@ -323,7 +323,7 @@ Table 3. Input channels
 수를 기록하여 이후 모든 수치를 같은 표본에서 산출하였다.
 
 인접 표본은 120일 중 119일의 입력과 5일 중 4일의 목표를 공유하므로 명목 학습 행 264,653건의 실질 규모는
-훨씬 작다. 이 때문에 모수를 늘리면 1~2회차에 과적합되었고(이전 설정 146종목·17채널에서의 탐색), 탐색 끝에 0.50M으로 고정하였다.
+훨씬 작다. 이 때문에 모수를 늘리면 1~2회차에 과적합되어 0.50M으로 고정하였다.
 
 모든 실험은 학습 자료의 무조건부 분위수, 즉 입력을 무시하고 세 상수를 출력하는 예측기를 기준선으로 평가한다.
 이를 상회하지 못하면 초매개변수 조정 문제가 아니라 변수·목표 설계의 실패로 간주한다.
@@ -461,7 +461,8 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 손실(0.01730 대 0.01765)이다.
 
 기권율의 절대 수준을 정하는 임계값 분위는 시험구간을 참조하여 선택되었으므로 5.91%라는 값은 표본 밖
-수치가 아니다. 분위를 95에서 90, 75로 낮추면 전체 기권율이 11.71%, 28.08%로 오르는 동안 최상위
+수치가 아니다. 다만 앞 문단의 통제군 비교는 날짜마다 같은 개수를 기권시켜 기권율을 맞춘 상태에서 여섯 수준
+전부로 수행하였으므로, 이 비교의 결론은 임계값 선택에 의존하지 않는다. 분위를 95에서 90, 75로 낮추면 전체 기권율이 11.71%, 28.08%로 오르는 동안 최상위
 변동성 분위의 기권율도 36.22%, 68.72%로 함께 올라 분위별 집중이 유지되고, 세 분위 모두에서 최상위 분위
 기권율의 모형 간 순서(제안 모형 > TFT 원본 > 분위 헤드)도 보존된다. 임계값 선택이 기권 행태에 관한 결론을
 만들어낸 것은 아니다.
@@ -523,7 +524,7 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 73.9%에 그쳐 구간 자체를 신뢰구간으로 해석해서는 안 된다. 보정은 폭의 순위를 바꾸지 않으므로 기권 결과에는
 영향이 없다.
 
-본 논문의 결과는 과거 자료에 대한 평가이며 투자 권유를 의도하지 않는다. 향후 연구에서는 구성요소를 둘 이상
+향후 연구에서는 구성요소를 둘 이상
 함께 제거하는 실험으로 개선의 출처를 가리고, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러
 시장 국면에서 다시 검증한다.
 
