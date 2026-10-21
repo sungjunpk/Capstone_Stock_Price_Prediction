@@ -158,27 +158,27 @@ Transformer(TFT)는 여러 분위수를 동시에 출력한다. 그러나 TFT는
 왔으므로[20], 같은 조건의 그래디언트 부스팅 결정트리(gradient boosting decision tree, GBDT) 기준모형을 함께
 측정하여 5장에 보고한다.
 
-## 3. 연구 방법
+## 3. 제안하는 방법
 
-### 3.1 요구사항으로부터의 구조 도출
+### 3.1 설계 요구사항
 
-본 연구의 구성요소는 모두 <Table 1>의 좌측 요구사항으로부터 역산되었다.
+<Table 1>은 1장에서 밝힌 요구사항과 그것을 충족하기 위해 고른 구성요소를 정리한 것이다.
 
 Table 1. Requirements and corresponding components
 
 | Requirement | Required property | Part chosen |
 |---|---|---|
-| Abstention | A distribution, not a point: q90 - q10 must exist | Quantile head, pinball loss |
-| Cost: 120-day lookback x 201 stocks, daily | Sequence-length reduction | Patch tokenization (120 to 24) |
-| Cost: channel-independent encoding repeats the encoder | Channel-axis reduction before the encoder | TFT variable selection network (vs. linear merge, Sec. 5.4) |
-| Scale differs by stock and era | Non-stationary normalization | RevIN, with channel exceptions |
-| Local equities track global macro | Exogenous sequence injection | Macro cross-attention (design option, Sec. 5.4) |
+| Abstention | A predicted distribution, not a single value | Quantile output layer, pinball loss |
+| Scale differs by stock and era | Normalization that assumes no fixed price level | RevIN, with channel exceptions |
+| Local equities track global macro | A way to inject an exogenous series | Macro cross-attention (design option, Sec. 5.4) |
+| A limited compute budget | Fewer tokens, and one encoder pass over the channels | Patch tokenization (120 to 24), channel reduction before the encoder (Sec. 5.4) |
 
-### 3.2 제안 구조
+### 3.2 전체 구조
 
-제안 모형의 전체 구조는 (Fig. 1)과 같다. 입력은 세 경로로 구성된다. 종목 동적 변수(30채널 × 120일), 매크로
-시퀀스(13채널), 정적 범주형 변수 3종이다. 정적 임베딩은 문맥 벡터를 형성하여 변수선택을 조건화하고,
-크로스어텐션 이후 다시 더해진다. 헤드에는 마지막 패치 토큰, 즉 가장 최근 1주의 표현만이 전달된다.
+제안 모형의 전체 구조는 (Fig. 1)과 같다. 입력은 세 갈래다. 첫째는 종목마다 매일 계산되는 지표 30개를 120일치 모은 것이다.
+둘째는 시장 전체를 나타내는 지표 13개의 같은 기간 계열이다. 셋째는 섹터, 시가총액 구간, 요일처럼 한 번 정해지면 윈도우 안에서 바뀌지
+않는 값 3종이다. 셋째 입력은 문맥 벡터로 바뀌어 앞의 두 경로가 어떤 변수에 비중을 둘지를 조건화한다. 예측에는 가장 최근 구간의 표현만
+쓴다.
 
 ![Fig. 1](images/fig1_architecture.png)
 
@@ -200,17 +200,16 @@ Panels (b)-(d) are adapted from [3] and [8].
 본 연구는 *τ* ∈ {0.1, 0.5, 0.9}를 동시에 학습한다. 세 값이 한 번의 계산으로 나오므로 불확실성을 따로 추정하기 위한 추가
 연산이 필요하지 않다. 사후 교정을 적용한 결과는 6장에 밝힌다.
 
-### 3.3 결합 과정의 설계 결정
+### 3.3 설계 선택
 
 아래 1)과 2)는 구조의 필수 요소가 아니라 비교 검토한 설계 선택지이며, 각각의 기여는 5.4절의 제거 실험으로
 확인한다. 3)은 보류 규칙이 의존하는 구조적 요건이다.
 
 #### 1) 변수선택망의 역할과 배치
 
-패치 임베딩은 각 채널을 독립적으로 24개 토큰으로 변환한다. 채널 축을 줄이는 데 연산이 가장 적은 방법은 선형 합치기이며
-매크로 경로에는 그 방식을 썼으나, 종목 채널에는 변수선택망을 두었다. 소프트맥스 게이트가 정적 문맥으로
-조건화되어 섹터와 시가총액 구간에 따라 다른 가중을 주기 때문이다. 변수선택망은 그 게이트를 채널 축에
-적용한다(식 2, 3).
+구간 단위로 토큰을 만들면 채널마다 24개의 토큰이 생긴다. 이 채널 축을 하나로 줄여야 인코더를 한 번만 실행할 수 있다. 가장 단순한 방법은
+채널을 선형 변환으로 합치는 것이고, 매크로 경로에는 이 방식을 썼다. 종목 채널에는 채널별 가중치를 학습하는 변수선택망을 두었다. 가중치가
+정적 문맥에 따라 달라져 섹터와 시가총액 구간별로 다른 비중을 줄 수 있기 때문이다(식 2, 3).
 
 &nbsp;&nbsp;&nbsp;&nbsp;*v*_{n} = softmax( GRN( [ flat(*E*_{n}) ; *c*_{s} ] ) ) ∈ ℝ^{C},&nbsp;&nbsp; *n* = 1, …, *N*&nbsp;&nbsp;&nbsp;&nbsp;(2)
 
@@ -220,11 +219,9 @@ Panels (b)-(d) are adapted from [3] and [8].
 모든 채널 임베딩을 이어 붙인 벡터, *c*_{s}는 정적 임베딩에서 얻은 문맥 벡터, GRN은 TFT의 게이트 잔차
 신경망이다.
 
-변수선택망을 인코더 뒤에 두면 인코더가 채널 수만큼 반복 실행되는 반면, 앞에 두면 채널이 먼저 하나로
-축약되어 1회만 실행된다.
-패치마다 산출되는 *v* ∈ ℝ^{N×C}는 각 채널의 사용 비중으로 남으나 본 연구는 이 값을 매매 근거로 제시하지 않는다. 종목 채널까지 선형
-합치기로 바꾼 변형은 모수가 0.117M으로 줄면서도 정확도와 보류 행태가 같았다(5.4절). 인코더 앞에서 채널을
-하나로 합치는 것이 비용 절감의 원인이며, 게이트는 그 이상의 정확도를 더하지 않았다.
+변수선택망을 인코더 뒤에 두면 인코더가 채널 수만큼 반복되지만, 앞에 두면 채널이 먼저 하나로 합쳐져 한 번만 실행된다. 다만 종목 채널까지
+선형 합치기로 바꾼 변형도 정확도와 보류 행태가 같았다(5.4절). 연산을 줄이는 것은 인코더 앞의 채널 축약 자체이며, 학습된 가중치가
+정확도를 더하지는 않았다.
 
 #### 2) 매크로 크로스어텐션의 방향
 
@@ -249,7 +246,14 @@ Panels (b)-(d) are adapted from [3] and [8].
 헤드의 초기화도 성능에 영향을 주었다. 기본 초기화에서는 softplus(0) = 0.693이라 초기 구간 폭이 목표 분포와
 어긋난 지점에 놓여 기준선에 미달하므로, 최종층 편향을 학습자료의 무조건부 분위수로 설정하여 해소하였다.
 
-### 3.4 최종 설정
+### 3.4 판단 보류 규칙
+
+비교하는 모든 모형에 같은 규칙을 적용한다. 예측 구간의 폭이 최근 분포의 95분위를 넘으면 그 시점의 판단을 보류한다. 여기서 최근 분포는
+판단일로부터 거슬러 달력 90일, 거래일로는 약 60일 안에 나온 폭을 모은 것이며, 종목별로 나누지 않고 전 종목을 합쳐 만든다. 구간 전체의
+폭 분포를 쓰면 뒤쪽 날짜의 폭이 앞쪽 날짜의 판단에 흘러들어 미래 정보가 섞인다. 임계값으로 95분위를 고른 근거와 다른 값으로 바꿨을 때의
+영향은 5.3절에서 다룬다.
+
+### 3.5 최종 설정
 
 <Table 2>는 이후 모든 실험에 사용한 설정이다. 정규화는 3.2절에서 기술한 방식을 따른다.
 
@@ -264,7 +268,7 @@ Table 2. Final model configuration
 | Normalization | RevIN, applied selectively by channel |
 | Parameters | 0.50M |
 
-## 4. 자료와 실험 설계
+## 4. 데이터셋
 
 ### 4.1 자료
 
@@ -315,14 +319,6 @@ Table 3. Input channels
 
 모든 실험은 학습 자료의 무조건부 분위수, 즉 입력을 무시하고 세 상수를 출력하는 예측기를 기준선으로 평가한다.
 이를 상회하지 못하면 초매개변수 조정 문제가 아니라 변수·목표 설계의 실패로 간주한다.
-
-### 4.4 판단 보류 규칙
-
-비교하는 모든 모형에 동일한 규칙을 적용한다. 예측 구간의 폭이 최근 분포의 95분위를 넘으면 보류한다. 이 분위를 고른 근거와 바꿨을 때의
-영향은 5.3절에서 따로 다룬다.
-'최근 분포'는 판단일부터 거슬러 달력 90일, 거래일로는 약 60일 안에 들어온 폭을 모은 것이며, 종목별로 나누지
-않고 전 종목을 합친 분포다. 구간 전체의 폭 분포를 쓰면 뒤쪽 날짜의 폭이 앞쪽 날짜의 보류 판단에 흘러들어
-미래 정보가 유입되기 때문이고, 모의투자에서 실제로 쓰는 방식과도 같다.
 
 ## 5. 실험 결과
 
@@ -409,7 +405,7 @@ PatchTST is omitted because its pinball loss falls far below the plotted range.
 
 ### 5.3 판단 보류 행태
 
-네 분위 모형에 4.4절의 동일한 보류 규칙을 적용하고 시험구간 전체에서 집계하였다. 점 예측 모형은 임계할
+네 분위 모형에 3.4절의 같은 보류 규칙을 적용하고 시험구간 전체에서 집계하였다. 점 예측 모형은 임계할
 폭이 없어 보류이 정의되지 않으므로 제외하였다.
 
 Table 6. Abstention on the test split (550 days, 106,490 windows), mean over five seeds with the standard deviation, single run for the quantile GBDT. The threshold is the 95th percentile of the width distribution over the trailing 90 calendar days, pooled across all stocks. Q1 and Q4 are the lowest and highest quartiles of realized volatility at decision time, taken over the whole test split
@@ -473,7 +469,7 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 원인이거나, 구성요소들이 서로를 대신하는 것이다. 둘 이상을 함께 제거하지 않았으므로 이 둘은 가려지지 않는다. 선형 합치기 변형은 모수가
 4분의 1이면서 결과가 같았으므로, 운용에서는 이 변형이 더 가벼운 대안이다.
 
-## 6. 결론 및 향후 연구
+## 6. 결론
 
 본 연구는 주가 예측에서 "지금 판단해도 되는가"를 함께 답하는 모형을, 매일 201종목을 평가할 수 있는 비용
 안에서 만드는 것을 목표로 하였다. 계산이 가벼운 패치 기반 트랜스포머에 TFT의 분위 예측 헤드를
@@ -497,6 +493,8 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 임계값 선택에 평가 기간 자료가 일부 참고되었다. 구성요소를 하나씩 제거하는 실험으로는 개선이 채널 축약 구조 자체에서 오는지 구성요소 간
 대체에서 오는지 가리지 못하였다(5.4절). 예측 구간의 포함률은 71.6%로 명목 80%에 못 미쳐(등각 분위회귀 보정[13] 후 73.9%)
 구간을 신뢰구간으로 해석할 수는 없으나, 보류은 폭의 순위만 쓰므로 영향을 받지 않는다.
+
+## 7. 후속 연구
 
 향후 연구에서는 구성요소를 둘 이상
 함께 제거하는 실험으로 개선의 출처를 가리고, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러
