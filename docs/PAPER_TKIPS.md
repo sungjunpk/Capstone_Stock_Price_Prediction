@@ -23,23 +23,30 @@ Seongjun Park†⋅Jimin Kim†⋅Ohjae Kwon†⋅Haeol Song†⋅Jeongil Seo†
 
 ## ABSTRACT
 
-Stock forecasting has long been studied for investment and risk management, yet most forecasting
-models give a single value, which leaves no way to judge how far that forecast can be trusted. In
-practice, an investor needs to weigh uncertainty alongside the forecast and know when to hold off. The
-Temporal Fusion Transformer (TFT) also forecasts uncertainty, but it is computationally expensive, while
-lightweight patch-based transformers produce only a single value. This paper proposes a lightweight
-model that adds a quantile head to a patch-based transformer and merges the input channels into one
-before the encoder so that the encoder runs only once, together with an abstention rule that withholds a decision when the prediction
-interval is wider than usual. On daily data for 201 KOSPI 200 stocks since 2015, the proposed model had
-a lower quantile (pinball) loss than TFT in all five repeated runs, while training 3.8 times and running
-inference 4.8 times faster. Abstentions concentrated in volatile periods, and the withheld forecasts
-carried about 1.5 times the error of those acted on, separating large errors better than a simple rule
-based on recent volatility alone. A quantile gradient-boosting baseline fitted on the same windows was
-cheaper still and abstained just as well, so what the proposed model gains over it is accuracy rather than
-cost. Point accuracy at the median matches a constant baseline, so the model adds not a sharper forecast but a
-signal of when not to act on one.
+A stock forecasting model cannot be equally accurate at every point in time,
+because the market changes the way it moves. A model that outputs a single
+number does not tell the user when its forecast is unreliable. This paper
+studies a model that withholds its decision at such times. Withholding requires
+the model to report its own uncertainty, so the proposed model outputs several
+quantiles instead of one value, and the width between the lower and the upper
+quantile serves as that measure. The model withholds a decision whenever the
+predicted interval is wider than it has recently been. The forecaster is a
+patch-based transformer, which is light enough to train repeatedly, extended
+with a quantile output layer; models that already produce a distribution, such
+as the Temporal Fusion Transformer (TFT), are far more expensive to train. On
+daily data for 201 KOSPI 200 stocks since 2015, withheld forecasts carried about
+1.5 times the error of those acted on, and withholding concentrated in volatile
+periods: 20.07% of the most volatile quartile against 0.21% of the least. The
+same advantage held at six matched abstention rates against a rule that looks
+only at recent realized volatility, and it did not appear when a quantile output
+layer alone was added to the lightweight model. The proposed model also had a
+lower quantile loss than the original TFT on both splits while training 3.8
+times faster and using 5.1 times less activation memory, although a quantile
+gradient-boosting baseline was cheaper still and withheld comparably. Point
+accuracy at the median matches a constant baseline, so the contribution is the
+selection of when not to act rather than a sharper forecast.
 
-<!-- 245 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
+<!-- 277 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -52,19 +59,16 @@ Forecast Uncertainty, Abstention
 
 ### 요     약
 
-주가 예측은 투자와 위험관리 등 여러 분야에서 꾸준히 연구되고 있으나, 대부분의 예측 모형은 하나의 예측값만
-제공하여 그 예측을 얼마나 신뢰할 수 있는지 판단하기 어렵다. 실제 투자에서는 예측값과 함께 불확실성을 고려하여
-판단을 보류해야 할 시점을 알 수 있어야 한다. 불확실성을 함께 예측하는 모형으로 Temporal Fusion
-Transformer(TFT)가 있으나 계산 비용이 크고, 계산이 가벼운 패치 기반 트랜스포머는 하나의 예측값만 제공한다.
-이에 본 논문에서는 패치 기반 트랜스포머에 분위수 출력층을 달고 입력 채널을 인코더 앞에서 하나로 합쳐 인코더를
-한 번만 실행하는 경량 모형을 제안하고,
-예측 구간이 평소보다 넓을 때 판단을 보류하는 보류 규칙을 함께 적용한다. 2015년 이후 코스피200 구성종목
-201개의 일별 자료로 실험한 결과, 제안 모형은 다섯 번의 반복 실험 모두에서 TFT보다 낮은 분위 손실을 보이면서
-학습은 3.8배, 추론은 4.8배 빨랐다. 보류는 변동성이 큰 시기에 집중되었으며, 보류한 예측의 오차는 실행된
-예측의 약 1.5배였다. 이는 최근 변동성만 보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러낸 결과이다. 같은 표본으로
-학습한 분위 그래디언트 부스팅 기준모형은 계산 비용이 더 낮고 보류 품질도 대등하였으므로, 제안 모형이 그
-기준모형보다 나은 점은 비용이 아니라 정확도이다. 중앙값의 점 예측 정확도는 상수 기준선과 다르지 않으므로,
-제안 모형이 더하는 것은 더 정확한 예측값이 아니라 그 예측에 따라 움직이지 말아야 할 시점이다.
+주가 예측 모형은 시장이 움직이는 방식이 시기마다 달라지므로 모든 시점에서 같은 정확도를 낼 수 없다. 그러나 값 하나만 내놓는 모형은 지금의
+예측을 믿어도 되는지를 사용자에게 알려주지 못한다. 본 논문은 그러한 시점에서 판단을 보류하는 모형을 다룬다. 판단을 보류하려면 모형이 자신의
+불확실성을 수치로 내놓아야 하므로, 제안 모형은 값 하나 대신 여러 분위수를 출력하고 하위 분위수와 상위 분위수 사이 구간의 폭을 그 수치로
+쓴다. 예측 구간이 최근보다 넓은 시점에서는 판단을 내놓지 않는다. 예측 모형으로는 반복 학습이 가능할 만큼 가벼운 패치 기반 트랜스포머에
+분위수 출력층을 더하였다. 이미 분포를 산출하는 Temporal Fusion Transformer(TFT)는 학습 비용이 훨씬 크기 때문이다.
+2015년 이후 코스피200 구성종목 201개의 일별 자료로 평가한 결과, 보류한 예측의 오차는 실행한 예측의 약 1.5배였고 보류는 변동성이
+큰 시기에 몰렸다(최상위 변동성 분위 20.07%, 최하위 0.21%). 이 우위는 보류 비율을 맞춘 여섯 수준 전부에서 최근 변동성만 보는
+규칙보다 컸으며, 가벼운 모형에 분위수 출력층만 더해서는 나타나지 않았다. 제안 모형의 분위 손실은 두 구간 모두에서 TFT 원본보다 낮았고
+학습은 3.8배 빠르며 활성값 메모리는 5.1배 적었으나, 분위 그래디언트 부스팅 기준모형은 그보다도 적은 자원으로 대등하게 보류하였다.
+중앙값의 점 예측 정확도는 상수 기준선과 같으므로, 본 연구의 기여는 더 정확한 예측값이 아니라 예측을 실행하지 말아야 할 시점의 선별이다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 판단 보류
 
@@ -470,23 +474,20 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 ## 6. 결론
 
-본 연구는 주가 예측에서 "지금 판단해도 되는가"를 함께 답하는 모형을, 매일 201종목을 평가할 수 있는 비용
-안에서 만드는 것을 목표로 하였다. 계산이 가벼운 패치 기반 트랜스포머에 TFT의 분위수 출력층을
-달고, 입력 채널을 인코더 앞에서 하나로 합쳐 인코더 실행 횟수를 1회로 줄였다. 예측 구간이 이례적으로 넓을
-때 보류하는 규칙도 함께 적용하였다. 코스피200 구성종목 201개의 일별 자료로 평가하여 다음 두 가지를
-확인하였다.
+본 연구는 주가 예측 모형이 확신하지 못하는 시점을 스스로 가려내는 문제를 다루었다. 연산량이 적은 예측 모형이 여러 분위수를 함께 출력하도록
+바꾸고, 예측 구간의 폭이 평소보다 넓은 시점에서 판단을 보류하는 규칙을 적용하였다. 코스피200 구성종목 201개의 2015년 이후 일별
+자료로 평가하였다.
 
-첫째, 제안 모형은 TFT 원본보다 낮은 분위 손실을 약 4분의 1의 비용으로 달성하였다. 시드를 짝지은 비교에서
-구간마다 다섯 시드 전부가 제안 모형 쪽이었고, 조기종료에 쓰이지 않은 시험구간에서는
-날짜 단위 DM 검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 종목당 추론 시간은 4.8배 짧았고,
-활성값 메모리는 5.1배 적었다. 다만 분위 GBDT의 비용은 이보다도 낮으며, 제안 모형이 GBDT보다 나은 점은 비용이 아니라
-시험구간 손실이다(+4.95% 대 +3.45%, 다섯 시드 모두 GBDT보다 낮음). 또한 종목 채널의 변수선택망을
-선형 합치기로 바꾼 변형은 모수가 0.117M으로 줄면서 같은 결과를 냈으므로, 운용에서는 이 변형이 같은 성능의
-더 가벼운 선택지다(5.4절). 둘째, 예측 구간이 시장 변동성에 반응하여 보류가 변동성이 큰 시기에
-집중되었다. 보류한 예측은 실행된 예측보다 오차가 약 1.5배 컸고, 보류율을 맞춘 비교에서도 최근 변동성만
-보고 보류하는 단순 규칙보다 큰 오차를 더 잘 걸러냈다. 분위 GBDT도 같은 비교에서 대등한 보류 품질을
-보였으므로 이 성질은 트랜스포머 구조에 고유하지 않다. 하나의 예측값만 내는 기존 패치 기반 모형으로는
-이러한 보류 자체를 할 수 없다.
+판단 보류는 의도한 대로 작동하였다. 보류는 변동성이 큰 시기에 몰렸고, 최상위 변동성 분위에서 20.07%인 반면 최하위 분위에서는
+0.21%였다. 보류한 예측의 오차는 실행한 예측의 1.5배였다. 이 차이는 보류 비율을 같게 맞춘 여섯 수준 전부에서 최근 변동성만 보고
+보류하는 규칙보다 컸다. 같은 성질이 분위수 출력층만 부착한 모형에서는 나타나지 않았으므로, 출력 형식을 바꾸는 것만으로는 얻어지지 않는다.
+다만 분위 그래디언트 부스팅도 같은 비교에서 대등하였으므로 이 성질이 트랜스포머 구조에 고유한 것은 아니다.
+
+예측 분포의 정확도와 자원 사용은 다음과 같다. 제안 모형의 분위 손실은 검증구간과 시험구간 모두에서 TFT 원본보다 낮았고, 조기종료에 쓰이지
+않은 시험구간에서는 다섯 시드 전부가 같은 방향이었으며 날짜 단위 DM 검정도 다섯 시드 모두 유의하였다. 학습 시간은 3.8배, 활성값
+메모리는 5.1배 적었다. 그러나 분위 그래디언트 부스팅은 그보다도 적은 자원으로 학습되므로, 자원 절감은 트랜스포머 계열 안에서의 비교다.
+중앙값만 떼어 평균절대오차로 재면 제안 모형은 상수 기준선과 같다. 본 연구가 더하는 것은 예측값의 정확도가 아니라 예측을 실행하지 말아야 할
+시점의 선별이다.
 
 본 연구는 예측 손실로 평가하였으며 거래비용을 포함한 투자 성과는 측정하지 않았다. 유니버스는 현재 시점의 구성종목이고, 입력 설계와 보류
 임계값 선택에 평가 기간 자료가 일부 참고되었다. 구성요소를 하나씩 제거하는 실험으로는 개선이 채널 축약 구조 자체에서 오는지 구성요소 간
@@ -495,9 +496,8 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 ## 7. 후속 연구
 
-향후 연구에서는 구성요소를 둘 이상
-함께 제거하는 실험으로 개선의 출처를 가리고, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러
-시장 국면에서 다시 검증한다.
+후속 연구로 두 가지를 계획한다. 첫째, 구성요소를 둘 이상 함께 제거한 변형을 학습하여 개선의 출처가 채널 축약 구조인지 구성요소 간 대체인지
+가린다. 둘째, 비교 이후 새로 쌓인 자료를 평가에 쓰지 않은 구간으로 두어 여러 시장 국면에서 다시 검증한다.
 
 ## References
 
