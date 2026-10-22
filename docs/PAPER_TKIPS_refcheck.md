@@ -1,4 +1,4 @@
-# 참고문헌 검증 (2026-10-21)
+# 참고문헌 검증 (2026-10-21, 2026-10-22 갱신)
 
 지도교수 피드백 1단계. 원고 `docs/PAPER_TKIPS.md` 의 참고문헌 26편을 각각 검색해 실재 여부,
 서지 정확성, 본문 인용 문장과의 내용 일치를 확인하였다. 기억이 아니라 검색 결과로만 판정하였다.
@@ -73,3 +73,18 @@
 **[2]** 영문 제목 끝을 정식 표기로 바꾼다.
 
 > T. S. Kim and S. Lee, "Deep learning-based stock fluctuation prediction according to overseas indices and **trading trend by investors**," *KIPS Transactions on Software and Data Engineering*, Vol.10, No.9, pp.367-374, 2021.
+
+
+---
+
+## 2026-10-22 갱신 — [10] 삭제
+
+원고를 다시 쓴 뒤 인용 현황을 다시 세었다. **미인용 문헌은 없었고**, 내용 불일치 세 건([1], [16], [10])은
+인용 문장을 고쳐 해결하였다. 그 뒤 남은 문제가 하나 있었다.
+
+**[10] D.-K. Kim and K. Kim, "Style-based transformer for time series forecasting"** 은 2.2절
+'예측 분포를 내는 모형' 에 인용되어 있었다. 그러나 이 논문은 예측 구간 전체를 한 번에 생성하는 디코더를 제안한
+것으로, **예측 분포를 산출하지 않는다.** 절의 주제와 맞지 않아 삭제하였다. 서지와 실재는 확인된 문헌이지만,
+판단 보류라는 본 논문의 주장과 이어지는 지점이 없다.
+
+삭제 후 [11]~[26]을 [10]~[25]로 재번호하였다. 참고문헌 25개, 미인용 0건, 없는 번호 인용 0건.

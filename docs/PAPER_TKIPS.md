@@ -120,18 +120,18 @@ Transformer(TFT)는 여러 분위수를 동시에 출력한다. 그러나 TFT는
 ### 2.1 주가 예측에 쓰인 딥러닝 모형
 
 금융 시계열에 딥러닝을 적용한 연구는 순환신경망과 합성곱신경망을 중심으로 축적되었다[1]. 장단기기억 신경망으로 미국 주식의 등락 방향을 예측한
-연구[17], 여러 기계학습 기법을 자산가격 결정에 적용한 연구[18]가 대표적이다. 국내에서는 해외지수와 투자자별 매매 동향을 입력으로 삼은
-등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[19]가 보고되었다. 이 연구들은 입력 변수와 신경망 구조를 바꾸어 정확도를 높이는
+연구[16], 여러 기계학습 기법을 자산가격 결정에 적용한 연구[17]가 대표적이다. 국내에서는 해외지수와 투자자별 매매 동향을 입력으로 삼은
+등락 예측[2], 가중 손실 함수를 적용한 순환 합성곱 구조[18]가 보고되었다. 이 연구들은 입력 변수와 신경망 구조를 바꾸어 정확도를 높이는
 데 집중하였고, 출력은 모두 점 예측이다. 따라서 모형이 어느 시점에서 확신하지 못하는지를 사용자가 알 수 없고, 1장에서 제기한 판단 보류도
 정의되지 않는다.
 
 ### 2.2 예측 분포를 내는 모형
 
-값 하나 대신 여러 분위수를 추정하는 방법은 분위회귀[12]에서 시작되었다. Temporal Fusion Transformer(TFT)[8]는
+값 하나 대신 여러 분위수를 추정하는 방법은 분위회귀[11]에서 시작되었다. Temporal Fusion Transformer(TFT)[8]는
 이를 딥러닝에 적용하여, 입력 변수의 중요도를 학습하는 장치와 시점별 어텐션을 결합하고 여러 분위수를 동시에 출력한다. 국내에서도 TFT를 여러
-시점 앞 예측에 적용한 연구[9], 예측 구간 전체를 한 번에 생성하도록 트랜스포머를 변형한 연구[10]가 있다. 이 계열은 판단 보류에 필요한
+시점 앞 예측에 적용한 연구[9]가 있다. 이 계열은 판단 보류에 필요한
 예측 구간을 제공한다. 단점은 연산량이다. TFT는 입력 기간의 모든 시점을 서로 비교하므로 학습 시간과 메모리가 입력 길이에 민감하다. 분위수
-예측이 명목 확률을 지키는지는 별도의 문제이며, 사후에 구간을 교정하는 방법이 제안되어 있다[13].
+예측이 명목 확률을 지키는지는 별도의 문제이며, 사후에 구간을 교정하는 방법이 제안되어 있다[12].
 
 ### 2.3 연산량을 줄인 시계열 트랜스포머
 
@@ -142,10 +142,10 @@ Transformer(TFT)는 여러 분위수를 동시에 출력한다. 그러나 TFT는
 
 ### 2.4 판단 보류를 다룬 연구
 
-모형이 일부 입력에 답을 내지 않는 선택지는 기각 옵션(reject option)으로 형식화되어 있다[14]. 오답 비용과 기각 비용의
+모형이 일부 입력에 답을 내지 않는 선택지는 기각 옵션(reject option)으로 형식화되어 있다[13]. 오답 비용과 기각 비용의
 교환관계로 최적 기각 영역을 정의한 이 틀은 선택적 예측(selective prediction)으로 일반화되어, 답을 낸 비율과 그 표본에서의
-오차를 함께 보고하는 평가 방식으로 자리잡았다[15]. 심층 신경망에서는 이미 학습된 모형의 신뢰도 점수로 기각 영역을 정하는 방법이
-제안되었다[16]. 이 연구들은 분류 문제를 대상으로 하고 선택 기준으로 예측 확률을 쓴다. 회귀 문제에는 그 확률이 없어 같은 방법을 그대로
+오차를 함께 보고하는 평가 방식으로 자리잡았다[14]. 심층 신경망에서는 이미 학습된 모형의 신뢰도 점수로 기각 영역을 정하는 방법이
+제안되었다[15]. 이 연구들은 분류 문제를 대상으로 하고 선택 기준으로 예측 확률을 쓴다. 회귀 문제에는 그 확률이 없어 같은 방법을 그대로
 적용할 수 없다.
 
 ### 2.5 본 연구의 위치
@@ -160,7 +160,7 @@ Transformer(TFT)는 여러 분위수를 동시에 출력한다. 그러나 TFT는
 이 폭에서 얻는 것이다.
 
 비교 대상에는 트리 계열 기준모형도 포함하였다. 잘 조정된 단순 기준모형과 견주지 않으면 개선폭이 과장되기 쉽다는 지적이 예측 문헌에서 반복되어
-왔기 때문이다[20]. 같은 자료와 같은 분할에서 그래디언트 부스팅 결정트리(gradient boosting decision tree,
+왔기 때문이다[19]. 같은 자료와 같은 분할에서 그래디언트 부스팅 결정트리(gradient boosting decision tree,
 GBDT)를 함께 학습하여 5장에 보고한다.
 
 ## 3. 제안하는 방법
@@ -193,11 +193,11 @@ in this work (teal) and the static context path (orange). The variable selection
 cross-attention are design options; removing either did not change the results (Sec. 5.4).
 Panels (b)-(d) are adapted from [3] and [8].
 
-입력은 윈도우마다 정규화한다. 각 윈도우의 통계로 입력을 표준화하고 출력에서 되돌리는 방식이며[11], 종목과 시대에 따라 가격 수준의 의미가
+입력은 윈도우마다 정규화한다. 각 윈도우의 통계로 입력을 표준화하고 출력에서 되돌리는 방식이며[10], 종목과 시대에 따라 가격 수준의 의미가
 달라지는 자료에서는 필수적이다. 다만 횡단면 순위 채널에는 적용하지 않았다. 이 채널은 정보가 값의 수준 자체에 담겨 있어, 윈도우 안에서
 표준화하면 그 정보가 사라진다.
 
-모형의 출력은 세 개의 분위수다. 분위수를 학습시키는 손실은 분위회귀[12]에서 온 핀볼 손실이며, 분위 *τ*에 대하여 식 (1)과 같이
+모형의 출력은 세 개의 분위수다. 분위수를 학습시키는 손실은 분위회귀[11]에서 온 핀볼 손실이며, 분위 *τ*에 대하여 식 (1)과 같이
 정의된다.
 
 &nbsp;&nbsp;&nbsp;&nbsp;L(*τ*; *y*, *ŷ*) = max[ *τ*(*y* − *ŷ*), (*τ* − 1)(*y* − *ŷ*) ]&nbsp;&nbsp;&nbsp;&nbsp;(1)
@@ -231,7 +231,7 @@ Panels (b)-(d) are adapted from [3] and [8].
 #### 2) 매크로 크로스어텐션의 방향
 
 매크로 지표는 크로스어텐션으로 종목 표현에 주입한다. 종목 표현을 질의로, 매크로 부호화를 키와 값으로 둔다. 방향을 반대로 두면 출력이 매크로
-시퀀스의 형상을 따라 종목별 예측이 나오지 않는다. 외생 변수를 어텐션으로 주입하는 발상은 TimeXer[21]에도 있으며, 본 연구는 매크로를
+시퀀스의 형상을 따라 종목별 예측이 나오지 않는다. 외생 변수를 어텐션으로 주입하는 발상은 TimeXer[20]에도 있으며, 본 연구는 매크로를
 패치 단위로 유지한다는 점이 다르다. 매크로 경로는 13채널을 하나로 합치는 선형 변환으로 처리하였다. 이 모듈의 정확도 기여는 5.4절의 제거
 실험에서 확인되지 않았다.
 
@@ -349,8 +349,8 @@ Table 4. Forecast accuracy on the validation and test splits (three-quantile pin
 개선폭의 16%에 그치므로 우위가 아니라 대등하거나 근소하게 낫다는 수준으로 해석한다. 조기종료와 최적 회차
 선택에 쓰이지 않은 시험구간에서는 격차가 0.000499로 벌어지며 다섯 시드의 범위가 겹치지 않는다
 (0.017739~0.017895 대 0.018205~0.018407). 평균 차이에 대한 Welch 검정은 검증구간 *t* = 4.47(*p* = 0.004),
-시험구간 *t* = 10.33(*p* < 0.001)이다. 같은 표본의 날짜별 손실 계열에 Diebold-Mariano 검정[22](Newey-West 4시차[23],
-Harvey-Leybourne-Newbold 소표본 보정[24])을 적용하면 550거래일의 시험구간에서는 다섯 시드 모두 유의하나(*p* ≤ 0.022) 122거래일의 검증구간에서는 다섯 시드 모두 유의하지 않다(*p*
+시험구간 *t* = 10.33(*p* < 0.001)이다. 같은 표본의 날짜별 손실 계열에 Diebold-Mariano 검정[21](Newey-West 4시차[22],
+Harvey-Leybourne-Newbold 소표본 보정[23])을 적용하면 550거래일의 시험구간에서는 다섯 시드 모두 유의하나(*p* ≤ 0.022) 122거래일의 검증구간에서는 다섯 시드 모두 유의하지 않다(*p*
 = 0.16~0.56). 날짜를 표본으로 보는 검정이므로 짧은 구간에서는 검정력이 약하다. 분위수 출력층만 부착한
 PatchTST는 검증구간 +0.07%, 시험구간 +0.36%로 상수 예측을 간신히 상회하는 데 그쳤고, 다섯 시드 가운데
 네 시드는 첫 회차에서 최적값에 도달하였다. 격차가 시험구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
@@ -358,8 +358,8 @@ PatchTST는 검증구간 +0.07%, 시험구간 +0.36%로 상수 예측을 간신�
 기준선(0.053447)과 사실상 같고 TFT 원본은 0.053707로 오히려 나쁘므로, 핀볼 손실의 개선은 중앙값의 점
 정확도가 아니라 예측 구간에서 온다.
 
-트리 계열 기준모형으로 분위 손실을 쓰는 히스토그램 그래디언트 부스팅(LightGBM[25]의 방식을 따른
-scikit-learn[26] 구현)을 같은 분할과 같은 윈도우 표본에서 평가하였다. 입력은 동적 30채널의 당일 값과 1·5·20일 시차, 매크로 13채널, 정적 범주형 3종의 136개이고, 분위마다 모형을 하나씩 두어 검증구간
+트리 계열 기준모형으로 분위 손실을 쓰는 히스토그램 그래디언트 부스팅(LightGBM[24]의 방식을 따른
+scikit-learn[25] 구현)을 같은 분할과 같은 윈도우 표본에서 평가하였다. 입력은 동적 30채널의 당일 값과 1·5·20일 시차, 매크로 13채널, 정적 범주형 3종의 136개이고, 분위마다 모형을 하나씩 두어 검증구간
 손실로 트리 수를 정하였다(75·25·275개). 검증구간 손실은 제안 모형과 같았고(0.011890 대 0.011889), 시험구간 손실은 TFT
 원본보다 작고 제안 모형보다 컸다. 제안 모형의 다섯 시드는 모두 이 값보다 낮았다(최대 0.017895 대 0.018107).
 
@@ -482,7 +482,7 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 본 연구는 예측 손실로 평가하였으며 거래비용을 포함한 투자 성과는 측정하지 않았다. 유니버스는 현재 시점의 구성종목이고, 입력 설계와 보류
 임계값 선택에 평가 기간 자료가 일부 참고되었다. 구성요소를 하나씩 제거하는 실험으로는 개선이 채널 축약 구조 자체에서 오는지 구성요소 간
-대체에서 오는지 가리지 못하였다(5.4절). 예측 구간의 포함률은 71.6%로 명목 80%에 못 미쳐(등각 분위회귀 보정[13] 후 73.9%)
+대체에서 오는지 가리지 못하였다(5.4절). 예측 구간의 포함률은 71.6%로 명목 80%에 못 미쳐(등각 분위회귀 보정[12] 후 73.9%)
 구간을 신뢰구간으로 해석할 수는 없으나, 보류는 폭의 순위만 쓰므로 영향을 받지 않는다.
 
 ## 7. 후속 연구
@@ -510,39 +510,38 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 
 [9] I. K. Kim, D. H. Kim, and J. Lee, "Temporal fusion transformers and deep learning methods for multi-horizon time series forecasting," *KIPS Transactions on Software and Data Engineering*, Vol.11, No.2, pp.81-86, 2022.
 
-[10] D.-K. Kim and K. Kim, "Style-based transformer for time series forecasting," *KIPS Transactions on Software and Data Engineering*, Vol.10, No.12, pp.579-586, 2021.
 
-[11] T. Kim, J. Kim, Y. Tae, C. Park, J.-H. Choi, and J. Choo, "Reversible instance normalization for accurate time-series forecasting against distribution shift," in *Proceedings of the International Conference on Learning Representations*, 2022.
+[10] T. Kim, J. Kim, Y. Tae, C. Park, J.-H. Choi, and J. Choo, "Reversible instance normalization for accurate time-series forecasting against distribution shift," in *Proceedings of the International Conference on Learning Representations*, 2022.
 
-[12] R. Koenker and G. Bassett, "Regression quantiles," *Econometrica*, Vol.46, No.1, pp.33-50, 1978.
+[11] R. Koenker and G. Bassett, "Regression quantiles," *Econometrica*, Vol.46, No.1, pp.33-50, 1978.
 
-[13] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in *Advances in Neural Information Processing Systems*, pp.3543-3553, 2019.
+[12] Y. Romano, E. Patterson, and E. J. Candes, "Conformalized quantile regression," in *Advances in Neural Information Processing Systems*, pp.3543-3553, 2019.
 
-[14] C. K. Chow, "On optimum recognition error and reject tradeoff," *IEEE Transactions on Information Theory*, Vol.16, No.1, pp.41-46, 1970.
+[13] C. K. Chow, "On optimum recognition error and reject tradeoff," *IEEE Transactions on Information Theory*, Vol.16, No.1, pp.41-46, 1970.
 
-[15] R. El-Yaniv and Y. Wiener, "On the foundations of noise-free selective classification," *Journal of Machine Learning Research*, Vol.11, pp.1605-1641, 2010.
+[14] R. El-Yaniv and Y. Wiener, "On the foundations of noise-free selective classification," *Journal of Machine Learning Research*, Vol.11, pp.1605-1641, 2010.
 
-[16] Y. Geifman and R. El-Yaniv, "Selective classification for deep neural networks," in *Advances in Neural Information Processing Systems*, pp.4878-4887, 2017.
+[15] Y. Geifman and R. El-Yaniv, "Selective classification for deep neural networks," in *Advances in Neural Information Processing Systems*, pp.4878-4887, 2017.
 
-[17] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," *European Journal of Operational Research*, Vol.270, No.2, pp.654-669, 2018.
+[16] T. Fischer and C. Krauss, "Deep learning with long short-term memory networks for financial market predictions," *European Journal of Operational Research*, Vol.270, No.2, pp.654-669, 2018.
 
-[18] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," *The Review of Financial Studies*, Vol.33, No.5, pp.2223-2273, 2020.
+[17] S. Gu, B. Kelly, and D. Xiu, "Empirical asset pricing via machine learning," *The Review of Financial Studies*, Vol.33, No.5, pp.2223-2273, 2020.
 
-[19] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," *KIPS Transactions on Software and Data Engineering*, Vol.8, No.3, pp.123-128, 2019.
+[18] H. J. Kim and Y. S. Jung, "A stock price prediction based on recurrent convolution neural network with weighted loss function," *KIPS Transactions on Software and Data Engineering*, Vol.8, No.3, pp.123-128, 2019.
 
-[20] S. Makridakis, E. Spiliotis, and V. Assimakopoulos, "Statistical and machine learning forecasting methods: Concerns and ways forward," *PLOS ONE*, Vol.13, No.3, e0194889, 2018.
+[19] S. Makridakis, E. Spiliotis, and V. Assimakopoulos, "Statistical and machine learning forecasting methods: Concerns and ways forward," *PLOS ONE*, Vol.13, No.3, e0194889, 2018.
 
-[21] Y. Wang et al., "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in *Advances in Neural Information Processing Systems*, 2024.
+[20] Y. Wang et al., "TimeXer: Empowering transformers for time series forecasting with exogenous variables," in *Advances in Neural Information Processing Systems*, 2024.
 
-[22] F. X. Diebold and R. S. Mariano, "Comparing predictive accuracy," *Journal of Business & Economic Statistics*, Vol.13, No.3, pp.253-263, 1995.
+[21] F. X. Diebold and R. S. Mariano, "Comparing predictive accuracy," *Journal of Business & Economic Statistics*, Vol.13, No.3, pp.253-263, 1995.
 
-[23] W. K. Newey and K. D. West, "A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix," *Econometrica*, Vol.55, No.3, pp.703-708, 1987.
+[22] W. K. Newey and K. D. West, "A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix," *Econometrica*, Vol.55, No.3, pp.703-708, 1987.
 
-[24] D. Harvey, S. Leybourne, and P. Newbold, "Testing the equality of prediction mean squared errors," *International Journal of Forecasting*, Vol.13, No.2, pp.281-291, 1997.
+[23] D. Harvey, S. Leybourne, and P. Newbold, "Testing the equality of prediction mean squared errors," *International Journal of Forecasting*, Vol.13, No.2, pp.281-291, 1997.
 
-[25] G. Ke et al., "LightGBM: A highly efficient gradient boosting decision tree," in *Advances in Neural Information Processing Systems*, pp.3146-3154, 2017.
+[24] G. Ke et al., "LightGBM: A highly efficient gradient boosting decision tree," in *Advances in Neural Information Processing Systems*, pp.3146-3154, 2017.
 
-[26] F. Pedregosa et al., "Scikit-learn: Machine learning in Python," *Journal of Machine Learning Research*, Vol.12, pp.2825-2830, 2011.
+[25] F. Pedregosa et al., "Scikit-learn: Machine learning in Python," *Journal of Machine Learning Research*, Vol.12, pp.2825-2830, 2011.
 
 <!-- AUTHORS:BEGIN -->
 <!--
