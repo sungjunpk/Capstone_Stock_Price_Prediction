@@ -32,18 +32,17 @@ a light architecture and reports, instead of a single value, the range the
 future return is expected to fall in. When that range is among the widest 5% of
 the ranges seen over the past 90 days, the model withholds its decision. It was
 evaluated on daily data for 201 KOSPI 200 stocks since 2015. Withheld forecasts
-had 1.5 times the error of those acted on. Withholding concentrated in turbulent
-periods, reaching 20.07% there against 0.21% in the calmest periods. When the
-same share of forecasts was withheld by a simple rule that looks only at recent
-movement, the proposed criterion filtered out large errors better at all six
-shares tested, and this difference did not appear in a model to which only the
-range output had been added. The ranges were more accurate than those of the
-Temporal Fusion Transformer, and training was 3.8 times faster. The
-representative value the model reports, however, was no more accurate than a
+carried about 1.5 times the error of those acted on, and withholding
+concentrated in turbulent periods. When the same share of forecasts was withheld
+by a simple rule that looks only at recent movement, the proposed criterion
+still filtered out large errors better, and this behavior did not appear in a
+model to which only the range output had been added. The ranges were more
+accurate than those of the Temporal Fusion Transformer, and training was faster.
+The representative value the model reports, however, was no more accurate than a
 predictor that uses only the past distribution. What this study adds is not a
 more accurate forecast but a criterion for when not to act on one.
 
-<!-- 255 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
+<!-- 242 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -60,12 +59,11 @@ Forecast Uncertainty, Abstention
 믿어도 되는 때인지 알려주지 못한다. 본 논문은 모형이 확신하지 못하는 시점을 스스로 가려내고 그 시점에는 예측을 내놓지 않는 방법을 제안한다.
 이렇게 답을 내지 않는 것을 판단 보류라고 한다. 제안 모형은 계산이 가벼운 구조를 쓰면서, 예측값 하나 대신 미래 수익률이 들어올 범위를 함께
 내놓는다. 그 범위가 최근 90일 사이에 나온 범위 가운데 넓은 쪽 5%에 들면 판단을 보류한다. 2015년 이후 코스피200 구성종목
-201개의 일별 자료로 평가하였다. 보류한 예측은 실행한 예측보다 오차가 1.5배 컸다. 보류는 시장이 크게 출렁인 시기에 몰려 그 구간에서
-20.07%에 이른 반면, 잔잔한 시기에는 0.21%에 그쳤다. 같은 비율만큼 보류하도록 맞추고 최근 변동폭만 보고 보류하는 단순한 규칙과
-견주었을 때에도, 여섯 가지 비율 모두에서 제안한 기준이 오차가 큰 예측을 더 잘 걸러냈다. 범위를 내놓는 기능만 덧붙인 모형에서는 이 차이가
-나타나지 않았다. 범위의 정확도는 기존 대표 모형인 Temporal Fusion Transformer보다 높았고 학습은 3.8배 빨랐다. 다만
-모형이 내놓는 대표 예측값 자체는 과거 분포만 쓰는 단순 예측기와 다르지 않았다. 이 연구가 더하는 것은 더 정확한 예측값이 아니라, 그 예측을
-실행하지 말아야 할 시점을 골라내는 기준이다.
+201개의 일별 자료로 평가하였다. 보류한 예측은 실행한 예측보다 오차가 약 1.5배 컸고, 보류는 시장이 크게 출렁인 시기에 집중되었다. 같은
+비율만큼 보류하도록 맞추고 최근 변동폭만 보고 보류하는 단순한 규칙과 견주었을 때에도, 제안한 기준이 오차가 큰 예측을 더 잘 걸러냈다. 범위를
+내놓는 기능만 덧붙인 모형에서는 이러한 성질이 나타나지 않았다. 예측 범위의 정확도는 기존 대표 모형인 Temporal Fusion
+Transformer보다 높았고 학습도 더 빨랐다. 다만 모형이 내놓는 대표 예측값 자체는 과거 분포만 쓰는 단순 예측기와 다르지 않았다. 이
+연구가 더하는 것은 더 정확한 예측값이 아니라, 그 예측을 실행하지 말아야 할 시점을 골라내는 기준이다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 판단 보류
 
