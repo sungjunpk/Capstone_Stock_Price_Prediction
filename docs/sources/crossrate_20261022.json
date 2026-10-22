@@ -1,0 +1,292 @@
+{
+ "generated_at": "2026-10-22T17:27:09",
+ "data": "outputs/train_bundle.zip (2026-10-16 동결본)",
+ "note": "분위 교차율 — q50 < q10 또는 q90 < q50 인 행의 비율. 세 모형 모두 src/models/quantile_head.py 의 QuantileHead(누적 소프트플러스)를 공유하므로 0 은 구조적 귀결이며, 보장이 없는 모형과의 비교가 아니다.",
+ "models": {
+  "ours": {
+   "runs": [
+    {
+     "seed": 42,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01241375
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.0141063
+     }
+    },
+    {
+     "seed": 43,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01239887
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01425455
+     }
+    },
+    {
+     "seed": 44,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01250212
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01385526
+     }
+    },
+    {
+     "seed": 45,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01267557
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.0140652
+     }
+    },
+    {
+     "seed": 46,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01257071
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.01418243
+     }
+    }
+   ],
+   "agg": {
+    "val": {
+     "seeds": 5,
+     "rows": 115430,
+     "crossings": 0,
+     "rate": 0.0,
+     "min_gap": 0.01239887
+    },
+    "test": {
+     "seeds": 5,
+     "rows": 532450,
+     "crossings": 0,
+     "rate": 0.0,
+     "min_gap": 0.01385526
+    }
+   }
+  },
+  "tft": {
+   "runs": [
+    {
+     "seed": 42,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03361522
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03323084
+     }
+    },
+    {
+     "seed": 43,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03282913
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03294817
+     }
+    },
+    {
+     "seed": 44,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04140372
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04142008
+     }
+    },
+    {
+     "seed": 45,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03257992
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03225863
+     }
+    },
+    {
+     "seed": 46,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03135745
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03181784
+     }
+    }
+   ],
+   "agg": {
+    "val": {
+     "seeds": 5,
+     "rows": 115430,
+     "crossings": 0,
+     "rate": 0.0,
+     "min_gap": 0.03135745
+    },
+    "test": {
+     "seeds": 5,
+     "rows": 532450,
+     "crossings": 0,
+     "rate": 0.0,
+     "min_gap": 0.03181784
+    }
+   }
+  },
+  "patchtst_q": {
+   "runs": [
+    {
+     "seed": 42,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.03644958
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.0352354
+     }
+    },
+    {
+     "seed": 43,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04974481
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04973982
+     }
+    },
+    {
+     "seed": 44,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04970216
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04970455
+     }
+    },
+    {
+     "seed": 45,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.0497641
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04975536
+     }
+    },
+    {
+     "seed": 46,
+     "val": {
+      "n": 23086,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04956139
+     },
+     "test": {
+      "n": 106490,
+      "crossings": 0,
+      "rate": 0.0,
+      "min_gap": 0.04942672
+     }
+    }
+   ],
+   "agg": {
+    "val": {
+     "seeds": 5,
+     "rows": 115430,
+     "crossings": 0,
+     "rate": 0.0,
+     "min_gap": 0.03644958
+    },
+    "test": {
+     "seeds": 5,
+     "rows": 532450,
+     "crossings": 0,
+     "rate": 0.0,
+     "min_gap": 0.0352354
+    }
+   }
+  }
+ }
+}
