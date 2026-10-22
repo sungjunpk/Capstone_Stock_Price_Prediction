@@ -7,9 +7,10 @@ hwp 는 머리말·꼬리말을 여백과 본문 사이의 별도 영역으로 �
 좌우 20mm / 위 35.5mm / 아래 25.5mm 안쪽이다 — Word 여백은 본문 기준이라 그 값을 넣는다.
 
     review.docx   투고용 — 규정 2.1 에 따라 저자 정보를 뺀다
-    preview.docx  저자 정보까지 넣은 판 — 쪽수 확인과 게재 확정 후 최종본 대비용
+    preview.docx  저자 정보까지 넣은 판 — 원고 확정 후에만 다시 낸다
 
-    python3 scripts/make_paper_docx.py
+    python3 scripts/make_paper_docx.py              # 투고본만
+    python3 scripts/make_paper_docx.py --preview    # preview 까지
 """
 import re
 import sys
@@ -583,6 +584,8 @@ def build(blind):
 
 
 if __name__ == "__main__":
+    # 기본은 투고본만 만든다. preview(저자 정보 포함)는 원고가 확정된 뒤에 --preview 로 낸다
     build(blind=True)
-    build(blind=False)
+    if "--preview" in sys.argv:
+        build(blind=False)
     sys.exit(0)
