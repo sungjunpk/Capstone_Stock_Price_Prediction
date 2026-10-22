@@ -23,30 +23,26 @@ Seongjun Park†⋅Jimin Kim†⋅Ohjae Kwon†⋅Haeol Song†⋅Jeongil Seo†
 
 ## ABSTRACT
 
-A stock forecasting model cannot be equally accurate at every point in time,
-because the market changes the way it moves. A model that outputs a single
-number does not tell the user when its forecast is unreliable. This paper
-studies a model that withholds its decision at such times. Withholding requires
-the model to report its own uncertainty, so the proposed model outputs several
-quantiles instead of one value, and the width between the lower and the upper
-quantile serves as that measure. The model withholds a decision whenever the
-predicted interval is wider than it has recently been. The forecaster is a
-patch-based transformer, which is light enough to train repeatedly, extended
-with a quantile output layer; models that already produce a distribution, such
-as the Temporal Fusion Transformer (TFT), are far more expensive to train. On
-daily data for 201 KOSPI 200 stocks since 2015, withheld forecasts carried about
-1.5 times the error of those acted on, and withholding concentrated in volatile
-periods: 20.07% of the most volatile quartile against 0.21% of the least. The
-same advantage held at six matched abstention rates against a rule that looks
-only at recent realized volatility, and it did not appear when a quantile output
-layer alone was added to the lightweight model. The proposed model also had a
-lower quantile loss than the original TFT on both splits while training 3.8
-times faster and using 5.1 times less activation memory, although a quantile
-gradient-boosting baseline was cheaper still and withheld comparably. Point
-accuracy at the median matches a constant baseline, so the contribution is the
-selection of when not to act rather than a sharper forecast.
+A stock forecasting model cannot be equally accurate at every point in time, and
+a model that reports a single value does not tell the user when its forecast is
+unreliable. This paper proposes a model that withholds its decision at such
+times. A patch-based transformer, chosen because it is light enough to train
+repeatedly, is given a quantile output layer that reports three quantiles
+instead of one value. The width between the lower and the upper quantile
+measures the uncertainty of the model, and the model withholds a decision when
+that width exceeds the 95th percentile of the widths observed over the past 90
+days. The model was evaluated on daily data for 201 KOSPI 200 stocks since 2015.
+Withheld forecasts carried 1.5 times the error of those acted on, and
+withholding concentrated in the most volatile quartile (20.07%) rather than the
+least (0.21%). The advantage held at six matched abstention rates against a rule
+based on recent realized volatility, and it did not appear when only a quantile
+output layer was added. Quantile loss was lower than that of the original
+Temporal Fusion Transformer while training 3.8 times faster. Median point
+accuracy matches a constant baseline, so the contribution is the selection of
+when not to act rather than a sharper forecast. The same rule applies to any
+model that reports quantiles.
 
-<!-- 277 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
+<!-- 224 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -59,16 +55,14 @@ Forecast Uncertainty, Abstention
 
 ### 요     약
 
-주가 예측 모형은 시장이 움직이는 방식이 시기마다 달라지므로 모든 시점에서 같은 정확도를 낼 수 없다. 그러나 값 하나만 내놓는 모형은 지금의
-예측을 믿어도 되는지를 사용자에게 알려주지 못한다. 본 논문은 그러한 시점에서 판단을 보류하는 모형을 다룬다. 판단을 보류하려면 모형이 자신의
-불확실성을 수치로 내놓아야 하므로, 제안 모형은 값 하나 대신 여러 분위수를 출력하고 하위 분위수와 상위 분위수 사이 구간의 폭을 그 수치로
-쓴다. 예측 구간이 최근보다 넓은 시점에서는 판단을 내놓지 않는다. 예측 모형으로는 반복 학습이 가능할 만큼 가벼운 패치 기반 트랜스포머에
-분위수 출력층을 더하였다. 이미 분포를 산출하는 Temporal Fusion Transformer(TFT)는 학습 비용이 훨씬 크기 때문이다.
-2015년 이후 코스피200 구성종목 201개의 일별 자료로 평가한 결과, 보류한 예측의 오차는 실행한 예측의 약 1.5배였고 보류는 변동성이
-큰 시기에 몰렸다(최상위 변동성 분위 20.07%, 최하위 0.21%). 이 우위는 보류 비율을 맞춘 여섯 수준 전부에서 최근 변동성만 보는
-규칙보다 컸으며, 가벼운 모형에 분위수 출력층만 더해서는 나타나지 않았다. 제안 모형의 분위 손실은 두 구간 모두에서 TFT 원본보다 낮았고
-학습은 3.8배 빠르며 활성값 메모리는 5.1배 적었으나, 분위 그래디언트 부스팅 기준모형은 그보다도 적은 자원으로 대등하게 보류하였다.
-중앙값의 점 예측 정확도는 상수 기준선과 같으므로, 본 연구의 기여는 더 정확한 예측값이 아니라 예측을 실행하지 말아야 할 시점의 선별이다.
+주가 예측 모형은 모든 시점에서 같은 정확도를 낼 수 없으나, 값 하나만 내놓는 모형은 지금의 예측을 믿어도 되는지를 알려주지 못한다. 본
+논문은 그러한 시점에서 판단을 보류하는 모형을 제안한다. 반복 학습이 가능할 만큼 가벼운 패치 기반 트랜스포머에 분위수 출력층을 더해 값 하나
+대신 세 개의 분위수를 산출하고, 하위 분위수와 상위 분위수 사이 구간의 폭을 불확실성의 척도로 삼는다. 그 폭이 최근 90일 동안 관측된 폭의
+95분위를 넘으면 판단을 보류한다. 2015년 이후 코스피200 구성종목 201개의 일별 자료로 평가하였다. 보류한 예측의 오차는 실행한 예측의
+1.5배였고, 보류는 최상위 변동성 분위에 20.07%로 몰린 반면 최하위 분위에서는 0.21%에 그쳤다. 이 우위는 보류 비율을 맞춘 여섯
+수준 전부에서 최근 변동성만 보는 규칙보다 컸으며, 분위수 출력층만 더해서는 나타나지 않았다. 분위 손실은 Temporal Fusion
+Transformer 원본보다 낮았고 학습은 3.8배 빨랐다. 중앙값의 점 예측 정확도는 상수 기준선과 같으므로, 본 연구의 기여는 더 정확한
+예측값이 아니라 예측을 실행하지 말아야 할 시점의 선별이다. 같은 규칙은 분위수를 산출하는 다른 모형에도 그대로 적용된다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 판단 보류
 
@@ -211,9 +205,9 @@ Panels (b)-(d) are adapted from [3] and [8].
 
 #### 1) 변수선택망의 역할과 배치
 
-구간 단위로 토큰을 만들면 채널마다 24개의 토큰이 생긴다. 이 채널 축을 하나로 줄여야 인코더를 한 번만 실행할 수 있다. 가장 단순한 방법은
-채널을 선형 변환으로 합치는 것이고, 매크로 경로에는 이 방식을 썼다. 종목 채널에는 채널별 가중치를 학습하는 변수선택망을 두었다. 가중치가
-정적 문맥에 따라 달라져 섹터와 시가총액 구간별로 다른 비중을 줄 수 있기 때문이다(식 2, 3).
+구간 단위로 토큰을 만들면 채널마다 24개의 토큰이 생긴다. 이 채널 축을 하나로 줄여야 인코더를 한 번만 실행할 수 있다. 매크로 경로에는
+채널을 선형 변환으로 합쳤고, 종목 채널에는 채널별 가중치를 학습하는 변수선택망을 두었다. 가중치가 정적 문맥에 따라 달라져 섹터와 시가총액
+구간별로 다른 비중을 줄 수 있기 때문이다(식 2, 3).
 
 &nbsp;&nbsp;&nbsp;&nbsp;*v*_{n} = softmax( GRN( [ flat(*E*_{n}) ; *c*_{s} ] ) ) ∈ ℝ^{C},&nbsp;&nbsp; *n* = 1, …, *N*&nbsp;&nbsp;&nbsp;&nbsp;(2)
 
@@ -348,9 +342,8 @@ Table 4. Forecast accuracy on the validation and test splits (three-quantile pin
 선택에 쓰이지 않은 시험구간에서는 격차가 0.000499로 벌어지며 다섯 시드의 범위가 겹치지 않는다
 (0.017739~0.017895 대 0.018205~0.018407). 평균 차이에 대한 Welch 검정은 검증구간 *t* = 4.47(*p* = 0.004),
 시험구간 *t* = 10.33(*p* < 0.001)이다. 같은 표본의 날짜별 손실 계열에 Diebold-Mariano 검정[22](Newey-West 4시차[23],
-Harvey-Leybourne-Newbold 소표본 보정[24])을 적용하면 550거래일의 시험구간에서는 다섯 시드 모두 유의하나
-(*p* = 0.022, 0.001, 0.009, 0.003, < 0.001) 122거래일의 검증구간에서는 다섯 시드 모두 유의하지 않다
-(*p* = 0.16~0.56). 날짜를 표본으로 보는 검정이므로 짧은 구간에서는 검정력이 약하다. 분위수 출력층만 부착한
+Harvey-Leybourne-Newbold 소표본 보정[24])을 적용하면 550거래일의 시험구간에서는 다섯 시드 모두 유의하나(*p* ≤ 0.022) 122거래일의 검증구간에서는 다섯 시드 모두 유의하지 않다(*p*
+= 0.16~0.56). 날짜를 표본으로 보는 검정이므로 짧은 구간에서는 검정력이 약하다. 분위수 출력층만 부착한
 PatchTST는 검증구간 +0.07%, 시험구간 +0.36%로 상수 예측을 간신히 상회하는 데 그쳤고, 다섯 시드 가운데
 네 시드는 첫 회차에서 최적값에 도달하였다. 격차가 시험구간에서 벌어지는 이유의 하나는 학습 곡선이다. TFT는 다섯 시드 모두
 1~2회차에서 최적값에 도달한 뒤 과적합으로 돌아섰고, 제안 모형의 최적 회차는 2~10회차에 분포하였다. 세 모형을 모두 단정밀도로 맞추어 한 번씩 학습하면 격차는 좁아지지만 순서는 바뀌지 않는다. 중앙값만 떼어 평균절대오차로 재면 제안 모형은 0.053439 ± 0.000142로 상수
@@ -435,9 +428,8 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 
 보류율의 절대 수준을 정하는 임계값 분위는 시험구간을 참조하여 선택되었으므로 5.91%라는 값은 표본 밖
 수치가 아니다. 다만 앞 문단의 통제군 비교는 날짜마다 같은 개수를 보류시켜 보류율을 맞춘 상태에서 여섯 수준
-전부로 수행하였으므로, 이 비교의 결론은 임계값 선택에 의존하지 않는다. 분위를 95에서 90, 75로 낮추면 전체 보류율이 11.71%, 28.08%로 오르는 동안 최상위
-변동성 분위의 보류율도 36.22%, 68.72%로 함께 올라 분위별 집중이 유지되고, 세 분위 모두에서 최상위 분위
-보류율의 모형 간 순서(제안 모형 > TFT 원본 > 분위수 출력층만 부착한 모형)도 보존된다. 
+전부로 수행하였으므로, 이 비교의 결론은 임계값 선택에 의존하지 않는다. 분위를 95에서 90, 75로 낮추면 전체 보류율이 11.71%, 28.08%로 오르는 동안 최상위 변동성 분위의 보류율도 36.22%,
+68.72%로 함께 올라 분위별 집중과 모형 간 순서가 모두 유지된다. 
 
 ### 5.4 구성요소 제거
 
