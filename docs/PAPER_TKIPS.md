@@ -23,26 +23,27 @@ Seongjun Park†⋅Jimin Kim†⋅Ohjae Kwon†⋅Haeol Song†⋅Jeongil Seo†
 
 ## ABSTRACT
 
-A stock forecasting model works well in some periods and poorly in others. Most
-models report only a single predicted value, so they cannot tell the user
-whether the present moment is one they handle well. This paper proposes a model
-that identifies the moments it is unsure about and makes no prediction at those
-moments; not answering in this way is called abstention. The proposed model uses
-a light architecture and reports, instead of a single value, the range the
-future return is expected to fall in. When that range is among the widest 5% of
-the ranges seen over the past 90 days, the model withholds its decision. It was
-evaluated on daily data for 201 KOSPI 200 stocks since 2015. Withheld forecasts
-carried about 1.5 times the error of those acted on, and withholding
-concentrated in turbulent periods. When the same share of forecasts was withheld
-by a simple rule that looks only at recent movement, the proposed criterion
-still filtered out large errors better, and this behavior did not appear in a
-model to which only the range output had been added. The ranges were more
-accurate than those of the Temporal Fusion Transformer, and training was faster.
-The representative value the model reports, however, was no more accurate than a
-predictor that uses only the past distribution. What this study adds is not a
-more accurate forecast but a criterion for when not to act on one.
+Stock price forecasting has been studied in economics, statistics and computer
+science, and recent work increasingly trains artificial intelligence models on
+price and trading data to predict price movements. Most of these models,
+however, report a single predicted value and therefore cannot tell the user
+whether that prediction should be trusted at the present moment. This paper
+proposes a deep learning model that identifies the moments it is unsure about
+and makes no prediction at those moments, which is called abstention. The
+proposed model uses a lightweight architecture and reports, instead of a single
+value, the range in which the future return is expected to fall; when that range
+is among the widest 5% of the ranges observed over the past 90 days, the model
+withholds its decision. The proposed model and the comparison models were
+evaluated on daily data for 201 KOSPI 200 stocks since 2015, in terms of both
+forecast quality and abstention quality, and the proposed model performed better
+than the comparison models. In particular, withheld forecasts carried about 1.5
+times the error of those acted on, and when the same share of forecasts was
+withheld, the proposed criterion filtered out large errors better than a simple
+rule based on recent price movement. These results indicate that the
+contribution of the proposed model lies not in the accuracy of the predicted
+value but in selecting the moments at which a prediction should not be acted on.
 
-<!-- 242 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
+<!-- 239 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -55,15 +56,14 @@ Forecast Uncertainty, Abstention
 
 ### 요     약
 
-주가 예측 모형은 시기에 따라 잘 맞을 때와 그렇지 않을 때가 있다. 그런데 대부분의 모형은 예측값 하나만 내놓기 때문에, 지금이 그 예측을
-믿어도 되는 때인지 알려주지 못한다. 본 논문은 모형이 확신하지 못하는 시점을 스스로 가려내고 그 시점에는 예측을 내놓지 않는 방법을 제안한다.
-이렇게 답을 내지 않는 것을 판단 보류라고 한다. 제안 모형은 계산이 가벼운 구조를 쓰면서, 예측값 하나 대신 미래 수익률이 들어올 범위를 함께
-내놓는다. 그 범위가 최근 90일 사이에 나온 범위 가운데 넓은 쪽 5%에 들면 판단을 보류한다. 2015년 이후 코스피200 구성종목
-201개의 일별 자료로 평가하였다. 보류한 예측은 실행한 예측보다 오차가 약 1.5배 컸고, 보류는 시장이 크게 출렁인 시기에 집중되었다. 같은
-비율만큼 보류하도록 맞추고 최근 변동폭만 보고 보류하는 단순한 규칙과 견주었을 때에도, 제안한 기준이 오차가 큰 예측을 더 잘 걸러냈다. 범위를
-내놓는 기능만 덧붙인 모형에서는 이러한 성질이 나타나지 않았다. 예측 범위의 정확도는 기존 대표 모형인 Temporal Fusion
-Transformer보다 높았고 학습도 더 빨랐다. 다만 모형이 내놓는 대표 예측값 자체는 과거 분포만 쓰는 단순 예측기와 다르지 않았다. 이
-연구가 더하는 것은 더 정확한 예측값이 아니라, 그 예측을 실행하지 말아야 할 시점을 골라내는 기준이다.
+주가 예측은 경제학, 통계학, 컴퓨터공학 등 여러 분야에서 연구되는 주제이며, 최근에는 가격과 거래 자료로부터 인공지능 모형을 학습하여 주가의
+변동을 예측하는 연구가 활발해지고 있다. 그러나 대부분의 모형은 예측값을 하나만 내놓기 때문에, 그 예측을 지금 믿어도 되는지는 알려주지
+못한다. 본 연구에서는 확신하기 어려운 시점을 스스로 가려내고 그 시점에는 예측을 내놓지 않는, 판단 보류가 가능한 딥러닝 모형을 제안한다.
+제안 모형은 계산이 가벼운 구조를 사용하여 예측값 하나 대신 미래 수익률이 들어올 범위를 함께 산출하고, 그 범위가 최근 90일 동안 나온 범위
+가운데 넓은 쪽 5%에 들면 판단을 보류한다. 2015년 이후 코스피200 구성종목 201개의 일별 자료로 제안 모형과 비교 모형들의 예측
+성능과 보류 성능을 비교한 결과, 제안 모형이 비교 모형들보다 우수한 성능을 보였다. 특히 보류한 예측의 오차는 실행한 예측보다 약 1.5배
+컸고, 같은 비율만큼 보류하도록 맞춘 비교에서도 최근 변동폭만 보는 단순한 규칙보다 오차가 큰 예측을 더 잘 걸러냈다. 이 결과는 제안 모형의
+기여가 예측값의 정확도가 아니라 예측을 실행하지 말아야 할 시점의 선별에 있음을 보여준다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 판단 보류
 
