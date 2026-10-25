@@ -35,13 +35,14 @@ the future return is expected to fall as a measure of forecast uncertainty, and
 withholds the decision at the moments when that uncertainty rises well above its usual
 level. In an evaluation on daily data for 201 KOSPI 200 stocks since 2015, the moments
 at which the model withheld its decision were indeed the moments at which forecast
-errors were large. The proposed criterion also selected high-risk moments better than
-a simple rule based on recent market volatility. This study shows empirically that the
+errors were large. The proposed model gave the most accurate predictive distribution
+among the four models compared, and its criterion selected high-risk moments better
+than a simple rule based on recent market volatility. This study shows empirically that the
 contribution of an artificial intelligence model for stock forecasting lies not in
 improving point-forecast accuracy, but in reliably selecting the moments at which a
 prediction should be withheld.
 
-<!-- 216 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
+<!-- 229 단어 (공백 분리 기준; 제한 300). 한 문단, 표·참고문헌·장 번호 없음 -->
 
 **Keywords :** Stock Return Forecasting, Patch-Based Transformer, Quantile Regression,
 Forecast Uncertainty, Abstention
@@ -59,8 +60,8 @@ Forecast Uncertainty, Abstention
 집중하기보다 확신할 수 없는 순간 스스로 판단을 보류하는 능력을 갖추어야 한다는 문제 의식에서 출발한다. 이를 위해 경량화된 딥러닝 구조를
 바탕으로 미래 수익률의 예측 불확실성을 나타내는 예측 폭을 함께 산출하고, 불확실성이 평소보다 크게 치솟는 구간에서는 예측을 스스로 보류하는
 메커니즘을 구현했다. 2015년 이후 코스피200 구성종목 201개의 일별 자료를 통한 검증 결과, 모형이 보류를 선언한 시점은 실제로 예측
-오차가 크게 발생하는 위험 구간임이 확인되었다. 또한 단순 시장 변동성 지표를 따르는 수준을 넘어 예측이 틀리기 쉬운 고위험 시점을 유의미하게
-선별해냈다. 본 연구는 주가 예측 인공지능의 기여가 점 예측의 정확도 갱신에 있는 것이 아니라 판단할 수 없는 시점을 신뢰성 있게 선별하여
+오차가 크게 발생하는 위험 구간임이 확인되었다. 제안 모형의 예측 분포는 비교한 네 모형 가운데 가장 정확했으며, 단순 시장 변동성 지표를
+따르는 수준을 넘어 예측이 틀리기 쉬운 고위험 시점을 유의미하게 선별해냈다. 본 연구는 주가 예측 인공지능의 기여가 점 예측의 정확도 갱신에 있는 것이 아니라 판단할 수 없는 시점을 신뢰성 있게 선별하여
 예측을 보류하는 것에 있음을 실증적으로 입증한다.
 
 **키워드 :** 주가 수익률 예측, 패치 기반 트랜스포머, 분위회귀, 예측 불확실성, 판단 보류
