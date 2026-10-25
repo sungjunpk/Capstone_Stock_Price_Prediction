@@ -79,6 +79,7 @@ FULL_W = Mm(170)    # 좌우 여백을 뺀 본문 폭 — 전폭 표가 쓴다
 # 전폭 그림은 본문 폭보다 좁게 둔다. 170mm 로 넣으면 높이가 128.7mm 로 쪽 높이(236mm)의
 # 55% 라, 2단 본문 뒤에 남은 자리에 못 들어가 다음 쪽으로 밀리고 그 쪽이 통째로 빈다.
 FIG_W = Mm(105)     # 높이 79.5mm
+FIG2_W = Mm(72)     # 높이 55mm — 단 안에 블록째 들어가야 해서 단폭보다 좁게
 
 # 표제부의 문단 간격·여백은 양식 hwp 의 PARA_SHAPE 값(1/200pt 단위)을 pt 로 환산한 것이다.
 # 게재논문 실측 좌표와도 맞는다 — 저자줄 아래 22.7pt, 키워드 위 8.5pt, 초록 들여쓰기 10pt.
@@ -523,7 +524,8 @@ def build(blind):
             p.add_run().add_picture(
                 str(ROOT / "docs" / payload),
                 width=BIO_W if in_bio else (
-                    FIG_W if full else COL_W))
+                    FIG_W if full else
+                    FIG2_W if "fig2" in payload else COL_W))
             continue
 
         # --- 표: 열이 많으면 1단 구간 ---

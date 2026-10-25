@@ -391,6 +391,15 @@ epoch당 학습 시간은 40배치 학습 스텝 시간의 중앙값에 학습 �
 201개 종목 순전파 21회 수행의 중앙값이며, 종목당 지연시간은 이를 201로 나눈 값이다. 활성값(activation) 메모리는 역전파 그래프를
 유지하기 위해 순전파 시 추가 할당된 장치 메모리를 의미한다.
 
+![Fig. 2](images/fig2_cost_accuracy.png)
+
+Fig. 2. Forecast accuracy against inference cost. The vertical axis is the pinball improvement
+over the unconditional-quantile baseline on validation (<Table 4>); the test-split gap is wider.
+The horizontal axis is per-stock inference latency and the circle area is activation memory
+(<Table 5>). The quantile GBDT (open diamond) runs on the CPU, so its marker size does not
+apply. The original point-forecast PatchTST is omitted; its pinball loss falls far below the
+plotted range.
+
 제안 모형은 TFT 원본 대비 학습 시간이 3.8배 짧고 활성값 메모리를 5.1배 적게 사용하면서도 더 낮은 손실을 기록했다. 이는 입력을 구간
 단위로 묶어 어텐션 대상 길이를 120에서 24로 줄이고, 채널을 인코더 앞에서 하나로 통합하여 반복 연산을 제거한 결과이다. 이러한 효율성
 차이는 환경이 바뀌어도 유지되어, 캐글 GPU 기준 epoch당 학습 시간은 제안 모형이 41.8초, TFT 원본이 157.1초를 기록했다.
@@ -402,16 +411,6 @@ epoch당 학습 시간은 40배치 학습 스텝 시간의 중앙값에 학습 �
 
 (Fig. 2)는 <Table 4>의 검증 정확도와 <Table 5>의 비용을 한 평면에 놓은 것이다. 세 트랜스포머 모형 가운데 제안 모형이
 파레토 전선 위에 있고, 분위 GBDT는 검증 정확도가 같으면서 지연이 더 짧다.
-
-![Fig. 2](images/fig2_cost_accuracy.png)
-
-Fig. 2. Forecast accuracy against inference cost. The vertical axis is the pinball
-improvement over the unconditional-quantile baseline on validation, the split the models
-were selected on; the test-split gap is wider (<Table 4>). The
-horizontal axis is per-stock inference latency, and the circle area is activation memory
-for a 120-day input (<Table 5>). The quantile GBDT (open diamond) is measured on the CPU
-and has no activation memory, so its marker size does not apply. The original point-forecast
-PatchTST is omitted because its pinball loss falls far below the plotted range.
 
 ### 5.3 판단 보류 행태
 
@@ -452,10 +451,12 @@ Table 6. Abstention on the test split (550 days, 106,490 windows), mean over fiv
 전부로 수행하였으므로, 이 비교의 결론은 임계값 선택에 의존하지 않는다. 분위를 95에서 90, 75로 낮추면 전체 보류율이 11.71%, 28.08%로 오르는 동안 최상위 변동성 분위의 보류율도 36.22%,
 68.72%로 함께 올라 분위별 집중과 모형 간 순서가 모두 유지된다. 
 
-### 5.4 구성요소 제거
+### 5.4 구성요소 제거와 보류의 강건성
 
 분위수 출력층만 단 PatchTST와 제안 모형 사이에는 변수선택망, 정적 문맥, 매크로 크로스어텐션이 한꺼번에 더해져
-있다. 개선이 어디서 오는지 가리기 위해 셋을 하나씩 제거한 변형을 같은 설정과 시드로 학습하였다. 변수선택망은
+있다. 이 절은 두 가지를 확인한다. 첫째, 판단 보류가 특정 부품에 의존하는지 확인한다. 셋을 하나씩 제거해도 보류의 성질이 유지된다면, 이
+논문의 결론은 특정 구조 선택에 묶이지 않는다. 둘째, 5.1절의 개선이 어느 요소에서 오는지 확인한다. 셋이 동시에 더해져 있으므로 그대로는
+귀속할 수 없다. 세 변형은 같은 설정과 시드로 학습하였다. 변수선택망은
 매크로 경로와 같은 선형 합치기로 바꾸었고, 매크로 제거 변형은 크로스어텐션 없이 종목 표현을 출력층으로 보내며,
 정적 문맥 제거 변형은 문맥 벡터를 0으로 두어 변수선택의 조건화와 결합 뒤 더하기를 함께 껐다. 초매개변수는
 <Table 2> 그대로이며, 보고 지표는 실험 전에 시험구간 핀볼 손실, 최상위 변동성 분위의 보류율, 보류율 6%에서
@@ -471,10 +472,13 @@ Table 7. Removing one component at a time (test split, mean over five seeds 42-4
 | No static context | 0.456M | 0.017797 ± 0.000010 | +5.10% | 1/5 | 20.18 ± 0.30% | +0.067 ± 0.021 |
 
 세 변형 모두 세 지표에서 제안 모형과 구별되지 않았다. 시험구간 손실의 Welch 검정은 *p* = 0.81, 0.21, 0.33이고, 짝지은
-비교에서 제안 모형이 낮은 시드는 다섯 가운데 셋, 둘, 하나였다. 보류율 6%의 통제군 비교는 열다섯 실행 가운데 열넷에서 95% 신뢰구간이
-0을 포함하지 않았다. 따라서 개선은 어느 한 구성요소에서 오지 않는다. 설명은 둘로 남는다. 세 변형이 공유하는 채널 축약 구조 자체가
-원인이거나, 구성요소들이 서로를 대신하는 것이다. 둘 이상을 함께 제거하지 않았으므로 이 둘은 가려지지 않는다. 선형 합치기 변형은 모수가
-4분의 1이면서 결과가 같았으므로, 운용에서는 이 변형이 더 가벼운 대안이다.
+비교에서 제안 모형이 낮은 시드는 다섯 가운데 셋, 둘, 하나였다. 보류 쪽도 같았다. 최상위 변동성 분위의 보류율은 세 변형에서
+19.90~20.51%로 제안 모형의 20.07%와 다르지 않았고, 보류율 6%의 통제군 비교는 열다섯 실행 가운데 열넷에서 95% 신뢰구간이
+0을 포함하지 않았다. 따라서 판단 보류는 세 구성요소 가운데 어느 것에도 의존하지 않으며, 본 논문의 결론은 이들 설계 선택에 묶이지 않는다.
+
+반면 개선의 출처는 가려지지 않았다. 세 변형이 공유하는 채널 축약 구조 자체가 원인이거나, 구성요소들이 서로를 대신하는 것이다. 둘 이상을
+함께 제거하지 않았으므로 이 둘은 구별할 수 없다. 선형 합치기 변형은 모수가 4분의 1이면서 결과가 같았으므로, 운용에서는 이 변형이 더
+가벼운 대안이다.
 
 ## 6. 결론
 
