@@ -386,7 +386,8 @@ TFT 원본은 다섯 시드 모두 1회차 또는 2회차에서 최적값에 도
 
 ### 5.2 계산 비용
 
-자원 사용량은 본 연구의 주된 기여라기보다, 제안 모형이 기존 분포 예측 모형을 대체할 실용성이 있는지 확인하는 조건이다.
+경량 구조는 PatchTST[7]에서 가져온 것이므로 그 자체가 본 연구의 기여는 아니다. 이 절은 분포 출력을 더한 뒤에도 그 경량성이
+유지되는지를 확인한다.
 
 Table 5. Computational cost measured on one device (Mac, Metal GPU backend; batch 64, 120-day input,
 201 stocks). The quantile GBDT row is one full fit of the three quantile models on the CPU (8 cores), so it has
